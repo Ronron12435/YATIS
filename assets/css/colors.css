@@ -1,0 +1,28 @@
+/* YATIS Color Scheme */
+:root {
+    /* Primary Colors - Navy Blue to Cyan Gradient */
+    --primary-navy: #1a3a52;
+    --primary-blue: #2c5f8d;
+    --primary-cyan: #00bcd4;
+    --primary-light-cyan: #4dd0e1;
+    
+    /* Accent Colors */
+    --accent-teal: #009688;
+    --accent-light: #80deea;
+    
+    /* Neutral Colors */
+    --white: #ffffff;
+    --light-gray: #f5f7fa;
+    --gray: #95a5a6;
+    --dark-gray: #34495e;
+    
+    /* Status Colors */
+    --success: #2ecc71;
+    --warning: #f39c12;
+    --danger: #e74c3c;
+    --info: #3498db;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, #1a3a52 0%, #2c5f8d 50%, #00bcd4 100%);
+    --gradient-accent: linear-gradient(135deg, #00bcd4 0%, #4dd0e1 100%);
+}
