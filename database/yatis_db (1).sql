@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 09, 2026 at 04:41 AM
+-- Generation Time: Mar 09, 2026 at 11:49 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -52,6 +52,14 @@ CREATE TABLE `businesses` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `businesses`
+--
+
+INSERT INTO `businesses` (`id`, `user_id`, `business_name`, `business_type`, `description`, `address`, `phone`, `email`, `logo`, `is_open`, `opening_time`, `closing_time`, `capacity`, `available_tables`, `seats_per_table`, `is_subscribed`, `subscription_date`, `shop_image`, `latitude`, `longitude`, `featured_products`, `created_at`, `updated_at`) VALUES
+(1, 3, 'ron restaurant', 'food', 'adsasa', 'The Church of Jesus Christ of Latter-day Saints, A.E. Marañon Street, Sagay, Negros Occidental, Negros Island Region, Philippines', '09123459756', 'ron@gmail.com', NULL, 0, '08:00:00', '17:00:00', 20, 9, 6, 0, NULL, NULL, 10.88864975, 123.41299117, NULL, '2026-03-09 05:40:16', '2026-03-09 09:00:53'),
+(2, 3, 'Prince Hypermarket', 'goods', 'sadsad', 'Prince Hypermart, Bacolod North Road, Sagay, Negros Occidental, Negros Island Region, Philippines', '09123459798', 'ron@gmail.com', NULL, 0, '08:00:00', '18:00:00', 0, 0, 0, 0, NULL, NULL, 10.89233454, 123.41252714, NULL, '2026-03-09 05:49:53', '2026-03-09 10:00:57');
 
 -- --------------------------------------------------------
 
@@ -119,6 +127,13 @@ CREATE TABLE `friendships` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `friendships`
+--
+
+INSERT INTO `friendships` (`id`, `user_id`, `friend_id`, `status`, `created_at`) VALUES
+(1, 4, 5, 'accepted', '2026-03-09 06:29:55');
+
 -- --------------------------------------------------------
 
 --
@@ -135,6 +150,13 @@ CREATE TABLE `groups` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `groups`
+--
+
+INSERT INTO `groups` (`id`, `name`, `description`, `creator_id`, `member_limit`, `privacy`, `created_at`) VALUES
+(1, 'Clan kalan', 'riot', 4, 50, 'public', '2026-03-09 08:32:02');
+
 -- --------------------------------------------------------
 
 --
@@ -148,6 +170,13 @@ CREATE TABLE `group_members` (
   `role` enum('admin','member') DEFAULT 'member',
   `joined_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `group_members`
+--
+
+INSERT INTO `group_members` (`id`, `group_id`, `user_id`, `role`, `joined_at`) VALUES
+(6, 1, 4, 'member', '2026-03-09 08:37:07');
 
 -- --------------------------------------------------------
 
@@ -163,6 +192,13 @@ CREATE TABLE `group_messages` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `group_messages`
+--
+
+INSERT INTO `group_messages` (`id`, `group_id`, `sender_id`, `content`, `created_at`) VALUES
+(1, 1, 4, 'dsad', '2026-03-09 08:38:22');
+
 -- --------------------------------------------------------
 
 --
@@ -176,6 +212,13 @@ CREATE TABLE `group_message_reads` (
   `last_read_message_id` int(11) NOT NULL,
   `last_read_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `group_message_reads`
+--
+
+INSERT INTO `group_message_reads` (`id`, `user_id`, `group_id`, `last_read_message_id`, `last_read_at`) VALUES
+(1, 4, 1, 1, '2026-03-09 08:38:24');
 
 -- --------------------------------------------------------
 
@@ -193,6 +236,16 @@ CREATE TABLE `job_applications` (
   `interview_date` datetime DEFAULT NULL,
   `applied_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `job_applications`
+--
+
+INSERT INTO `job_applications` (`id`, `job_id`, `user_id`, `resume_path`, `cover_letter`, `status`, `interview_date`, `applied_at`) VALUES
+(1, 1, 4, 'uploads/resumes/resume_4_1773037849.pdf', '', 'reviewed', '2026-03-13 08:30:00', '2026-03-09 06:30:49'),
+(2, 2, 4, 'uploads/resumes/resume_4_1773040081.pdf', '', 'accepted', '2026-03-09 15:20:00', '2026-03-09 07:08:01'),
+(3, 2, 5, 'uploads/resumes/resume_5_1773043147.pdf', '', 'accepted', '2026-03-09 16:22:00', '2026-03-09 07:59:07'),
+(4, 1, 5, 'uploads/resumes/resume_5_1773044353.pdf', '', 'rejected', '2026-03-09 16:21:00', '2026-03-09 08:19:13');
 
 -- --------------------------------------------------------
 
@@ -215,6 +268,14 @@ CREATE TABLE `job_postings` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `job_postings`
+--
+
+INSERT INTO `job_postings` (`id`, `employer_id`, `business_id`, `title`, `description`, `requirements`, `salary_range`, `location`, `job_type`, `status`, `created_at`, `updated_at`) VALUES
+(1, 3, 1, 'Waiter', 'High School Graduate', 'adsadsa', '15000', 'Sagay City, Negros Occidental', 'full-time', 'open', '2026-03-09 06:11:02', '2026-03-09 06:11:02'),
+(2, 3, 2, 'Sales Associate', 'adasdsa', 'HS Grad', '15000', 'Sagay City, Negros Occidental', 'full-time', 'open', '2026-03-09 07:00:38', '2026-03-09 07:00:38');
+
 -- --------------------------------------------------------
 
 --
@@ -232,6 +293,13 @@ CREATE TABLE `menu_items` (
   `is_available` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `menu_items`
+--
+
+INSERT INTO `menu_items` (`id`, `business_id`, `name`, `description`, `price`, `image`, `category`, `is_available`, `created_at`) VALUES
+(1, 1, 'asdsad', 'rewqe4qw', 156.00, 'uploads/menu_items/menu_items_69ae63b8321ef.jpg', 'food', 1, '2026-03-09 06:07:52');
 
 -- --------------------------------------------------------
 
@@ -299,6 +367,13 @@ CREATE TABLE `products` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `products`
+--
+
+INSERT INTO `products` (`id`, `business_id`, `name`, `description`, `price`, `stock`, `image`, `category`, `is_available`, `created_at`, `updated_at`) VALUES
+(1, 2, 'Curls', 'qqweqw', 15.00, 1000, NULL, 'Curls', 1, '2026-03-09 06:07:07', '2026-03-09 06:07:07');
+
 -- --------------------------------------------------------
 
 --
@@ -327,6 +402,21 @@ CREATE TABLE `restaurant_tables` (
   `occupied_at` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `restaurant_tables`
+--
+
+INSERT INTO `restaurant_tables` (`id`, `business_id`, `table_number`, `seats`, `is_occupied`, `occupied_at`, `created_at`) VALUES
+(1, 1, 1, 6, 0, NULL, '2026-03-09 06:19:53'),
+(2, 1, 2, 6, 0, NULL, '2026-03-09 06:19:53'),
+(3, 1, 3, 6, 0, NULL, '2026-03-09 06:19:53'),
+(4, 1, 4, 6, 0, NULL, '2026-03-09 06:19:53'),
+(5, 1, 5, 6, 0, NULL, '2026-03-09 06:19:53'),
+(6, 1, 6, 6, 0, NULL, '2026-03-09 06:19:53'),
+(7, 1, 7, 6, 0, NULL, '2026-03-09 06:19:53'),
+(8, 1, 8, 6, 0, NULL, '2026-03-09 06:19:53'),
+(9, 1, 9, 6, 0, NULL, '2026-03-09 06:19:53');
 
 -- --------------------------------------------------------
 
@@ -424,6 +514,17 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `first_name`, `last_name`, `profile_picture`, `cover_photo`, `bio`, `is_private`, `latitude`, `longitude`, `location_name`, `role`, `is_premium`, `premium_expires_at`, `created_at`, `updated_at`) VALUES
+(1, 'admin', 'admin@yatis.com', '$2y$10$RAz7Fxnh2fsR0FFs3hPlFOG3VAvlkmQg.gYAWpDA0NPaJ78BX/3fC', 'System', 'Administrator', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'admin', 0, NULL, '2026-03-09 03:43:46', '2026-03-09 03:50:54'),
+(2, 'almencion@gmail.com', 'almencion@gmail.com', '$2y$10$YnXQPlilGA0WXiGIjwhBaOujBtGtDxD7auhMGs3Mqm1bILTDZl4NW', 'kent', 'almencion', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'business', 0, NULL, '2026-03-09 03:56:43', '2026-03-09 03:56:43'),
+(3, 'ron', 'ron@gmail.com', '$2y$10$ioQ.a/AUOgy8orfg9ND6X.35pnkfiD5XjsdwNrciz6jG9d681/Ms.', 'ron', 'almencion', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'business', 0, NULL, '2026-03-09 04:00:13', '2026-03-09 04:00:13'),
+(4, 'jayson', 'jayson@gmail.com', '$2y$10$rYAT29fQjGSTynliS2iE2OmdBdojKPxFOLnpRcrGBNzHglS5A0tS.', 'jayson', 'almencion', 'uploads/profile_photos/profile_4_1773052426.jpg', NULL, NULL, 0, NULL, NULL, NULL, 'user', 0, NULL, '2026-03-09 04:00:53', '2026-03-09 10:33:46'),
+(5, 'kelir', 'kelir@gmail.com', '$2y$10$lYa5xMEjQMZbHKUcZqm4nOy19vBuFWhZk6fYdNiUnFxXh4aIwFEdO', 'kelir', 'almencion', NULL, NULL, NULL, 0, NULL, NULL, NULL, 'user', 0, NULL, '2026-03-09 04:02:25', '2026-03-09 04:02:25');
 
 -- --------------------------------------------------------
 
@@ -666,7 +767,7 @@ ALTER TABLE `user_task_completions`
 -- AUTO_INCREMENT for table `businesses`
 --
 ALTER TABLE `businesses`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `destination_reviews`
@@ -690,49 +791,49 @@ ALTER TABLE `event_tasks`
 -- AUTO_INCREMENT for table `friendships`
 --
 ALTER TABLE `friendships`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `groups`
 --
 ALTER TABLE `groups`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `group_members`
 --
 ALTER TABLE `group_members`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `group_messages`
 --
 ALTER TABLE `group_messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `group_message_reads`
 --
 ALTER TABLE `group_message_reads`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `job_applications`
 --
 ALTER TABLE `job_applications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `job_postings`
 --
 ALTER TABLE `job_postings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `menu_items`
 --
 ALTER TABLE `menu_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `notifications`
@@ -756,19 +857,19 @@ ALTER TABLE `private_messages`
 -- AUTO_INCREMENT for table `products`
 --
 ALTER TABLE `products`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `profile_visits`
 --
 ALTER TABLE `profile_visits`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `restaurant_tables`
 --
 ALTER TABLE `restaurant_tables`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -792,7 +893,7 @@ ALTER TABLE `tourist_destinations`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `user_achievements`
