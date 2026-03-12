@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/Database.php';
-require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../api/models/User.php';
 
 class AuthController {
     private $db;
@@ -9,6 +9,11 @@ class AuthController {
     public function __construct() {
         $database = new Database();
         $this->db = $database->connect();
+        
+        if (!$this->db) {
+            throw new Exception("Database connection failed");
+        }
+        
         $this->user = new User($this->db);
     }
 
@@ -68,7 +73,36 @@ class AuthController {
     }
 
     public function logout() {
-        session_destroy();
+        // Ensure session is started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Log the logout action
+        error_log("Logout called for user: " . ($_SESSION['user_id'] ?? 'unknown'));
+        
+        // Clear all session variables
+        $_SESSION = [];
+        
+        // Delete the session cookie
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(), 
+                '', 
+                time() - 3600,
+                $params["path"], 
+                $params["domain"],
+                $params["secure"], 
+                $params["httponly"]
+            );
+        }
+        
+        // Destroy the session
+        @session_destroy();
+        
+        error_log("Session destroyed");
+        
         return ['success' => true, 'message' => 'Logged out successfully'];
     }
 

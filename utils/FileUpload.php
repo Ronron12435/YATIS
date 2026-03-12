@@ -132,7 +132,7 @@ class FileUpload {
         return [
             'success' => true,
             'path' => 'uploads/profile_photos/' . $filename,
-            'url' => '/yatis/uploads/profile_photos/' . $filename
+            'url' => 'uploads/profile_photos/' . $filename
         ];
     }
 
@@ -200,7 +200,7 @@ class FileUpload {
         return [
             'success' => true,
             'path' => 'uploads/profile_photos/' . $filename,
-            'url' => '/yatis/uploads/profile_photos/' . $filename
+            'url' => 'uploads/profile_photos/' . $filename
         ];
     }
 

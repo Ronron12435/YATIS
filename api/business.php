@@ -1,23 +1,41 @@
 <?php
+// Set error handling to not output errors directly
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// Set JSON header FIRST before any includes
+header('Content-Type: application/json');
+
+error_log('=== API Request Started ===');
+error_log('Method: ' . $_SERVER['REQUEST_METHOD']);
+error_log('Request URI: ' . $_SERVER['REQUEST_URI']);
+
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/../config/Database.php';
-require_once __DIR__ . '/../models/Business.php';
-require_once __DIR__ . '/../models/MenuItem.php';
-require_once __DIR__ . '/../models/Product.php';
-require_once __DIR__ . '/../models/Service.php';
+require_once __DIR__ . '/models/Business.php';
+require_once __DIR__ . '/models/MenuItem.php';
+require_once __DIR__ . '/models/Product.php';
+require_once __DIR__ . '/models/Service.php';
 
-header('Content-Type: application/json');
+error_log('Includes loaded successfully');
 
 $database = new Database();
 $db = $database->connect();
 
+error_log('Database connected');
+
 $method = $_SERVER['REQUEST_METHOD'];
+
+error_log('Processing ' . $method . ' request');
 
 try {
     if($method === 'POST') {
+        error_log('POST request detected');
         Auth::check();
+        error_log('Auth check passed');
         Auth::checkRole(['business', 'admin']);
+        error_log('Role check passed');
         
         // Check if this is a file upload (FormData) or JSON request
         $isFileUpload = isset($_FILES) && count($_FILES) > 0;
@@ -28,7 +46,16 @@ try {
             $data = $_POST;
         } else {
             // Handle JSON requests
-            $data = json_decode(file_get_contents('php://input'), true);
+            $input = file_get_contents('php://input');
+            $data = json_decode($input, true);
+            
+            // Check if JSON decoding failed
+            if($data === null && !empty($input)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Invalid JSON input: ' . json_last_error_msg()]);
+                exit;
+            }
+            
             $action = $data['action'] ?? '';
         }
         
@@ -331,6 +358,80 @@ try {
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update location']);
             }
+        } elseif($action === 'update_business') {
+            Auth::check();
+            Auth::checkRole(['business', 'admin']);
+            
+            error_log('update_business action called');
+            error_log('Data received: ' . json_encode($data));
+            
+            $business_id = $data['business_id'] ?? 0;
+            $business_name = $data['business_name'] ?? '';
+            $description = $data['description'] ?? '';
+            $phone = $data['phone'] ?? '';
+            $email = $data['email'] ?? '';
+            $opening_time = $data['opening_time'] ?? null;
+            $closing_time = $data['closing_time'] ?? null;
+            
+            error_log('Parsed values - ID: ' . $business_id . ', Name: ' . $business_name);
+            
+            // Validate phone number if provided
+            if(!empty($phone)) {
+                $phone = preg_replace('/[^0-9]/', '', $phone);
+                if(strlen($phone) !== 11) {
+                    error_log('Phone validation failed: ' . $phone);
+                    echo json_encode(['success' => false, 'message' => 'Phone number must be exactly 11 digits']);
+                    exit;
+                }
+            }
+            
+            // Verify the business belongs to the current user (unless admin)
+            if($_SESSION['role'] !== 'admin') {
+                $query = "SELECT user_id FROM businesses WHERE id = :business_id";
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(':business_id', $business_id);
+                $stmt->execute();
+                $business = $stmt->fetch();
+                
+                error_log('Business check - Found: ' . ($business ? 'yes' : 'no'));
+                
+                if(!$business || $business['user_id'] != Auth::getUserId()) {
+                    error_log('Unauthorized access attempt');
+                    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+                    exit;
+                }
+            }
+            
+            // Update business details (address is updated via update_location action)
+            $query = "UPDATE businesses SET 
+                      business_name = :business_name,
+                      description = :description,
+                      phone = :phone,
+                      email = :email,
+                      opening_time = :opening_time,
+                      closing_time = :closing_time
+                      WHERE id = :business_id";
+            
+            error_log('Executing update query');
+            
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(':business_name', $business_name);
+            $stmt->bindParam(':description', $description);
+            $stmt->bindParam(':phone', $phone);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':opening_time', $opening_time);
+            $stmt->bindParam(':closing_time', $closing_time);
+            $stmt->bindParam(':business_id', $business_id);
+            
+            if($stmt->execute()) {
+                error_log('Update successful');
+                echo json_encode(['success' => true, 'message' => 'Business details updated successfully']);
+                error_log('Response sent');
+            } else {
+                error_log('Update failed: ' . json_encode($stmt->errorInfo()));
+                echo json_encode(['success' => false, 'message' => 'Failed to update business details']);
+                error_log('Error response sent');
+            }
         }
     } elseif($method === 'GET') {
         $action = $_GET['action'] ?? '';
@@ -342,23 +443,19 @@ try {
             if($type) {
                 $businesses = $business->getByType($type);
                 
-                // For the business map view, show ALL businesses to everyone
-                // Only filter for business management operations (not map display)
-                $context = $_GET['context'] ?? 'map'; // Default to map context
+                // Check if user is a business owner
+                $currentRole = $_SESSION['role'] ?? 'user';
+                $currentUserId = $_SESSION['user_id'] ?? 0;
                 
-                if($context === 'manage' && isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
-                    // Only filter for business management, not map display
-                    $currentUserId = $_SESSION['user_id'];
-                    $currentRole = $_SESSION['role'];
-                    
-                    // Only filter for non-admin users in management context
-                    if($currentRole !== 'admin') {
-                        $businesses = array_filter($businesses, function($b) use ($currentUserId) {
-                            return $b['user_id'] == $currentUserId;
-                        });
-                        // Re-index array after filtering
-                        $businesses = array_values($businesses);
-                    }
+                // For business owners, always show only their own business
+                // For regular users, show all businesses
+                if($currentRole === 'business' && isset($_SESSION['user_id'])) {
+                    // Business owners only see their own business
+                    $businesses = array_filter($businesses, function($b) use ($currentUserId) {
+                        return $b['user_id'] == $currentUserId;
+                    });
+                    // Re-index array after filtering
+                    $businesses = array_values($businesses);
                 }
                 
                 echo json_encode(['success' => true, 'businesses' => $businesses]);
@@ -519,67 +616,14 @@ try {
             $business = new Business($db);
             $businesses = $business->getByUserId(Auth::getUserId());
             echo json_encode(['success' => true, 'businesses' => $businesses]);
-        } elseif($action === 'update_business') {
-            Auth::check();
-            Auth::checkRole(['business', 'admin']);
-            
-            $business_id = $data['business_id'] ?? 0;
-            $business_name = $data['business_name'] ?? '';
-            $description = $data['description'] ?? '';
-            $phone = $data['phone'] ?? '';
-            $email = $data['email'] ?? '';
-            $opening_time = $data['opening_time'] ?? null;
-            $closing_time = $data['closing_time'] ?? null;
-            
-            // Validate phone number if provided
-            if(!empty($phone)) {
-                $phone = preg_replace('/[^0-9]/', '', $phone);
-                if(strlen($phone) !== 11) {
-                    echo json_encode(['success' => false, 'message' => 'Phone number must be exactly 11 digits']);
-                    exit;
-                }
-            }
-            
-            // Verify the business belongs to the current user (unless admin)
-            if($_SESSION['role'] !== 'admin') {
-                $query = "SELECT user_id FROM businesses WHERE id = :business_id";
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':business_id', $business_id);
-                $stmt->execute();
-                $business = $stmt->fetch();
-                
-                if(!$business || $business['user_id'] != Auth::getUserId()) {
-                    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-                    exit;
-                }
-            }
-            
-            // Update business details (address is updated via update_location action)
-            $query = "UPDATE businesses SET 
-                      business_name = :business_name,
-                      description = :description,
-                      phone = :phone,
-                      email = :email,
-                      opening_time = :opening_time,
-                      closing_time = :closing_time
-                      WHERE id = :business_id";
-            
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':business_name', $business_name);
-            $stmt->bindParam(':description', $description);
-            $stmt->bindParam(':phone', $phone);
-            $stmt->bindParam(':email', $email);
-            $stmt->bindParam(':opening_time', $opening_time);
-            $stmt->bindParam(':closing_time', $closing_time);
-            $stmt->bindParam(':business_id', $business_id);
-            
-            if($stmt->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Business details updated successfully']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to update business details']);
-            }
+        } else {
+            error_log('Unknown action: ' . $action);
+            echo json_encode(['success' => false, 'message' => 'Unknown action: ' . $action]);
         }
     }
 } catch(Exception $e) {
+    error_log('Exception caught: ' . $e->getMessage());
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
+?>

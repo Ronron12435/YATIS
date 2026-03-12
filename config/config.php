@@ -2,7 +2,7 @@
 // Application Configuration
 define('APP_NAME', 'YATIS');
 define('APP_VERSION', '1.0.0');
-define('BASE_URL', 'http://localhost/yatis/');
+define('BASE_URL', 'http://localhost/Project_ojt/YATIS/');
 
 // File Upload Settings
 define('UPLOAD_DIR', __DIR__ . '/../uploads/');

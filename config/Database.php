@@ -17,8 +17,10 @@ class Database {
             );
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            error_log("Database connection successful");
         } catch(PDOException $e) {
-            echo 'Connection Error: ' . $e->getMessage();
+            error_log("Database connection error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()]);
         }
         
         return $this->conn;

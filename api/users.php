@@ -1,5 +1,9 @@
 <?php
 // Start session FIRST before any output
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . '/../config/config.php';
 
 // Then set headers
@@ -42,8 +46,11 @@ try {
                     exit;
                 }
                 
+                error_log("Login attempt for username: " . $data['username']);
                 $result = $auth->login($data['username'], $data['password']);
+                error_log("Login result: " . json_encode($result));
                 echo json_encode($result);
+                exit;
             } else {
                 echo json_encode(['success' => false, 'message' => 'Invalid action']);
             }

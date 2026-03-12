@@ -29,7 +29,7 @@ $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
 if(!$user_data) {
     // User account was deleted - log them out
     session_destroy();
-    header('Location: /yatis/index.php?message=account_deleted');
+    header('Location: ./index.php?message=account_deleted');
     exit;
 }
 
@@ -864,7 +864,16 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             color: #666;
         }
         
+        /* Responsive Map */
+        .responsive-map {
+            height: 500px !important;
+        }
+        
         @media (max-width: 768px) {
+            .responsive-map {
+                height: 350px !important;
+            }
+            
             .group-content {
                 grid-template-columns: 1fr !important;
             }
@@ -1444,6 +1453,10 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(100%); opacity: 0; }
         }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
         .btn-primary { background: #667eea; color: white; }
         .btn-primary:hover { background: #5568d3; }
         .btn-success { background: #2ecc71; color: white; }
@@ -1526,7 +1539,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             .menu-toggle {
-                display: block;
+                display: block !important;
                 position: fixed;
                 top: 15px;
                 left: 15px;
@@ -1596,6 +1609,10 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 padding: 15px !important;
             }
             
+            .responsive-map {
+                height: 400px !important;
+            }
+            
             .user-card {
                 flex-direction: column;
                 align-items: flex-start !important;
@@ -1624,7 +1641,8 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             
             /* Hide business map on mobile */
             #business-map-container {
-                display: none !important;
+                display: block !important;
+                height: 400px !important;
             }
             
             /* Show mobile business list */
@@ -1732,7 +1750,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     <?php if($business_type === 'food'): ?>
                     <div class="sidebar-item" onclick="showSection('food-business'); initBusinessMap(); setTimeout(() => filterBusinessMap('food'), 300); event.stopPropagation();">
                         <span class="sidebar-icon"><i class="fas fa-utensils"></i></span>
-                        <div>Food</div>
+                        <div>Add Menu and Products</div>
                     </div>
                     <div class="sidebar-item" onclick="showSection('business'); initBusinessMap(); setTimeout(() => filterBusinessMap('goods'), 300); event.stopPropagation();">
                         <span class="sidebar-icon"><i class="fas fa-shopping-bag"></i></span>
@@ -1758,7 +1776,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     </div>
                     <div class="sidebar-item" onclick="showSection('services-business'); initBusinessMap(); setTimeout(() => filterBusinessMap('services'), 300); event.stopPropagation();">
                         <span class="sidebar-icon"><i class="fas fa-tools"></i></span>
-                        <div>Services</div>
+                        <div>Add Product and Services</div>
                     </div>
                     <?php endif; ?>
                     
@@ -1792,7 +1810,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             
             <div class="sidebar-item" onclick="showSection('profile')" style="display: flex; align-items: center; gap: 10px;">
                 <?php if(!empty($user_data['profile_picture'])): ?>
-                    <img src="<?php echo htmlspecialchars($user_data['profile_picture']); ?>" 
+                    <img src="./<?php echo htmlspecialchars($user_data['profile_picture']); ?>" 
                          alt="Profile" 
                          style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
                 <?php else: ?>
@@ -1881,7 +1899,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             
             <div class="sidebar-item" onclick="showSection('profile')" style="display: flex; align-items: center; gap: 10px;">
                 <?php if(!empty($user_data['profile_picture'])): ?>
-                    <img src="<?php echo htmlspecialchars($user_data['profile_picture']); ?>" 
+                    <img src="./<?php echo htmlspecialchars($user_data['profile_picture']); ?>" 
                          alt="Profile" 
                          style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
                 <?php else: ?>
@@ -1933,7 +1951,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     <h3>🗺️ Discover Businesses in Sagay City</h3>
                     <p style="color: #666; margin-bottom: 10px;">Explore food, goods, and services businesses on the map. Click pins to see details and menu offers!</p>
                     
-                    <div id="dashboard-map-container" style="width: 100%; height: 500px; border-radius: 8px; overflow: hidden; border: 2px solid #00bcd4; margin: 15px 0;">
+                    <div id="dashboard-map-container" style="width: 100%; border-radius: 8px; overflow: hidden; border: 2px solid #00bcd4; margin: 15px 0;" class="responsive-map">
                     </div>
                     <div style="display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 5px;">
@@ -2057,7 +2075,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     </div>
                     
                     <!-- Mobile Business List (Hidden on desktop, shown on mobile) -->
-                    <div id="mobile-business-list">
+                    <div id="mobile-business-list" style="display: none;">
                         <div style="margin-bottom: 15px;">
                             <h3 style="margin: 0 0 10px 0; color: #1a3a52;">📍 All Businesses</h3>
                             <p style="margin: 0; color: #666; font-size: 14px;">Tap any business to view details</p>
@@ -2113,7 +2131,6 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
 
             <!-- Food Business Section -->
             <div id="food-business" class="content-section">
-                <h1 class="page-title">🍔 Food Businesses</h1>
                 
                 <?php if($role === 'business' && $business_type === 'food'): ?>
                 <!-- Business Selector (for users with multiple food businesses) -->
@@ -2130,25 +2147,84 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     </div>
                 </div>
                 
-                <!-- Add Menu Button for Food Business Owners - MOVED TO TOP -->
-                <div class="card" style="background: linear-gradient(135deg, #e0f7fa 0%, #f5f7fa 100%); border-left: 4px solid #00bcd4;">
+                <!-- Business Type Selector for Adding Items -->
+                <div id="add-items-selector-card" class="card" style="background: linear-gradient(135deg, #f5f5f5 0%, #f9f9f9 100%); border-left: 4px solid #ccc; transition: all 0.3s ease;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label id="add-items-label" style="display: block; margin-bottom: 8px; color: #1a3a52; font-weight: 600; font-size: 14px;">
+                                📦 Select Business Type to Add Items:
+                            </label>
+                            <select id="add-items-business-type" onchange="updateAddItemsCardColor(this.value)" style="width: 100%; padding: 12px; border: 2px solid #ccc; border-radius: 8px; font-size: 14px; background: white; cursor: pointer; transition: all 0.3s ease;">
+                                <option value="">Choose a business type...</option>
+                                <?php
+                                // Get all businesses the user owns with their names and types
+                                $query = "SELECT id, business_name, business_type FROM businesses WHERE user_id = :user_id ORDER BY business_type, business_name";
+                                $stmt = $db->prepare($query);
+                                $stmt->bindParam(':user_id', $user_id);
+                                $stmt->execute();
+                                $user_businesses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                
+                                $business_type_labels = [
+                                    'food' => ['icon' => '🍔', 'suffix' => 'Menu Items'],
+                                    'goods' => ['icon' => '🛍️', 'suffix' => 'Products'],
+                                    'services' => ['icon' => '🛠️', 'suffix' => 'Services']
+                                ];
+                                
+                                foreach($user_businesses as $biz) {
+                                    $type = $biz['business_type'];
+                                    $name = $biz['business_name'];
+                                    if(isset($business_type_labels[$type])) {
+                                        $label = $business_type_labels[$type];
+                                        echo "<option value=\"{$type}\">{$label['icon']} {$name} - {$label['suffix']}</option>";
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add Menu Item Section (Food) -->
+                <div id="add-menu-section" class="card" style="display: none; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border-left: 4px solid #ffd700; transition: all 0.3s ease;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <h3 style="margin: 0 0 5px 0; color: #1a3a52;">🍔 Manage Your Menu</h3>
-                            <p style="margin: 0; color: #666; font-size: 14px;">Add and manage your food menu items</p>
+                            <h3 style="margin: 0 0 5px 0; color: #856404;">🍔 Manage Your Menu</h3>
+                            <p style="margin: 0; color: #856404; font-size: 14px;">Add and manage your food menu items</p>
                         </div>
-                        <button class="btn btn-primary" onclick="showQuickAddMenuForm()" style="padding: 12px 24px; font-size: 15px;">
+                        <button class="btn btn-primary" onclick="showQuickAddMenuForm()" style="padding: 12px 24px; font-size: 15px; background: #ffd700; color: #1a3a52; border: none; font-weight: 600;">
                             ➕ Add Menu Item
                         </button>
                     </div>
                 </div>
                 
                 <!-- My Menu Items for Food Business Owners -->
-                <div class="card">
-                    <h3>🍽️ My Menu Items</h3>
+                <div id="my-menu-section" class="card" style="display: none; border-left: 4px solid #ffd700;">
+                    <h3 style="color: #856404;">🍽️ My Menu Items</h3>
                     <p style="color: #666; margin-bottom: 15px;">Your current menu items and offerings</p>
                     <div id="my-menu-items-list">
                         <p style="color: #999;">Loading your menu items...</p>
+                    </div>
+                </div>
+                
+                <!-- Add Product Section (Goods) -->
+                <div id="add-product-section" class="card" style="display: none; background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%); border-left: 4px solid #3498db; transition: all 0.3s ease;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="margin: 0 0 5px 0; color: #0c5460;">🛍️ Manage Your Products</h3>
+                            <p style="margin: 0; color: #0c5460; font-size: 14px;">Add and manage your products</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="addProductFromFoodBusiness()" style="padding: 12px 24px; font-size: 15px; background: #3498db; color: white; border: none; font-weight: 600;">
+                            ➕ Add Product
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- My Products Section (Goods) -->
+                <div id="my-products-section" class="card" style="display: none; border-left: 4px solid #3498db;">
+                    <h3 style="color: #0c5460;">📦 My Products</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Your current products and inventory</p>
+                    <div id="my-products-list">
+                        <p style="color: #999;">Loading your products...</p>
                     </div>
                 </div>
                 <?php else: ?>
@@ -2181,7 +2257,6 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
 
             <!-- Goods Business Section -->
             <div id="goods-business" class="content-section">
-                <h1 class="page-title">🛍️ Goods & Products</h1>
                 
                 <?php if($role === 'business' && $business_type === 'goods'): ?>
                 <!-- Add Product Button for Goods Business Owners -->
@@ -2248,7 +2323,6 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
 
             <!-- Services Business Section -->
             <div id="services-business" class="content-section">
-                <h1 class="page-title">🛠️ Services</h1>
                 
                 <?php if($role === 'business' && $business_type === 'services'): ?>
                 <!-- Business Selector (for users with multiple service businesses) -->
@@ -2265,8 +2339,45 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     </div>
                 </div>
                 
+                <!-- Business Type Selector for Adding Items -->
+                <div class="card" style="background: linear-gradient(135deg, #f0e6ff 0%, #e8d9f5 100%); border-left: 4px solid #9b59b6;">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 8px; color: #1a3a52; font-weight: 600; font-size: 14px;">
+                                📦 Select Business Type to Add Items:
+                            </label>
+                            <select id="service-business-type-selector" onchange="switchServiceBusinessTypeForItems(this.value)" style="width: 100%; padding: 12px; border: 2px solid #9b59b6; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+                                <option value="">Choose a business type...</option>
+                                <?php
+                                // Get all businesses the user owns with their names and types
+                                $query = "SELECT id, business_name, business_type FROM businesses WHERE user_id = :user_id ORDER BY business_type, business_name";
+                                $stmt = $db->prepare($query);
+                                $stmt->bindParam(':user_id', $user_id);
+                                $stmt->execute();
+                                $user_businesses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                
+                                $business_type_labels = [
+                                    'food' => ['icon' => '🍔', 'suffix' => 'Menu Items'],
+                                    'goods' => ['icon' => '🛍️', 'suffix' => 'Products'],
+                                    'services' => ['icon' => '🛠️', 'suffix' => 'Services']
+                                ];
+                                
+                                foreach($user_businesses as $biz) {
+                                    $type = $biz['business_type'];
+                                    $name = $biz['business_name'];
+                                    if(isset($business_type_labels[$type])) {
+                                        $label = $business_type_labels[$type];
+                                        echo "<option value=\"{$type}\">{$label['icon']} {$name} - {$label['suffix']}</option>";
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Add Service Button for Service Business Owners -->
-                <div class="card" style="background: linear-gradient(135deg, #e0f7fa 0%, #f5f7fa 100%); border-left: 4px solid #00bcd4;">
+                <div class="card" id="manage-services-card" style="background: linear-gradient(135deg, #e0f7fa 0%, #f5f7fa 100%); border-left: 4px solid #00bcd4;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h3 style="margin: 0 0 5px 0; color: #1a3a52;">🛠️ Manage Your Services</h3>
@@ -2278,12 +2389,43 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     </div>
                 </div>
                 
+                <!-- Add Services and Products Button -->
+                <div class="card" style="background: linear-gradient(135deg, #f0e6ff 0%, #e8d9f5 100%); border-left: 4px solid #9b59b6; display: none;" id="service-add-items-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+                        <div>
+                            <h3 style="margin: 0 0 5px 0; color: #1a3a52;" id="service-add-items-title">📦 Add Items</h3>
+                            <p style="margin: 0; color: #666; font-size: 14px;" id="service-add-items-desc">Add items to your business</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; white-space: nowrap;" id="service-add-items-buttons">
+                            <!-- Buttons will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- My Services List for Service Business Owners -->
-                <div class="card">
+                <div class="card" id="my-services-card">
                     <h3>🛠️ My Services</h3>
                     <p style="color: #666; margin-bottom: 15px;">Your current service offerings</p>
                     <div id="my-services-list">
                         <p style="color: #999;">Loading your services...</p>
+                    </div>
+                </div>
+                
+                <!-- My Products List (shown when Goods is selected from dropdown) -->
+                <div class="card" id="my-products-card" style="display: none;">
+                    <h3>🛍️ My Products</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Your current product offerings</p>
+                    <div id="my-products-list-service-section">
+                        <p style="color: #999;">Loading your products...</p>
+                    </div>
+                </div>
+                
+                <!-- My Menu Items List (shown when Food is selected from dropdown) -->
+                <div class="card" id="my-menu-items-card" style="display: none;">
+                    <h3>🍔 My Menu Items</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Your current menu offerings</p>
+                    <div id="my-menu-items-list-service-section">
+                        <p style="color: #999;">Loading your menu items...</p>
                     </div>
                 </div>
                 <?php else: ?>
@@ -2707,7 +2849,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             <div id="profile" class="content-section">
                 <!-- Modern Profile Header -->
                 <div class="modern-profile-header">
-                    <div class="profile-cover" id="profile-cover-container" style="<?php echo !empty($user_data['cover_photo']) ? 'background-image: url(\'/yatis/' . htmlspecialchars($user_data['cover_photo']) . '\'); background-size: cover; background-position: center;' : ''; ?>" <?php echo !empty($user_data['cover_photo']) ? 'onclick="viewCoverPhoto()" style="cursor: pointer;"' : ''; ?>>
+                    <div class="profile-cover" id="profile-cover-container" style="<?php echo !empty($user_data['cover_photo']) ? 'background-image: url(\'' . htmlspecialchars($user_data['cover_photo']) . '\'); background-size: cover; background-position: center;' : ''; ?>" <?php echo !empty($user_data['cover_photo']) ? 'onclick="viewCoverPhoto()" style="cursor: pointer;"' : ''; ?>>
                         <?php if (empty($user_data['cover_photo'])): ?>
                             <div class="cover-gradient"></div>
                         <?php endif; ?>
@@ -2724,7 +2866,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         <div class="profile-avatar-wrapper">
                             <div class="modern-avatar" id="profile-avatar" onclick="toggleProfilePhotoMenu()" style="cursor: pointer; position: relative;">
                                 <?php if (!empty($user_data['profile_picture'])): ?>
-                                    <img src="/yatis/<?php echo htmlspecialchars($user_data['profile_picture']); ?>" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                                    <img src="./<?php echo htmlspecialchars($user_data['profile_picture']); ?>" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                                 <?php else: ?>
                                     <span class="avatar-text"><?php echo strtoupper(substr($username, 0, 2)); ?></span>
                                 <?php endif; ?>
@@ -3378,6 +3520,58 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
     <!-- End of right-section -->
 
     <script>
+        // Base path for API and assets
+        const BASE_PATH = './';
+        
+        // DEBUG: Log profile picture and viewport information
+        console.log('=== YATIS Dashboard Debug Info ===');
+        console.log('BASE_PATH:', BASE_PATH);
+        console.log('Current URL:', window.location.href);
+        console.log('Viewport Width:', window.innerWidth);
+        console.log('Viewport Height:', window.innerHeight);
+        console.log('Menu Toggle Display:', window.getComputedStyle(document.querySelector('.menu-toggle')).display);
+        
+        // Check profile picture paths
+        const profileImgs = document.querySelectorAll('img[alt="Profile"]');
+        console.log('Profile Images Found:', profileImgs.length);
+        profileImgs.forEach((img, index) => {
+            console.log(`Profile Image ${index}:`, {
+                src: img.src,
+                alt: img.alt,
+                computed_src: img.currentSrc,
+                complete: img.complete,
+                naturalWidth: img.naturalWidth,
+                naturalHeight: img.naturalHeight
+            });
+            
+            // Add error handler to track failed loads
+            img.addEventListener('error', function() {
+                console.error(`Profile Image ${index} FAILED TO LOAD:`, {
+                    src: this.src,
+                    alt: this.alt
+                });
+            });
+            
+            img.addEventListener('load', function() {
+                console.log(`Profile Image ${index} LOADED SUCCESSFULLY:`, {
+                    src: this.src,
+                    alt: this.alt
+                });
+            });
+        });
+        
+        // Check all img tags for redirect loop issues
+        console.log('=== All Image Tags ===');
+        document.querySelectorAll('img').forEach((img, index) => {
+            if (img.src.includes('uploads/profile_photos')) {
+                console.log(`Image ${index} (profile photo):`, {
+                    src: img.src,
+                    alt: img.alt,
+                    complete: img.complete
+                });
+            }
+        });
+        
         // Modal Helper Functions
         function showSuccessModal(message) {
             const modal = document.createElement('div');
@@ -3438,22 +3632,29 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         ${message}
                     </div>
                     <div style="padding: 15px 20px; text-align: right; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; justify-content: flex-end;">
-                        <button id="modal-cancel-btn" class="btn btn-secondary" style="padding: 10px 25px;">Cancel</button>
-                        <button id="modal-confirm-btn" class="btn btn-primary" style="padding: 10px 25px;">OK</button>
+                        <button class="modal-cancel-btn" style="padding: 10px 25px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Cancel</button>
+                        <button class="modal-confirm-btn" style="padding: 10px 25px; background: linear-gradient(135deg, #2c5f8d 0%, #00bcd4 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">OK</button>
                     </div>
                 </div>
             `;
             document.body.appendChild(modal);
             
-            document.getElementById('modal-confirm-btn').onclick = function() {
+            const confirmBtn = modal.querySelector('.modal-confirm-btn');
+            const cancelBtn = modal.querySelector('.modal-cancel-btn');
+            
+            confirmBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 modal.remove();
                 if (onConfirm) onConfirm();
-            };
+            });
             
-            document.getElementById('modal-cancel-btn').onclick = function() {
+            cancelBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
                 modal.remove();
                 if (onCancel) onCancel();
-            };
+            });
             
             modal.addEventListener('click', function(e) {
                 if (e.target === modal) {
@@ -3461,6 +3662,31 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     if (onCancel) onCancel();
                 }
             });
+        }
+        
+        function showLoadingModal(message = 'Loading...') {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.id = 'loading-modal';
+            modal.style.display = 'block';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 400px;">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white;">
+                        <h2 style="margin: 0; font-size: 18px;">⏳ Loading</h2>
+                    </div>
+                    <div style="padding: 40px 25px; text-align: center;">
+                        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #e0e0e0; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;"></div>
+                        <p style="margin: 0; font-size: 15px; color: #333;">${message}</p>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            return modal;
+        }
+        
+        function closeLoadingModal() {
+            const modal = document.getElementById('loading-modal');
+            if(modal) modal.remove();
         }
         
         // Mobile Menu Toggle
@@ -3504,7 +3730,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 if(!result.success || !result.exists) {
                     // Account was deleted - redirect to login
                     alert('Your account has been deleted by an administrator.');
-                    window.location.href = '/yatis/index.php?message=account_deleted';
+                    window.location.href = './index.php?message=account_deleted';
                 }
             } catch(error) {
                 console.error('Error checking account:', error);
@@ -3512,22 +3738,15 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
         
         function logout() {
-            showConfirmModal(
-                'Are you sure you want to logout?',
-                function() {
-                    // Clear all localStorage data on logout
-                    localStorage.removeItem('userLocation');
-                    localStorage.removeItem('locationPrompted');
-                    
-                    fetch('api/users.php?action=logout')
-                        .then(response => response.json())
-                        .then(result => {
-                            if(result.success) {
-                                window.location.href = 'index.php';
-                            }
-                        });
-                }
-            );
+            showConfirmModal('Are you sure you want to logout?', () => {
+                // Clear all localStorage data on logout
+                localStorage.removeItem('userLocation');
+                localStorage.removeItem('locationPrompted');
+                localStorage.removeItem('currentSection');
+                
+                // Redirect to logout.php which will handle session destruction
+                window.location.href = './logout.php';
+            });
         }
 
         // Check for location permission on page load
@@ -3757,6 +3976,19 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             // Save current section to localStorage
             localStorage.setItem('currentSection', sectionId);
             
+            // Hide/show menu toggle based on section
+            // Only show on business section on mobile
+            const menuToggle = document.querySelector('.menu-toggle');
+            if(menuToggle) {
+                if(window.innerWidth <= 768 && (sectionId === 'business' || sectionId === 'food-business' || sectionId === 'goods-business' || sectionId === 'services-business')) {
+                    // Show menu toggle ONLY on business sections on mobile
+                    menuToggle.style.removeProperty('display');
+                } else {
+                    // Hide menu toggle everywhere else
+                    menuToggle.style.display = 'none';
+                }
+            }
+            
             // Reset the viewingSpecificBusiness flag when navigating via sidebar
             // (but viewBusinessDetails will set it to true when called from map)
             if(typeof window.viewingSpecificBusiness !== 'undefined' && !window.isCallingFromMap) {
@@ -3981,6 +4213,13 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
 
         // Load initial data when page loads
         window.addEventListener('DOMContentLoaded', function() {
+            // Initialize menu toggle visibility - only show on business sections on mobile
+            const menuToggle = document.querySelector('.menu-toggle');
+            if(menuToggle) {
+                // Don't show on page load - let showSection() handle it
+                menuToggle.style.display = 'none';
+            }
+            
             // Restore last viewed section from localStorage
             const savedSection = localStorage.getItem('currentSection');
             if(savedSection && document.getElementById(savedSection)) {
@@ -4038,11 +4277,77 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 otherGoodsForm.addEventListener('submit', submitOtherGoodsProduct);
             }
             
+            // Handle Add Items Business Type Dropdown
+            const businessTypeDropdown = document.getElementById('add-items-business-type');
+            if(businessTypeDropdown) {
+                businessTypeDropdown.addEventListener('change', function() {
+                    const selectedType = this.value;
+                    
+                    // Hide all sections
+                    document.getElementById('add-menu-section').style.display = 'none';
+                    document.getElementById('my-menu-section').style.display = 'none';
+                    document.getElementById('add-product-section').style.display = 'none';
+                    document.getElementById('my-products-section').style.display = 'none';
+                    
+                    // Show selected sections
+                    if(selectedType === 'food') {
+                        document.getElementById('add-menu-section').style.display = 'block';
+                        document.getElementById('my-menu-section').style.display = 'block';
+                        loadMyMenuItems();
+                    } else if(selectedType === 'goods') {
+                        document.getElementById('add-product-section').style.display = 'block';
+                        document.getElementById('my-products-section').style.display = 'block';
+                        loadMyProducts();
+                    }
+                });
+            }
+            
             // Initialize dashboard map for all account types
             setTimeout(() => {
                 initDashboardMap();
             }, 500);
         });
+        
+        // Update Add Items Card Color Based on Selection
+        function updateAddItemsCardColor(selectedType) {
+            const card = document.getElementById('add-items-selector-card');
+            const dropdown = document.getElementById('add-items-business-type');
+            const label = document.getElementById('add-items-label');
+            
+            const colorSchemes = {
+                food: {
+                    background: 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)',
+                    border: '#ffd700',
+                    textColor: '#856404',
+                    dropdownBorder: '#ffd700'
+                },
+                goods: {
+                    background: 'linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%)',
+                    border: '#3498db',
+                    textColor: '#0c5460',
+                    dropdownBorder: '#3498db'
+                },
+                services: {
+                    background: 'linear-gradient(135deg, #f0e6ff 0%, #e8d9f5 100%)',
+                    border: '#9b59b6',
+                    textColor: '#5a3a7a',
+                    dropdownBorder: '#9b59b6'
+                },
+                default: {
+                    background: 'linear-gradient(135deg, #f5f5f5 0%, #f9f9f9 100%)',
+                    border: '#ccc',
+                    textColor: '#1a3a52',
+                    dropdownBorder: '#ccc'
+                }
+            };
+            
+            const scheme = colorSchemes[selectedType] || colorSchemes.default;
+            
+            card.style.background = scheme.background;
+            card.style.borderLeftColor = scheme.border;
+            dropdown.style.borderColor = scheme.dropdownBorder;
+            label.style.color = scheme.textColor;
+        }
         
         // Update business hours based on current time
         function updateBusinessHours() {
@@ -4218,7 +4523,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             console.log('Submitting profile update:', data);
             
             try {
-                const response = await fetch('/yatis/api/profile.php', {
+                const response = await fetch('./api/profile.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'update', ...data })
@@ -4458,7 +4763,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         .then(data => {
                             if(data.success && data.friends.length > 0) {
                                 friendsList.innerHTML = data.friends.map(friend => {
-                                    const profilePicUrl = friend.profile_picture ? `/yatis/${friend.profile_picture}` : null;
+                                    const profilePicUrl = friend.profile_picture ? `${BASE_PATH}${friend.profile_picture}` : null;
                                     const initials = (friend.first_name?.charAt(0) || '') + (friend.last_name?.charAt(0) || '');
                                     const unreadCount = unreadCounts[friend.id] || 0;
                                     
@@ -4610,7 +4915,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                                 console.log('Processing request:', JSON.stringify(request, null, 2));
                                 console.log('Request ID:', request.id, 'Type:', typeof request.id);
                                 
-                                const profilePicUrl = request.profile_picture ? `/yatis/${request.profile_picture}` : null;
+                                const profilePicUrl = request.profile_picture ? `${BASE_PATH}${request.profile_picture}` : null;
                                 const initials = (request.first_name?.charAt(0) || '') + (request.last_name?.charAt(0) || '');
                                 
                                 return `
@@ -5138,7 +5443,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 });
         }
 
-        function viewBusinessDetails(businessId, type) {
+        function viewBusinessDetailsOld(businessId, type) {
             fetch(`api/business.php?action=details&id=${businessId}&type=${type}`)
                 .then(response => response.json())
                 .then(data => {
@@ -5241,7 +5546,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             if(businessId) {
                 showAddMenuItemForm(businessId);
             } else {
-                alert('⚠️ Please register your food business first in the "My Business" section.');
+                showErrorModal('⚠️ Please register your food business first in the "My Business" section.');
             }
         }
         
@@ -5264,7 +5569,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 console.log('Opening form for business ID:', businessId);
                 showAddProductForm(businessId);
             } else {
-                alert('⚠️ Please register your business first in the "My Business" section.');
+                showErrorModal('⚠️ Please register your business first in the "My Business" section.');
             }
         }
         
@@ -5279,7 +5584,19 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             if(businessId) {
                 showAddServiceForm(businessId);
             } else {
-                alert('⚠️ Please register your service business first in the "My Business" section.');
+                showErrorModal('⚠️ Please register your service business first in the "My Business" section.');
+            }
+        }
+        
+        // Quick add product form for services business owners
+        async function showQuickAddProductFormForServices() {
+            // Get user's goods business ID
+            let businessId = await getUserBusinessIdByType('goods');
+            
+            if(businessId) {
+                showAddProductForm(businessId);
+            } else {
+                showErrorModal('⚠️ Please register a goods business first in the "My Business" section.');
             }
         }
         
@@ -5425,12 +5742,22 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         loadMyMenuItems();
                     }
                 } else {
-                    alert('Error: ' + result.message);
+                    showErrorModal('Error: ' + result.message);
                 }
             } catch(error) {
-                alert('An error occurred. Please try again.');
+                showErrorModal('An error occurred. Please try again.');
                 console.error(error);
             }
+        }
+        
+        // Add Product from Food Business Account
+        async function addProductFromFoodBusiness() {
+            const businessId = await getUserBusinessIdByType('goods');
+            if(!businessId) {
+                showErrorModal('⚠️ Please register a goods business first in the "My Business" section.');
+                return;
+            }
+            showAddProductForm(businessId);
         }
         
         // Add Product Form
@@ -5521,13 +5848,19 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         loadMyProducts();
                     }
                     
+                    // Also reload My Products list for service section if it exists
+                    const myProductsListServiceSection = document.getElementById('my-products-list-service-section');
+                    if(myProductsListServiceSection) {
+                        loadMyProductsForServiceSection();
+                    }
+                    
                     // Reload business list
                     loadBusinesses('goods');
                 } else {
-                    alert('Error: ' + result.message);
+                    showErrorModal(result.message);
                 }
             } catch(error) {
-                alert('An error occurred. Please try again.');
+                showErrorModal('An error occurred. Please try again.');
                 console.error(error);
             }
         }
@@ -5605,10 +5938,10 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         loadMyServices();
                     }
                 } else {
-                    alert('Error: ' + result.message);
+                    showErrorModal('Error: ' + result.message);
                 }
             } catch(error) {
-                alert('An error occurred. Please try again.');
+                showErrorModal('An error occurred. Please try again.');
                 console.error(error);
             }
         }
@@ -5619,7 +5952,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             
             const businessId = await getUserBusinessId();
             if(!businessId) {
-                alert('Please register your business first in "My Business" section.');
+                showErrorModal('Please register your business first in "My Business" section.');
                 return;
             }
             
@@ -5646,14 +5979,14 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 const result = await response.json();
                 
                 if(result.success) {
-                    alert('✓ Product added successfully!');
+                    showSuccessModal('✓ Product added successfully!');
                     event.target.reset();
                     loadMyProducts();
                 } else {
-                    alert('Error: ' + result.message);
+                    showErrorModal('Error: ' + result.message);
                 }
             } catch(error) {
-                alert('An error occurred. Please try again.');
+                showErrorModal('An error occurred. Please try again.');
                 console.error(error);
             }
         }
@@ -5817,8 +6150,80 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             loadMyServices();
         }
 
-        // Load My Menu Items for Food Business Section
-        async function loadMyMenuItems() {
+        // Switch business type for service business owners to add items
+        function switchServiceBusinessTypeForItems(businessType) {
+            console.log('switchServiceBusinessTypeForItems called with type:', businessType);
+            
+            const card = document.getElementById('service-add-items-card');
+            const manageServicesCard = document.getElementById('manage-services-card');
+            const myServicesCard = document.getElementById('my-services-card');
+            const myProductsCard = document.getElementById('my-products-card');
+            const myMenuItemsCard = document.getElementById('my-menu-items-card');
+            const titleEl = document.getElementById('service-add-items-title');
+            const descEl = document.getElementById('service-add-items-desc');
+            const buttonsEl = document.getElementById('service-add-items-buttons');
+            
+            if(!businessType || businessType === '') {
+                // Hide the card if no selection
+                if(card) card.style.display = 'none';
+                if(manageServicesCard) manageServicesCard.style.display = 'block';
+                // Show only My Services when no selection
+                if(myServicesCard) myServicesCard.style.display = 'block';
+                if(myProductsCard) myProductsCard.style.display = 'none';
+                if(myMenuItemsCard) myMenuItemsCard.style.display = 'none';
+                return;
+            }
+            
+            // Hide the "Manage Your Services" card when a type is selected
+            if(manageServicesCard) manageServicesCard.style.display = 'none';
+            
+            // Show the card
+            if(card) card.style.display = 'block';
+            
+            // Hide all item lists first
+            if(myServicesCard) myServicesCard.style.display = 'none';
+            if(myProductsCard) myProductsCard.style.display = 'none';
+            if(myMenuItemsCard) myMenuItemsCard.style.display = 'none';
+            
+            // Update title and description based on selection
+            if(businessType === 'food') {
+                if(titleEl) titleEl.textContent = '🍔 Add Menu Items';
+                if(descEl) descEl.textContent = 'Add menu items to your food business';
+                if(buttonsEl) buttonsEl.innerHTML = `
+                    <button class="btn btn-primary" onclick="showQuickAddMenuForm()" style="padding: 10px 18px; font-size: 14px; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #333;">
+                        ➕ Add Menu Item
+                    </button>
+                `;
+                // Show My Menu Items
+                if(myMenuItemsCard) myMenuItemsCard.style.display = 'block';
+                loadMyMenuItemsForServiceSection();
+            } else if(businessType === 'services') {
+                if(titleEl) titleEl.textContent = '🛠️ Add Services';
+                if(descEl) descEl.textContent = 'Add services to your service business';
+                if(buttonsEl) buttonsEl.innerHTML = `
+                    <button class="btn btn-primary" onclick="showQuickAddServiceForm()" style="padding: 10px 18px; font-size: 14px; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                        ➕ Add Services
+                    </button>
+                `;
+                // Show My Services
+                if(myServicesCard) myServicesCard.style.display = 'block';
+                loadMyServices();
+            } else if(businessType === 'goods') {
+                if(titleEl) titleEl.textContent = '🛍️ Add Products';
+                if(descEl) descEl.textContent = 'Add products to your goods business';
+                if(buttonsEl) buttonsEl.innerHTML = `
+                    <button class="btn btn-primary" onclick="showQuickAddProductFormForServices()" style="padding: 10px 18px; font-size: 14px; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                        ➕ Add Products
+                    </button>
+                `;
+                // Show My Products
+                if(myProductsCard) myProductsCard.style.display = 'block';
+                loadMyProductsForServiceSection();
+            }
+        }
+
+        // Load My Menu Items for Food Business Section with Pagination
+        async function loadMyMenuItems(page = 1) {
             // Use selected business ID if available, otherwise get the first one
             let businessId = selectedFoodBusinessId;
             
@@ -5849,8 +6254,15 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     const container = document.getElementById('my-menu-items-list');
                     
                     if(result.menu_items.length > 0) {
-                        container.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">' + 
-                            result.menu_items.map(item => `
+                        // Determine items per page based on viewport width
+                        const itemsPerPage = window.innerWidth <= 768 ? 5 : 10;
+                        const totalPages = Math.ceil(result.menu_items.length / itemsPerPage);
+                        const startIndex = (page - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedItems = result.menu_items.slice(startIndex, endIndex);
+                        
+                        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">' + 
+                            paginatedItems.map(item => `
                             <div class="menu-item" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; border: 2px solid ${item.is_available == 1 ? '#2ecc71' : '#e74c3c'}; position: relative;">
                                 <button onclick="deleteItem(${item.id}, 'food', ${businessId})" 
                                         style="position: absolute; top: 10px; left: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"
@@ -5878,6 +6290,22 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                                 </div>
                             </div>
                         `).join('') + '</div>';
+                        
+                        // Add pagination controls if more than one page
+                        if(totalPages > 1) {
+                            html += `
+                                <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                                    ${page > 1 ? `<button onclick="loadMyMenuItems(${page - 1})" class="btn btn-primary" style="padding: 8px 15px;">← Previous</button>` : ''}
+                                    ${Array.from({length: totalPages}, (_, i) => i + 1).map(p => `
+                                        <button onclick="loadMyMenuItems(${p})" class="btn ${p === page ? 'btn-primary' : 'btn-secondary'}" style="padding: 8px 12px; ${p === page ? 'background: #00bcd4; color: white;' : ''}">${p}</button>
+                                    `).join('')}
+                                    ${page < totalPages ? `<button onclick="loadMyMenuItems(${page + 1})" class="btn btn-primary" style="padding: 8px 15px;">Next →</button>` : ''}
+                                    <span style="margin-left: 10px; color: #666; font-size: 14px;">Page ${page} of ${totalPages}</span>
+                                </div>
+                            `;
+                        }
+                        
+                        container.innerHTML = html;
                     } else {
                         container.innerHTML = '<p style="color: #999;">No menu items added yet. Click "Add Menu Item" button to add your first item!</p>';
                     }
@@ -5897,7 +6325,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
         
         // Load My Services for Service Business Section
-        async function loadMyServices() {
+        async function loadMyServices(page = 1) {
             // Use selected business ID if available, otherwise get the first one
             let businessId = selectedServiceBusinessId;
             
@@ -5928,8 +6356,15 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     const container = document.getElementById('my-services-list');
                     
                     if(result.items.length > 0) {
-                        container.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">' + 
-                            result.items.map(item => `
+                        // Determine items per page based on screen size
+                        const itemsPerPage = window.innerWidth <= 768 ? 5 : 10;
+                        const totalPages = Math.ceil(result.items.length / itemsPerPage);
+                        const startIndex = (page - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedItems = result.items.slice(startIndex, endIndex);
+                        
+                        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">' + 
+                            paginatedItems.map(item => `
                             <div class="menu-item" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; border: 2px solid ${item.is_available == 1 ? '#2ecc71' : '#e74c3c'}; position: relative;">
                                 <button onclick="deleteItem(${item.id}, 'services', ${businessId})" 
                                         style="position: absolute; top: 10px; left: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"
@@ -5954,6 +6389,35 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                                 </div>
                             </div>
                         `).join('') + '</div>';
+                        
+                        // Add pagination controls if there are multiple pages
+                        if(totalPages > 1) {
+                            html += '<div style="margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">';
+                            
+                            // Previous button
+                            if(page > 1) {
+                                html += `<button onclick="loadMyServices(${page - 1})" class="btn btn-primary" style="padding: 10px 16px; font-size: 14px;">← Previous</button>`;
+                            }
+                            
+                            // Page numbers
+                            for(let i = 1; i <= totalPages; i++) {
+                                if(i === page) {
+                                    html += `<button style="padding: 10px 14px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">${i}</button>`;
+                                } else {
+                                    html += `<button onclick="loadMyServices(${i})" style="padding: 10px 14px; background: #f0f0f0; color: #333; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 14px;">${i}</button>`;
+                                }
+                            }
+                            
+                            // Next button
+                            if(page < totalPages) {
+                                html += `<button onclick="loadMyServices(${page + 1})" class="btn btn-primary" style="padding: 10px 16px; font-size: 14px;">Next →</button>`;
+                            }
+                            
+                            html += `<span style="color: #666; font-size: 14px; margin-left: 10px;">Page ${page} of ${totalPages}</span>`;
+                            html += '</div>';
+                        }
+                        
+                        container.innerHTML = html;
                     } else {
                         container.innerHTML = '<p style="color: #999;">No services added yet. Click "Add Service" button to add your first service!</p>';
                     }
@@ -5968,6 +6432,209 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 const container = document.getElementById('my-services-list');
                 if(container) {
                     container.innerHTML = '<p style="color: #e74c3c;">Error loading services.</p>';
+                }
+            }
+        }
+
+        // Load My Products for Service Section (when user selects Goods from dropdown)
+        async function loadMyProductsForServiceSection(page = 1) {
+            const businessId = await getUserBusinessIdByType('goods');
+            if(!businessId) {
+                const container = document.getElementById('my-products-list-service-section');
+                if(container) {
+                    container.innerHTML = '<p style="color: #e74c3c;">Please register your goods business first.</p>';
+                }
+                return;
+            }
+            
+            try {
+                const response = await fetch(`api/business.php?action=get_products&business_id=${businessId}`);
+                const result = await response.json();
+                
+                if(result.success && result.items) {
+                    const container = document.getElementById('my-products-list-service-section');
+                    
+                    if(result.items.length > 0) {
+                        // Determine items per page based on screen size
+                        const itemsPerPage = window.innerWidth <= 768 ? 5 : 10;
+                        const totalPages = Math.ceil(result.items.length / itemsPerPage);
+                        const startIndex = (page - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedItems = result.items.slice(startIndex, endIndex);
+                        
+                        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">' + 
+                            paginatedItems.map(item => `
+                            <div class="menu-item" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; border: 2px solid ${item.is_available == 1 ? '#2ecc71' : '#e74c3c'}; position: relative;">
+                                <button onclick="deleteItem(${item.id}, 'goods', ${businessId})" 
+                                        style="position: absolute; top: 10px; left: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"
+                                        title="Delete">
+                                    🗑️
+                                </button>
+                                <div style="position: relative; width: 100%; height: 180px; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    ${item.image ? 
+                                        `<img src="${item.image}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover;">` : 
+                                        `<div style="font-size: 60px;">🛍️</div>`
+                                    }
+                                    <div style="position: absolute; top: 10px; right: 10px;">
+                                        <span class="badge-privacy ${item.is_available == 1 ? 'badge-open' : 'badge-closed'}" style="font-size: 11px; padding: 4px 8px;">
+                                            ${item.is_available == 1 ? 'Available' : 'Not Available'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="padding: 15px;">
+                                    <h4 style="margin: 0 0 5px 0; color: #1a3a52; font-size: 16px;">${item.name}</h4>
+                                    ${item.description ? `<p style="margin: 0 0 10px 0; color: #666; font-size: 13px; line-height: 1.4;">${item.description}</p>` : ''}
+                                    ${item.stock ? `<p style="margin: 0 0 8px 0; color: #666; font-size: 12px;">📦 Stock: ${item.stock}</p>` : ''}
+                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                                        <span style="color: #3498db; font-weight: bold; font-size: 20px;">₱${parseFloat(item.price).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('') + '</div>';
+                        
+                        // Add pagination controls if there are multiple pages
+                        if(totalPages > 1) {
+                            html += '<div style="margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">';
+                            
+                            // Previous button
+                            if(page > 1) {
+                                html += `<button onclick="loadMyProductsForServiceSection(${page - 1})" class="btn btn-primary" style="padding: 10px 16px; font-size: 14px;">← Previous</button>`;
+                            }
+                            
+                            // Page numbers
+                            for(let i = 1; i <= totalPages; i++) {
+                                if(i === page) {
+                                    html += `<button style="padding: 10px 14px; background: #00bcd4; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">${i}</button>`;
+                                } else {
+                                    html += `<button onclick="loadMyProductsForServiceSection(${i})" style="padding: 10px 14px; background: #f0f0f0; color: #333; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 14px;">${i}</button>`;
+                                }
+                            }
+                            
+                            // Next button
+                            if(page < totalPages) {
+                                html += `<button onclick="loadMyProductsForServiceSection(${page + 1})" class="btn btn-primary" style="padding: 10px 16px; font-size: 14px;">Next →</button>`;
+                            }
+                            
+                            html += `<span style="color: #666; font-size: 14px; margin-left: 10px;">Page ${page} of ${totalPages}</span>`;
+                            html += '</div>';
+                        }
+                        
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p style="color: #999;">No products added yet. Click "Add Products" button to add your first product!</p>';
+                    }
+                } else {
+                    const container = document.getElementById('my-products-list-service-section');
+                    if(container) {
+                        container.innerHTML = '<p style="color: #e74c3c;">Error loading products.</p>';
+                    }
+                }
+            } catch(error) {
+                console.error('Error loading products:', error);
+                const container = document.getElementById('my-products-list-service-section');
+                if(container) {
+                    container.innerHTML = '<p style="color: #e74c3c;">Error loading products.</p>';
+                }
+            }
+        }
+
+        // Load My Menu Items for Service Section (when user selects Food from dropdown)
+        async function loadMyMenuItemsForServiceSection(page = 1) {
+            const businessId = await getUserBusinessIdByType('food');
+            if(!businessId) {
+                const container = document.getElementById('my-menu-items-list-service-section');
+                if(container) {
+                    container.innerHTML = '<p style="color: #e74c3c;">Please register your food business first.</p>';
+                }
+                return;
+            }
+            
+            try {
+                const response = await fetch(`api/business.php?action=details&id=${businessId}&type=food`);
+                const result = await response.json();
+                
+                if(result.success && result.menu_items) {
+                    const container = document.getElementById('my-menu-items-list-service-section');
+                    
+                    if(result.menu_items.length > 0) {
+                        // Determine items per page based on screen size
+                        const itemsPerPage = window.innerWidth <= 768 ? 5 : 10;
+                        const totalPages = Math.ceil(result.menu_items.length / itemsPerPage);
+                        const startIndex = (page - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedItems = result.menu_items.slice(startIndex, endIndex);
+                        
+                        let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">' + 
+                            paginatedItems.map(item => `
+                            <div class="menu-item" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s; border: 2px solid ${item.is_available == 1 ? '#2ecc71' : '#e74c3c'}; position: relative;">
+                                <button onclick="deleteItem(${item.id}, 'food', ${businessId})" 
+                                        style="position: absolute; top: 10px; left: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"
+                                        title="Delete">
+                                    🗑️
+                                </button>
+                                <div style="position: relative; width: 100%; height: 180px; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    ${item.image ? 
+                                        `<img src="${item.image}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover;">` : 
+                                        `<div style="font-size: 60px;">🍽️</div>`
+                                    }
+                                    <div style="position: absolute; top: 10px; right: 10px;">
+                                        <span class="badge-privacy ${item.is_available == 1 ? 'badge-open' : 'badge-closed'}" style="font-size: 11px; padding: 4px 8px;">
+                                            ${item.is_available == 1 ? 'Available' : 'Not Available'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div style="padding: 15px;">
+                                    <h4 style="margin: 0 0 5px 0; color: #1a3a52; font-size: 16px;">${item.name}</h4>
+                                    ${item.description ? `<p style="margin: 0 0 10px 0; color: #666; font-size: 13px; line-height: 1.4;">${item.description}</p>` : ''}
+                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
+                                        <span style="color: #ffd700; font-weight: bold; font-size: 20px;">₱${parseFloat(item.price).toFixed(2)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('') + '</div>';
+                        
+                        // Add pagination controls if there are multiple pages
+                        if(totalPages > 1) {
+                            html += '<div style="margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">';
+                            
+                            // Previous button
+                            if(page > 1) {
+                                html += `<button onclick="loadMyMenuItemsForServiceSection(${page - 1})" class="btn btn-primary" style="padding: 10px 16px; font-size: 14px;">← Previous</button>`;
+                            }
+                            
+                            // Page numbers
+                            for(let i = 1; i <= totalPages; i++) {
+                                if(i === page) {
+                                    html += `<button style="padding: 10px 14px; background: #ffd700; color: #333; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">${i}</button>`;
+                                } else {
+                                    html += `<button onclick="loadMyMenuItemsForServiceSection(${i})" style="padding: 10px 14px; background: #f0f0f0; color: #333; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; font-size: 14px;">${i}</button>`;
+                                }
+                            }
+                            
+                            // Next button
+                            if(page < totalPages) {
+                                html += `<button onclick="loadMyMenuItemsForServiceSection(${page + 1})" class="btn btn-primary" style="padding: 10px 16px; font-size: 14px;">Next →</button>`;
+                            }
+                            
+                            html += `<span style="color: #666; font-size: 14px; margin-left: 10px;">Page ${page} of ${totalPages}</span>`;
+                            html += '</div>';
+                        }
+                        
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p style="color: #999;">No menu items added yet. Click "Add Menu Item" button to add your first item!</p>';
+                    }
+                } else {
+                    const container = document.getElementById('my-menu-items-list-service-section');
+                    if(container) {
+                        container.innerHTML = '<p style="color: #e74c3c;">Error loading menu items.</p>';
+                    }
+                }
+            } catch(error) {
+                console.error('Error loading menu items:', error);
+                const container = document.getElementById('my-menu-items-list-service-section');
+                if(container) {
+                    container.innerHTML = '<p style="color: #e74c3c;">Error loading menu items.</p>';
                 }
             }
         }
@@ -6055,13 +6722,18 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             if(!container || dashboardMap) return;
             
             // Create map centered on Sagay City
-            dashboardMap = L.map('dashboard-map-container').setView([10.8967, 123.4253], 13);
+            dashboardMap = L.map('dashboard-map-container', { zoomControl: false }).setView([10.8967, 123.4253], 13);
             
             // Add OpenStreetMap tiles
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors',
                 maxZoom: 19
             }).addTo(dashboardMap);
+            
+            // Fix map sizing on mobile
+            setTimeout(() => {
+                dashboardMap.invalidateSize();
+            }, 100);
             
             // Initialize marker storage
             dashboardMarkers = {
@@ -6260,8 +6932,13 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         // View specific business details from dashboard map
         // VERSION: 2024-02-24-v4-FINAL
         async function viewBusinessDetails(businessId, businessType, businessName) {
-            // Show alert to confirm new code is running
-            alert(`Loading menu for: ${businessName} (ID: ${businessId})\n\nIf you see Ron's menu after this, the cache is still stuck.`);
+            // If called with only 2 params (from subscribed businesses), use old function
+            if(arguments.length === 2) {
+                return viewBusinessDetailsOld(businessId, businessType);
+            }
+            
+            // Show loading modal
+            showLoadingModal(`Loading ${businessType === 'food' ? 'menu' : businessType === 'goods' ? 'products' : 'services'}...`);
             
             console.log('=== viewBusinessDetails v4 FINAL called ===');
             console.log(`ID=${businessId}, Type=${businessType}, Name=${businessName}`);
@@ -6432,6 +7109,9 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     }, 2000);
                 }
             }
+            
+            // Close loading modal
+            closeLoadingModal();
         }
         
         // Filter dashboard map by business type
@@ -6529,7 +7209,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         const randomLng = baseLongitude + (Math.random() - 0.5) * radius;
                         
                         // Create custom icon for user
-                        const profilePicUrl = user.profile_picture ? `/yatis/${user.profile_picture}` : null;
+                        const profilePicUrl = user.profile_picture ? `${BASE_PATH}${user.profile_picture}` : null;
                         const initials = (user.first_name?.charAt(0) || '') + (user.last_name?.charAt(0) || '');
                         
                         // Debug logging
@@ -6596,7 +7276,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         }
                         
                         // Create popup content
-                        const popupProfilePic = user.profile_picture ? `/yatis/${user.profile_picture}` : null;
+                        const popupProfilePic = user.profile_picture ? `${BASE_PATH}${user.profile_picture}` : null;
                         const popupContent = `
                             <div style="min-width: 250px; text-align: center;">
                                 <div style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); 
@@ -7521,22 +8201,47 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                             }
                             
                             // Send update request
+                            const requestBody = JSON.stringify({
+                                action: 'update_business',
+                                business_id: businessId,
+                                business_name: currentValues.business_name,
+                                description: currentValues.description,
+                                phone: currentValues.phone,
+                                email: currentValues.email,
+                                opening_time: currentValues.opening_time,
+                                closing_time: currentValues.closing_time
+                            });
+                            
+                            console.log('Sending request body:', requestBody);
+                            
                             fetch('api/business.php', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    action: 'update_business',
-                                    business_id: businessId,
-                                    business_name: currentValues.business_name,
-                                    description: currentValues.description,
-                                    phone: currentValues.phone,
-                                    email: currentValues.email,
-                                    opening_time: currentValues.opening_time,
-                                    closing_time: currentValues.closing_time
-                                })
+                                body: requestBody
                             })
-                            .then(response => response.json())
+                            .then(response => {
+                                console.log('Response status:', response.status);
+                                console.log('Response type:', response.type);
+                                console.log('Response URL:', response.url);
+                                return response.text().then(text => {
+                                    console.log('Raw response text length:', text.length);
+                                    console.log('Raw response text:', text.substring(0, 500));
+                                    
+                                    if(!text || text.trim() === '') {
+                                        throw new Error('Empty response from server');
+                                    }
+                                    
+                                    try {
+                                        return JSON.parse(text);
+                                    } catch(e) {
+                                        console.error('JSON parse error:', e);
+                                        console.error('Response was:', text);
+                                        throw new Error('Invalid JSON response: ' + text.substring(0, 200));
+                                    }
+                                });
+                            })
                             .then(result => {
+                                console.log('Parsed result:', result);
                                 if(result.success) {
                                     showSuccessModal('Business details updated successfully!');
                                     modal.remove();
@@ -7546,7 +8251,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                                 }
                             })
                             .catch(error => {
-                                console.error('Error:', error);
+                                console.error('Fetch error:', error);
                                 showErrorModal('An error occurred: ' + error.message);
                             });
                         });
@@ -8764,59 +9469,57 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function toggleJobStatus(jobId, newStatus) {
-            if(!confirm(`Are you sure you want to ${newStatus === 'open' ? 'reopen' : 'close'} this position?`)) {
-                return;
-            }
+            const message = `Are you sure you want to ${newStatus === 'open' ? 'reopen' : 'close'} this position?`;
             
-            fetch('api/jobs.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'update_job_status',
-                    job_id: jobId,
-                    status: newStatus
+            showConfirmModal(message, () => {
+                fetch('api/jobs.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update_job_status',
+                        job_id: jobId,
+                        status: newStatus
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if(result.success) {
-                    alert(`Job ${newStatus === 'open' ? 'reopened' : 'closed'} successfully!`);
-                    loadMyPostedJobs();
-                } else {
-                    alert('Failed to update status: ' + (result.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred.');
+                .then(response => response.json())
+                .then(result => {
+                    if(result.success) {
+                        showSuccessModal(`Job ${newStatus === 'open' ? 'reopened' : 'closed'} successfully!`);
+                        loadMyPostedJobs();
+                    } else {
+                        showErrorModal('Failed to update status: ' + (result.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showErrorModal('An error occurred.');
+                });
             });
         }
 
         function deleteJob(jobId) {
-            if(!confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) {
-                return;
-            }
-            
-            fetch('api/jobs.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'delete_job',
-                    job_id: jobId
+            showConfirmModal('Are you sure you want to delete this job posting? This action cannot be undone.', () => {
+                fetch('api/jobs.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'delete_job',
+                        job_id: jobId
+                    })
                 })
-            })
-            .then(response => response.json())
-            .then(result => {
-                if(result.success) {
-                    alert('Job deleted successfully!');
-                    loadMyPostedJobs();
-                } else {
-                    alert('Failed to delete job: ' + (result.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred.');
+                .then(response => response.json())
+                .then(result => {
+                    if(result.success) {
+                        showSuccessModal('Job deleted successfully!');
+                        loadMyPostedJobs();
+                    } else {
+                        showErrorModal('Failed to delete job: ' + (result.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showErrorModal('An error occurred.');
+                });
             });
         }
 
@@ -8843,7 +9546,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             console.log('🗺️ Initializing business map...');
             
             // Create Leaflet map centered on Sagay City
-            businessMap = L.map('business-map-container').setView([10.8967, 123.4253], 13);
+            businessMap = L.map('business-map-container', { zoomControl: false }).setView([10.8967, 123.4253], 13);
             
             // Add OpenStreetMap tiles
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -8888,13 +9591,20 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     'services': 0
                 };
                 
+                // Check if user is a business owner
+                const userRole = '<?php echo $role; ?>';
+                const isBusinessOwner = userRole === 'business';
+                
+                console.log('User role:', userRole, 'Is business owner:', isBusinessOwner);
+                
                 for(const type of businessTypes) {
                     // Fetch businesses of this type
+                    // API will automatically filter based on user role
                     const response = await fetch(`api/business.php?action=list&type=${type}`);
                     const data = await response.json();
                     
                     if(data.success && data.businesses) {
-                        console.log(`📊 Fetched ${data.businesses.length} ${type} businesses from API`);
+                        console.log(`� Fetchend ${data.businesses.length} ${type} businesses from API`);
                         
                         // Update count for this business type
                         businessCounts[type] = data.businesses.length;
@@ -9528,7 +10238,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
         
         // Load menu items for a specific business
-        function loadBusinessMenuItems(businessId, businessType, containerId) {
+        function loadBusinessMenuItems(businessId, businessType, containerId, page = 1) {
             console.log('=== loadBusinessMenuItems called ===');
             console.log('Business ID:', businessId);
             console.log('Business Type:', businessType);
@@ -9564,6 +10274,13 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     console.log('API Response:', data); // Debug log
                     
                     if(data.success && data.items && data.items.length > 0) {
+                        // Pagination setup
+                        const itemsPerPage = 15;
+                        const totalPages = Math.ceil(data.items.length / itemsPerPage);
+                        const startIndex = (page - 1) * itemsPerPage;
+                        const endIndex = startIndex + itemsPerPage;
+                        const paginatedItems = data.items.slice(startIndex, endIndex);
+                        
                         // Display items in a grid
                         const bgColor = businessType === 'food' ? '#ffd700, #ffed4e' : 
                                        businessType === 'goods' ? '#3498db, #2980b9' : 
@@ -9573,15 +10290,15 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         const userRole = '<?php echo $role; ?>';
                         const isOwner = userRole === 'business';
                         
-                        container.innerHTML = `
+                        let html = `
                             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px;">
-                                ${data.items.map(item => `
+                                ${paginatedItems.map(item => `
                                     <div class="menu-item-card" style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: transform 0.3s; border: 2px solid ${item.is_available == 1 ? '#2ecc71' : '#e74c3c'}; position: relative;">
                                         ${isOwner ? `
                                             <button onclick="deleteItem(${item.id}, '${businessType}', ${businessId})" 
                                                     style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"
                                                     title="Delete">
-                                                🗑️
+                                                �️
                                             </button>
                                         ` : ''}
                                         ${item.image ? `
@@ -9612,6 +10329,22 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                                 `).join('')}
                             </div>
                         `;
+                        
+                        // Add pagination controls if more than one page
+                        if(totalPages > 1) {
+                            html += `
+                                <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+                                    ${page > 1 ? `<button onclick="loadBusinessMenuItems(${businessId}, '${businessType}', '${containerIdToUse}', ${page - 1})" class="btn btn-primary" style="padding: 8px 15px;">← Previous</button>` : ''}
+                                    ${Array.from({length: totalPages}, (_, i) => i + 1).map(p => `
+                                        <button onclick="loadBusinessMenuItems(${businessId}, '${businessType}', '${containerIdToUse}', ${p})" class="btn ${p === page ? 'btn-primary' : 'btn-secondary'}" style="padding: 8px 12px; ${p === page ? 'background: #00bcd4; color: white;' : ''}">${p}</button>
+                                    `).join('')}
+                                    ${page < totalPages ? `<button onclick="loadBusinessMenuItems(${businessId}, '${businessType}', '${containerIdToUse}', ${page + 1})" class="btn btn-primary" style="padding: 8px 15px;">Next →</button>` : ''}
+                                    <span style="margin-left: 10px; color: #666; font-size: 14px;">Page ${page} of ${totalPages}</span>
+                                </div>
+                            `;
+                        }
+                        
+                        container.innerHTML = html;
                     } else {
                         container.innerHTML = `
                             <div style="text-align: center; padding: 40px; color: #999;">
@@ -9767,9 +10500,6 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                                             '<p style="color: #e74c3c;">⚠️ Location not set - Business owner needs to enable location</p>'}
                                     </div>
                                     <div style="display: flex; gap: 10px; margin-top: 10px;">
-                                        <button class="btn btn-primary" onclick="viewBusinessDetails(${business.id}, '${business.business_type}')">
-                                            View ${business.business_type === 'food' ? 'Menu' : business.business_type === 'goods' ? 'Products' : 'Services'}
-                                        </button>
                                         ${business.latitude && business.longitude ? 
                                             `<button class="btn btn-success" onclick="showBusinessLocationOnMap(${business.latitude}, ${business.longitude}, '${business.business_name}', '${business.business_type}')">
                                                 📍 Show on Map
@@ -11165,7 +11895,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             };
             
             try {
-                const response = await fetch('/yatis/api/events.php', {
+                const response = await fetch('./api/events.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -11188,7 +11918,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
 
         async function loadAdminEvents() {
             try {
-                const response = await fetch('/yatis/api/events.php?action=list_events');
+                const response = await fetch('./api/events.php?action=list_events');
                 const result = await response.json();
                 
                 if(result.success) {
@@ -11330,7 +12060,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             };
             
             try {
-                const response = await fetch('/yatis/api/events.php', {
+                const response = await fetch('./api/events.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -11363,7 +12093,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             }
             
             try {
-                const response = await fetch('/yatis/api/events.php', {
+                const response = await fetch('./api/events.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -11393,7 +12123,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             }
             
             try {
-                const response = await fetch('/yatis/api/events.php', {
+                const response = await fetch('./api/events.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -11429,7 +12159,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
 
         // Profile Photo Upload Functions
         let selectedPhotoFile = null;
-        let currentProfilePicture = '<?php echo !empty($user_data['profile_picture']) ? '/yatis/' . htmlspecialchars($user_data['profile_picture']) : ''; ?>';
+        let currentProfilePicture = '<?php echo !empty($user_data['profile_picture']) ? htmlspecialchars($user_data['profile_picture']) : ''; ?>';
         let selectedCoverPhotoFile = null;
 
         function toggleProfilePhotoMenu() {
@@ -11453,7 +12183,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
 
         function viewProfilePicture() {
             if (currentProfilePicture) {
-                document.getElementById('view-profile-picture-img').src = currentProfilePicture;
+                document.getElementById('view-profile-picture-img').src = `${BASE_PATH}${currentProfilePicture}`;
                 document.getElementById('view-profile-picture-modal').style.display = 'block';
             }
         }
@@ -11553,7 +12283,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             formData.append('cover_photo', selectedCoverPhotoFile);
             
             try {
-                const response = await fetch('/yatis/api/profile.php?action=upload_cover', {
+                const response = await fetch('./api/profile.php?action=upload_cover', {
                     method: 'POST',
                     body: formData
                 });
@@ -11597,7 +12327,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function viewCoverPhoto() {
-            const coverPhoto = '<?php echo !empty($user_data['cover_photo']) ? '/yatis/' . htmlspecialchars($user_data['cover_photo']) : ''; ?>';
+            const coverPhoto = '<?php echo !empty($user_data['cover_photo']) ? htmlspecialchars($user_data['cover_photo']) : ''; ?>';
             if (coverPhoto) {
                 document.getElementById('view-cover-photo-img').src = coverPhoto;
                 document.getElementById('view-cover-photo-modal').style.display = 'block';
@@ -11621,7 +12351,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             }
             
             try {
-                const response = await fetch('/yatis/api/profile.php?action=remove_cover', {
+                const response = await fetch('./api/profile.php?action=remove_cover', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
@@ -11685,7 +12415,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             formData.append('photo', selectedPhotoFile);
             
             try {
-                const response = await fetch('/yatis/api/profile.php?action=upload_photo', {
+                const response = await fetch('./api/profile.php?action=upload_photo', {
                     method: 'POST',
                     body: formData
                 });
@@ -11734,7 +12464,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             const avatar = document.getElementById('profile-avatar');
             if (avatar) {
                 avatar.innerHTML = `
-                    <img src="${photoUrl}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    <img src="${BASE_PATH}${photoUrl}" alt="Profile Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                     <div class="avatar-status"></div>
                     <div class="avatar-menu-overlay">
                         <span class="avatar-menu-icon">📷</span>
@@ -11751,7 +12481,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             // Update navbar avatar if exists
             const navbarAvatar = document.querySelector('.navbar .user-avatar');
             if (navbarAvatar) {
-                navbarAvatar.innerHTML = `<img src="${photoUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                navbarAvatar.innerHTML = `<img src="${BASE_PATH}${photoUrl}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
             }
         }
 
@@ -11761,7 +12491,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
             }
             
             try {
-                const response = await fetch('/yatis/api/profile.php?action=remove_photo', {
+                const response = await fetch('./api/profile.php?action=remove_photo', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({})
@@ -11813,10 +12543,10 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         // Profile visiting functions
         function loadProfileVisitors() {
             // First, clear old visitor records
-            fetch('/yatis/api/user_profile.php?action=clear_visitors', { method: 'GET' })
+            fetch('./api/user_profile.php?action=clear_visitors', { method: 'GET' })
                 .then(() => {
                     // Then load current visitors
-                    return fetch('/yatis/api/user_profile.php?action=visitors');
+                    return fetch('./api/user_profile.php?action=visitors');
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -11825,7 +12555,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     if (data.success && data.visitors.length > 0) {
                         visitorsList.innerHTML = data.visitors.map(visitor => {
                             const profilePic = visitor.profile_picture 
-                                ? `/yatis/${visitor.profile_picture}` 
+                                ? `${BASE_PATH}${visitor.profile_picture}` 
                                 : '';
                             const initials = (visitor.first_name?.charAt(0) || '') + (visitor.last_name?.charAt(0) || '');
                             const fullName = `${visitor.first_name || ''} ${visitor.last_name || ''}`.trim() || 'Anonymous';
@@ -11857,7 +12587,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function loadProfileAchievements() {
-            fetch('/yatis/api/events.php?action=user_achievements')
+            fetch('./api/events.php?action=user_achievements')
                 .then(response => response.json())
                 .then(data => {
                     if(data.success) {
@@ -11889,7 +12619,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function viewUserProfile(userId) {
-            fetch(`/yatis/api/user_profile.php?action=view&user_id=${userId}`)
+            fetch(`./api/user_profile.php?action=view&user_id=${userId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -11905,8 +12635,8 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function showUserProfileModal(user, isOwnProfile) {
-            const profilePic = user.profile_picture ? `/yatis/${user.profile_picture}` : '';
-            const coverPic = user.cover_photo ? `/yatis/${user.cover_photo}` : '';
+            const profilePic = user.profile_picture ? `${BASE_PATH}${user.profile_picture}` : '';
+            const coverPic = user.cover_photo ? `${BASE_PATH}${user.cover_photo}` : '';
             const initials = (user.first_name?.charAt(0) || '') + (user.last_name?.charAt(0) || '');
             const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Anonymous';
             const achievements = user.achievements || {total_points: 0, total_tasks_completed: 0, rank_position: 0};
@@ -12047,7 +12777,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
 
         // Events & Challenges Functions
         function loadEvents() {
-            fetch('/yatis/api/events.php?action=list_events')
+            fetch('./api/events.php?action=list_events')
                 .then(response => response.json())
                 .then(data => {
                     const eventsList = document.getElementById('events-list');
@@ -12055,7 +12785,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     if(data.success && data.events.length > 0) {
                         // For each event, we need to check completion status
                         Promise.all(data.events.map(event => 
-                            fetch(`/yatis/api/events.php?action=event_tasks&event_id=${event.id}`)
+                            fetch(`./api/events.php?action=event_tasks&event_id=${event.id}`)
                                 .then(response => response.json())
                                 .then(taskData => {
                                     if(taskData.success) {
@@ -12120,7 +12850,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function viewEventTasks(eventId, eventTitle) {
-            fetch(`/yatis/api/events.php?action=event_tasks&event_id=${eventId}`)
+            fetch(`./api/events.php?action=event_tasks&event_id=${eventId}`)
                 .then(response => response.json())
                 .then(data => {
                     if(data.success) {
@@ -12354,7 +13084,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function submitTaskCompletion(taskId, eventId, proofData) {
-            fetch('/yatis/api/events.php', {
+            fetch('./api/events.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -12385,7 +13115,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function loadUserAchievements() {
-            fetch('/yatis/api/events.php?action=user_achievements')
+            fetch('./api/events.php?action=user_achievements')
                 .then(response => response.json())
                 .then(data => {
                     if(data.success) {
@@ -12424,7 +13154,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
         }
 
         function loadLeaderboard() {
-            fetch('/yatis/api/events.php?action=leaderboard')
+            fetch('./api/events.php?action=leaderboard')
                 .then(response => response.json())
                 .then(data => {
                     const leaderboardList = document.getElementById('leaderboard-list');
@@ -12432,7 +13162,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     if(data.success && data.leaderboard.length > 0) {
                         leaderboardList.innerHTML = data.leaderboard.map((user, index) => {
                             const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-                            const profilePic = user.profile_picture ? `/yatis/${user.profile_picture}` : '';
+                            const profilePic = user.profile_picture ? `${BASE_PATH}${user.profile_picture}` : '';
                             const initials = (user.first_name?.charAt(0) || '') + (user.last_name?.charAt(0) || '');
                             const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
                             
@@ -12685,7 +13415,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 const div = document.createElement('div');
                 div.className = `message ${isOwn ? 'message-own' : 'message-other'}`;
                 
-                const profilePic = message.profile_picture ? `/yatis/${message.profile_picture}` : null;
+                const profilePic = message.profile_picture ? `${BASE_PATH}${message.profile_picture}` : null;
                 const initials = message.sender_name ? message.sender_name.split(' ').map(n => n.charAt(0)).join('') : '?';
                 
                 const avatarHtml = profilePic ? 
@@ -12757,7 +13487,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                         
                         const modalMembersList = document.getElementById('modalMembersList');
                         modalMembersList.innerHTML = data.members.map(member => {
-                            const profilePic = member.profile_picture ? `/yatis/${member.profile_picture}` : null;
+                            const profilePic = member.profile_picture ? `${BASE_PATH}${member.profile_picture}` : null;
                             const initials = (member.first_name?.charAt(0) || '') + (member.last_name?.charAt(0) || '');
                             const isCurrentUser = member.user_id === this.currentUserId;
                             const isFriend = friendIds.includes(member.user_id);
@@ -12978,7 +13708,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                     // Create new img element for profile picture
                     const newImg = document.createElement('img');
                     newImg.id = 'chatUserAvatar';
-                    newImg.src = `/yatis/${this.currentUserAvatar}`;
+                    newImg.src = `${BASE_PATH}${this.currentUserAvatar}`;
                     newImg.alt = this.currentUserName;
                     newImg.style.cssText = 'width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 3px solid white;';
                     newImg.onerror = function() {
@@ -13124,7 +13854,7 @@ if(isset($_GET['migrate']) && $_GET['migrate'] === 'events_system') {
                 const div = document.createElement('div');
                 div.className = `message ${isOwn ? 'message-own' : 'message-other'}`;
                 
-                const profilePic = message.profile_picture ? `/yatis/${message.profile_picture}` : null;
+                const profilePic = message.profile_picture ? `${BASE_PATH}${message.profile_picture}` : null;
                 const initials = message.sender_name ? message.sender_name.split(' ').map(n => n.charAt(0)).join('') : '?';
                 
                 const avatarHtml = profilePic ? 

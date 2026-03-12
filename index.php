@@ -6,6 +6,13 @@ if(isset($_SESSION['user_id'])) {
     header('Location: dashboard.php');
     exit;
 }
+
+// Redirect to landing page if not logged in and not coming from landing page
+// This makes landing.php the main entry point
+if(!isset($_GET['from_landing'])) {
+    header('Location: landing.php');
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -317,6 +324,8 @@ if(isset($_SESSION['user_id'])) {
                 password: formData.get('password')
             };
             
+            console.log('Login attempt with:', data);
+            
             try {
                 const response = await fetch('api/users.php', {
                     method: 'POST',
@@ -326,7 +335,12 @@ if(isset($_SESSION['user_id'])) {
                     body: JSON.stringify(data)
                 });
                 
-                const result = await response.json();
+                console.log('Response status:', response.status);
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+                
+                const result = JSON.parse(responseText);
+                console.log('Parsed result:', result);
                 
                 if(result.success) {
                     showModal('Login Successful', 'Redirecting to dashboard...', 'success');
@@ -337,8 +351,8 @@ if(isset($_SESSION['user_id'])) {
                     showModal('Login Failed', result.message || 'Invalid credentials. Please try again.', 'error');
                 }
             } catch(error) {
-                showModal('Error', 'An error occurred. Please try again.', 'error');
-                console.error(error);
+                console.error('Login error:', error);
+                showModal('Error', 'An error occurred. Please try again. Check console for details.', 'error');
             }
         });
 

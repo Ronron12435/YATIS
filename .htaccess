@@ -1,6 +1,10 @@
 RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/Project_ojt/YATIS/uploads/
+RewriteCond %{REQUEST_URI} !^/Project_ojt/YATIS/api/
+RewriteCond %{REQUEST_URI} !^/Project_ojt/YATIS/assets/
+RewriteCond %{REQUEST_URI} !^/Project_ojt/YATIS/config/
 RewriteRule ^(.*)$ index.php [QSA,L]
 
 # Security Headers

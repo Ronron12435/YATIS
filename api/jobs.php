@@ -6,8 +6,8 @@ ini_set('log_errors', 1);
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../middleware/Auth.php';
 require_once __DIR__ . '/../config/Database.php';
-require_once __DIR__ . '/../models/JobPosting.php';
-require_once __DIR__ . '/../models/JobApplication.php';
+require_once __DIR__ . '/models/JobPosting.php';
+require_once __DIR__ . '/models/JobApplication.php';
 require_once __DIR__ . '/../utils/FileUpload.php';
 
 header('Content-Type: application/json');
@@ -158,6 +158,14 @@ try {
             $application->id = $application_id;
             
             if($application->updateStatus($status)) {
+                // If applicant is hired, close the job posting
+                if($status === 'accepted') {
+                    $query = "UPDATE job_postings SET status = 'closed' WHERE id = (SELECT job_id FROM job_applications WHERE id = :application_id)";
+                    $stmt = $db->prepare($query);
+                    $stmt->bindParam(':application_id', $application_id);
+                    $stmt->execute();
+                }
+                
                 $statusMessage = $status === 'accepted' ? 'Applicant hired successfully!' : 'Application status updated';
                 echo json_encode(['success' => true, 'message' => $statusMessage]);
             } else {
