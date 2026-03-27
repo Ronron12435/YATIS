@@ -301,34 +301,128 @@ const EmployersModule = (() => {
     };
 
     const applyForJob = (jobId) => {
-        const coverLetter = prompt('Enter your cover letter (optional):');
-        if (coverLetter === null) return;
+        // First, load user's applications to check if they've already applied
+        fetch('/api/jobs/applications/my-applications', { credentials: 'include' })
+            .then(r => r.json())
+            .then(response => {
+                const applications = response.data || [];
+                
+                // Check if user has already applied to this job
+                const hasApplied = applications.some(app => 
+                    app.job_id === jobId || app.job_posting_id === jobId
+                );
+                
+                if (hasApplied) {
+                    alert('You have already applied for this position');
+                    return;
+                }
+                
+                // Show application form with resume upload
+                showApplicationForm(jobId);
+            })
+            .catch(err => {
+                console.error('Error checking applications:', err);
+                alert('Error checking your applications');
+            });
+    };
 
+    const showApplicationForm = (jobId) => {
+        const content = document.getElementById('jl-detail-content');
+        
+        content.innerHTML = `
+            <h2 style="margin-bottom:20px;">Submit Application</h2>
+            <form id="app-form" style="display:flex; flex-direction:column; gap:15px;">
+                <div>
+                    <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">
+                        Upload Resume (PDF, DOC, DOCX) *
+                    </label>
+                    <input type="file" id="app-resume" accept=".pdf,.doc,.docx" required 
+                        style="padding:10px; border:1px solid #ddd; border-radius:6px; width:100%;">
+                    <p style="font-size:12px; color:#999; margin-top:5px;">Maximum file size: 5MB</p>
+                </div>
+                
+                <div>
+                    <label style="display:block; margin-bottom:8px; font-weight:600; color:#333;">
+                        Cover Letter (Optional)
+                    </label>
+                    <textarea id="app-cover-letter" placeholder="Tell us why you're a great fit for this position..."
+                        style="padding:10px; border:1px solid #ddd; border-radius:6px; width:100%; min-height:120px; font-family:inherit;">
+                    </textarea>
+                </div>
+                
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" style="flex:1; padding:12px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
+                        <i class="fas fa-paper-plane"></i> Submit Application
+                    </button>
+                    <button type="button" onclick="document.getElementById('jl-detail-panel').style.display='none'" 
+                        style="flex:1; padding:12px; background:#95a5a6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        `;
+        
+        document.getElementById('jl-detail-panel').style.display = 'block';
+        
+        document.getElementById('app-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitApplication(jobId);
+        });
+    };
+
+    const submitApplication = (jobId) => {
+        const resumeInput = document.getElementById('app-resume');
+        const coverLetterInput = document.getElementById('app-cover-letter');
+        
+        console.log('=== EMPLOYERS SUBMIT APPLICATION DEBUG ===');
+        console.log('Job ID:', jobId);
+        console.log('Resume files:', resumeInput.files);
+        console.log('Resume file count:', resumeInput.files.length);
+        
+        if (!resumeInput.files.length) {
+            alert('Please upload a resume');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('resume', resumeInput.files[0]);
+        formData.append('cover_letter', coverLetterInput.value);
+        
+        console.log('FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`  ${key}:`, value);
+        }
+        
+        console.log('Sending POST to:', `/api/jobs/${jobId}/apply`);
+        
         fetch(`/api/jobs/${jobId}/apply`, {
             method: 'POST',
             credentials: 'include',
             headers: {
                 'X-CSRF-Token': CSRF_TOKEN,
-                'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                cover_letter: coverLetter || null
-            })
+            body: formData
         })
-        .then(r => r.json())
+        .then(r => {
+            console.log('Response status:', r.status);
+            console.log('Response headers:', r.headers);
+            return r.json();
+        })
         .then(response => {
+            console.log('API Response:', response);
             if (response.success) {
                 alert('Application submitted successfully!');
+                document.getElementById('jl-detail-panel').style.display = 'none';
                 loadStats();
-                showBrowseJobs();
+                loadJobListings();
             } else {
                 alert('Error: ' + (response.message || 'Failed to apply'));
             }
         })
         .catch(err => {
-            console.error('Error applying for job:', err);
-            alert('Error submitting application');
+            console.error('Fetch error:', err);
+            alert('Error submitting application: ' + err.message);
         });
     };
 

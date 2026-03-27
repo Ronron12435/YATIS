@@ -39,6 +39,7 @@
         .sidebar-item.active { background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); font-weight: 600; color: #ffffff; box-shadow: 0 2px 8px rgba(25,118,210,0.4); }
         .sidebar-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 60%; background: #42a5f5; border-radius: 0 3px 3px 0; }
         .sidebar-item .sidebar-icon { font-size: 20px; width: 24px; text-align: center; display: flex; align-items: center; justify-content: center; }
+        .notification-badge { background: #ff5252; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-left: auto; box-shadow: 0 2px 6px rgba(255,82,82,0.4); }
         .sidebar-item-parent { position: relative; }
         .sidebar-dropdown { display: none; background: #242424; border-radius: 8px; margin: 4px 8px 8px 8px; padding: 4px 0; border: 1px solid #3a3a3a; }
         .sidebar-item-parent:hover .sidebar-dropdown { display: block; }
@@ -117,6 +118,10 @@
             const target = document.getElementById(sectionId);
             if(target) target.classList.add('active');
             event.target.closest('.sidebar-item')?.classList.add('active');
+            
+            // Save active section to localStorage
+            localStorage.setItem('activeSection', sectionId);
+            
             if(sectionId === 'dashboard') setTimeout(() => initDashboardMap(), 100);
             if(sectionId === 'businesses') setTimeout(() => { if(typeof initBusinessesMap === 'function') initBusinessesMap(); }, 100);
             if(sectionId === 'people') setTimeout(() => initPeopleMap(), 150);
@@ -129,6 +134,33 @@
             if(sectionId === 'profile') setTimeout(() => { if(typeof initProfileSection === 'function') initProfileSection(); }, 100);
             if(sectionId === 'my-business') setTimeout(() => { if(typeof initMyBusinessSection === 'function') initMyBusinessSection(); }, 100);
         };
+
+        // Restore active section on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const activeSection = localStorage.getItem('activeSection') || 'dashboard';
+            const sectionElement = document.getElementById(activeSection);
+            const sidebarItem = document.querySelector(`[onclick="showSection('${activeSection}')"]`);
+            
+            if(sectionElement) {
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                sectionElement.classList.add('active');
+                if(sidebarItem) sidebarItem.classList.add('active');
+                
+                // Initialize the section
+                if(activeSection === 'dashboard') setTimeout(() => initDashboardMap(), 100);
+                if(activeSection === 'businesses') setTimeout(() => { if(typeof initBusinessesMap === 'function') initBusinessesMap(); }, 100);
+                if(activeSection === 'people') setTimeout(() => initPeopleMap(), 150);
+                if(activeSection === 'my-friends') setTimeout(() => { if(typeof loadFriendsList === 'function') loadFriendsList(); }, 100);
+                if(activeSection === 'employers') setTimeout(() => { if(typeof EmployersModule !== 'undefined') EmployersModule.init(); }, 100);
+                if(activeSection === 'jobs') setTimeout(() => { if(typeof JobsModule !== 'undefined') JobsModule.init(); }, 100);
+                if(activeSection === 'job-listings') setTimeout(() => { if(typeof loadJobListings === 'function') loadJobListings(); }, 100);
+                if(activeSection === 'my-applications') setTimeout(() => { if(typeof loadMyApplications === 'function') loadMyApplications(); }, 100);
+                if(activeSection === 'destinations') setTimeout(() => { if(typeof initDestinationsSection === 'function') initDestinationsSection(); }, 100);
+                if(activeSection === 'profile') setTimeout(() => { if(typeof initProfileSection === 'function') initProfileSection(); }, 100);
+                if(activeSection === 'my-business') setTimeout(() => { if(typeof initMyBusinessSection === 'function') initMyBusinessSection(); }, 100);
+            }
+        });
 
         window.toggleMobileMenu = function() {
             document.querySelector('.sidebar')?.classList.toggle('active');

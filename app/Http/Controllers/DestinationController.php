@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\DTOs\Destination\AddReviewDTO;
 use App\DTOs\Destination\CreateDestinationDTO;
 use App\Services\DestinationService;
-use App\Services\DatabaseSetupService;
 use Illuminate\Http\Request;
 
 class DestinationController extends Controller
@@ -88,8 +87,6 @@ class DestinationController extends Controller
     public function addReview(Request $request, $id)
     {
         try {
-            DatabaseSetupService::ensureDestinationReviewsTableExists();
-            
             \Log::info('Review submission started', [
                 'destination_id' => $id,
                 'user_id' => $request->user()?->id,
@@ -141,7 +138,6 @@ class DestinationController extends Controller
 
     public function dashboardData(Request $request)
     {
-        DatabaseSetupService::ensureDestinationReviewsTableExists();
         $response = $this->destinationService->getDashboardData($request->user()->id);
         return response()->json($response->toArray(), $response->statusCode);
     }

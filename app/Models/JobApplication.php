@@ -14,8 +14,8 @@ class JobApplication extends Model
     const CREATED_AT = 'applied_at';
 
     protected $fillable = [
-        'job_id', 'user_id',
-        'resume_path', 'cover_letter',
+        'job_posting_id', 'user_id',
+        'resume', 'cover_letter',
         'status', 'interview_date',
     ];
 
@@ -28,7 +28,7 @@ class JobApplication extends Model
 
     public function jobPosting()
     {
-        return $this->belongsTo(JobPosting::class, 'job_id');
+        return $this->belongsTo(JobPosting::class, 'job_posting_id');
     }
 
     public function user()

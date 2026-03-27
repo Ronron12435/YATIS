@@ -135,6 +135,8 @@ Route::get('/me', [AuthController::class, 'me']);
     // Jobs
     Route::post('/jobs/{id}/apply', [JobController::class, 'apply']);
     Route::get('/jobs/applications/my-applications', [JobController::class, 'myApplications']);
+    Route::post('/jobs/applications/{id}/status', [JobController::class, 'updateApplication']);
+    Route::post('/jobs/applications/{id}/interview', [JobController::class, 'setInterviewDate']);
     Route::get('/jobs/{id}/applications', [JobController::class, 'applications']);
     Route::put('/jobs/applications/{id}', [JobController::class, 'updateApplication']);
     Route::get('/jobs/business/{businessId}', [JobController::class, 'businessJobs']);

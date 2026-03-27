@@ -9,13 +9,23 @@ const JobsModule = (() => {
 
     const init = () => {
         getUserRole();
-        loadMyApplications().then(() => {
-            console.log('Applications loaded:', myApplications);
+        
+        // Only load applications for non-business users
+        if (userRole !== 'business') {
+            loadMyApplications().then(() => {
+                console.log('Applications loaded:', myApplications);
+                setTimeout(() => {
+                    loadJobs();
+                    loadMyJobs();
+                }, 100);
+            });
+        } else {
+            // For business users, just load their jobs
             setTimeout(() => {
-                loadJobs();
                 loadMyJobs();
             }, 100);
-        });
+        }
+        
         setupEventListeners();
     };
 
@@ -35,6 +45,11 @@ const JobsModule = (() => {
     };
 
     const loadJobs = () => {
+        // Only load jobs for non-business users
+        if (userRole === 'business') {
+            return;
+        }
+
         fetch('/api/jobs', { credentials: 'include' })
             .then(r => r.json())
             .then(response => {
@@ -52,12 +67,20 @@ const JobsModule = (() => {
             .catch(err => {
                 console.error('Error loading jobs:', err);
                 allJobs = [];
-                document.getElementById('jobs-list').innerHTML = '<p style="color:#e74c3c;">Error loading jobs</p>';
+                const jobsList = document.getElementById('jobs-list');
+                if (jobsList) {
+                    jobsList.innerHTML = '<p style="color:#e74c3c;">Error loading jobs</p>';
+                }
             });
     };
 
     const renderJobs = (jobs) => {
         const jobsList = document.getElementById('jobs-list');
+        
+        // If element doesn't exist, skip rendering (e.g., business account view)
+        if (!jobsList) {
+            return;
+        }
 
         if (!Array.isArray(jobs) || jobs.length === 0) {
             jobsList.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No jobs available</p>';
@@ -198,7 +221,16 @@ const JobsModule = (() => {
     const openApplyModal = () => {
         if (!currentJobId) return;
         
-        const hasApplied = myApplications.some(app => app.job_id === currentJobId);
+        console.log('openApplyModal - currentJobId:', currentJobId);
+        console.log('openApplyModal - myApplications:', myApplications);
+        
+        const hasApplied = myApplications.some(app => {
+            console.log('Checking app:', app, 'against jobId:', currentJobId);
+            return app.job_id === currentJobId || app.job_posting_id === currentJobId;
+        });
+        
+        console.log('openApplyModal - hasApplied:', hasApplied);
+        
         if (hasApplied) {
             alert('You have already applied for this position');
             return;
@@ -216,6 +248,11 @@ const JobsModule = (() => {
         const resumeInput = document.getElementById('resume-input');
         const coverLetterInput = document.getElementById('cover-letter-input');
 
+        console.log('=== SUBMIT APPLICATION DEBUG ===');
+        console.log('Resume files:', resumeInput.files);
+        console.log('Resume file count:', resumeInput.files.length);
+        console.log('Current Job ID:', currentJobId);
+
         if (!resumeInput.files.length) {
             alert('Please upload a resume');
             return;
@@ -225,9 +262,16 @@ const JobsModule = (() => {
         formData.append('resume', resumeInput.files[0]);
         formData.append('cover_letter', coverLetterInput.value);
 
+        console.log('FormData entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`  ${key}:`, value);
+        }
+
         const submitBtn = document.querySelector('#application-form button[type="submit"]');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Submitting...';
+
+        console.log('Sending POST to:', `/api/jobs/${currentJobId}/apply`);
 
         fetch(`/api/jobs/${currentJobId}/apply`, {
             method: 'POST',
@@ -238,8 +282,13 @@ const JobsModule = (() => {
             },
             body: formData
         })
-        .then(r => r.json())
+        .then(r => {
+            console.log('Response status:', r.status);
+            console.log('Response headers:', r.headers);
+            return r.json();
+        })
         .then(response => {
+            console.log('API Response:', response);
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-check"></i> Submit Application';
 
@@ -255,10 +304,10 @@ const JobsModule = (() => {
             }
         })
         .catch(err => {
-            console.error('Error:', err);
+            console.error('Fetch error:', err);
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-check"></i> Submit Application';
-            alert('Error submitting application');
+            alert('Error submitting application: ' + err.message);
         });
     };
 
@@ -266,6 +315,7 @@ const JobsModule = (() => {
         return fetch('/api/jobs/applications/my-applications', { credentials: 'include' })
             .then(r => r.json())
             .then(response => {
+                console.log('API Response:', response);
                 let applications = [];
                 if (response.success && Array.isArray(response.data)) {
                     applications = response.data;
@@ -274,6 +324,9 @@ const JobsModule = (() => {
                 } else if (Array.isArray(response)) {
                     applications = response;
                 }
+                // Store applications FIRST before rendering
+                myApplications = applications;
+                console.log('Loaded and stored myApplications:', myApplications);
                 renderMyApplications(applications);
                 return applications;
             })
@@ -301,10 +354,6 @@ const JobsModule = (() => {
             appsList.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">You haven\'t applied to any jobs yet</p>';
             return;
         }
-
-        // Store applications for duplicate check
-        myApplications = applications;
-        console.log('Stored myApplications:', myApplications);
 
         appsList.innerHTML = applications.map(app => {
             const statusColors = {
@@ -380,11 +429,19 @@ const JobsModule = (() => {
                 ? '<span style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Open</span>'
                 : '<span style="background:#95a5a6; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Closed</span>';
 
+            // Show notification badge if there are pending applications
+            const pendingBadge = job.applications_count && job.applications_count > 0
+                ? `<span style="background:#ff5252; color:white; padding:6px 10px; border-radius:50%; font-size:12px; font-weight:bold; min-width:28px; text-align:center; display:inline-flex; align-items:center; justify-content:center; margin-left:8px;">${job.applications_count}</span>`
+                : '';
+
             return `
                 <div style="border:1px solid #ddd; border-radius:8px; padding:15px; background:white;">
                     <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
                         <div>
-                            <h4 style="margin:0 0 5px 0; color:#333;">${escapeHtml(job.title)}</h4>
+                            <div style="display:flex; align-items:center;">
+                                <h4 style="margin:0 0 5px 0; color:#333;">${escapeHtml(job.title)}</h4>
+                                ${pendingBadge}
+                            </div>
                             <p style="margin:0; color:#666; font-size:14px;">
                                 <i class="fas fa-map-marker-alt"></i> ${escapeHtml(job.location)}
                             </p>
@@ -437,16 +494,308 @@ const JobsModule = (() => {
                 } else if (Array.isArray(response)) {
                     applications = response;
                 }
+                
                 if (applications.length === 0) {
                     alert('No applications yet');
                     return;
                 }
-                const appList = applications.map(app => 
-                    `${app.user?.first_name} ${app.user?.last_name} - ${app.status}`
-                ).join('\n');
-                alert(`Applications:\n\n${appList}`);
+
+                // Create applications list HTML with action buttons
+                const appListHTML = applications.map(app => {
+                    const statusColors = {
+                        'pending': '#f39c12',
+                        'reviewed': '#3498db',
+                        'accepted': '#27ae60',
+                        'rejected': '#e74c3c'
+                    };
+                    const statusColor = statusColors[app.status] || '#95a5a6';
+                    
+                    // Format interview date and time if available
+                    let interviewDisplay = '';
+                    const hasInterview = app.interview_date;
+                    if (hasInterview) {
+                        const interviewDateTime = new Date(app.interview_date);
+                        const interviewDate = interviewDateTime.toLocaleDateString();
+                        const interviewTime = interviewDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        interviewDisplay = `<div style="font-size:12px; color:#27ae60; margin-bottom:10px; font-weight:600;">
+                            <i class="fas fa-calendar"></i> Interview: ${interviewDate} at ${interviewTime}
+                        </div>`;
+                    }
+                    
+                    // Disable buttons if interview is already scheduled
+                    const acceptDisabled = hasInterview ? 'disabled' : '';
+                    const rejectDisabled = hasInterview ? 'disabled' : '';
+                    const acceptOpacity = hasInterview ? '0.5' : '1';
+                    const rejectOpacity = hasInterview ? '0.5' : '1';
+                    const acceptCursor = hasInterview ? 'not-allowed' : 'pointer';
+                    const rejectCursor = hasInterview ? 'not-allowed' : 'pointer';
+                    
+                    return `
+                        <div style="background:#f9f9f9; padding:15px; border-radius:6px; margin-bottom:15px; border-left:4px solid ${statusColor};">
+                            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+                                <div>
+                                    <div style="font-weight:600; color:#333;">${escapeHtml(app.first_name)} ${escapeHtml(app.last_name)}</div>
+                                    <div style="font-size:13px; color:#666; margin-top:4px;">
+                                        <i class="fas fa-envelope"></i> ${escapeHtml(app.email)}
+                                    </div>
+                                </div>
+                                <span style="background:${statusColor}; color:white; padding:4px 10px; border-radius:4px; font-size:12px; font-weight:600;">${escapeHtml(app.status)}</span>
+                            </div>
+                            
+                            <div style="font-size:12px; color:#999; margin-bottom:10px;">
+                                Applied: ${new Date(app.applied_at).toLocaleDateString()}
+                            </div>
+                            
+                            ${interviewDisplay}
+                            
+                            ${!hasInterview ? `
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
+                                    <input type="date" id="interview-date-${app.id}" style="padding:6px; border:1px solid #ddd; border-radius:4px; font-size:12px;" placeholder="Interview date">
+                                    <input type="time" id="interview-time-${app.id}" style="padding:6px; border:1px solid #ddd; border-radius:4px; font-size:12px;" placeholder="Interview time">
+                                </div>
+                            ` : ''}
+                            
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                                <button onclick="JobsModule.updateApplicationStatus(${app.id}, 'accepted')" ${acceptDisabled} style="padding:8px 12px; background:#27ae60; color:white; border:none; border-radius:4px; cursor:${acceptCursor}; font-size:12px; font-weight:600; opacity:${acceptOpacity};">
+                                    <i class="fas fa-check"></i> Accept
+                                </button>
+                                <button onclick="JobsModule.updateApplicationStatus(${app.id}, 'rejected')" ${rejectDisabled} style="padding:8px 12px; background:#e74c3c; color:white; border:none; border-radius:4px; cursor:${rejectCursor}; font-size:12px; font-weight:600; opacity:${rejectOpacity};">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Show modal with applications
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10000; width:90%; max-width:700px; max-height:80vh; overflow-y:auto;';
+                modal.innerHTML = `
+                    <div style="padding:20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:white;">
+                        <h2 style="margin:0; font-size:20px; color:#333;"><i class="fas fa-file-alt"></i> Job Applications (${applications.length})</h2>
+                        <button onclick="this.closest('div').parentElement.remove(); document.getElementById('app-modal-overlay').remove();" style="background:none; border:none; font-size:24px; color:#999; cursor:pointer;">&times;</button>
+                    </div>
+                    <div style="padding:20px;">
+                        ${appListHTML}
+                    </div>
+                `;
+
+                // Create overlay
+                const overlay = document.createElement('div');
+                overlay.id = 'app-modal-overlay';
+                overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999;';
+                overlay.onclick = () => {
+                    modal.remove();
+                    overlay.remove();
+                };
+
+                document.body.appendChild(overlay);
+                document.body.appendChild(modal);
             })
-            .catch(err => alert('Error loading applications'));
+            .catch(err => {
+                console.error('Error loading applications:', err);
+                alert('Error loading applications');
+            });
+    };
+
+    const showModal = (title, message, buttons = []) => {
+        const modal = document.createElement('div');
+        modal.id = 'custom-modal';
+        modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10001; padding:30px; max-width:400px; text-align:center;';
+        
+        let buttonsHTML = '';
+        if (buttons.length > 0) {
+            buttonsHTML = `<div style="display:flex; gap:10px; margin-top:20px; justify-content:center;">
+                ${buttons.map(btn => `<button onclick="${btn.onclick}" style="padding:10px 20px; background:${btn.color}; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">${btn.text}</button>`).join('')}
+            </div>`;
+        } else {
+            buttonsHTML = `<button onclick="document.getElementById('custom-modal').remove(); document.getElementById('custom-modal-overlay').remove();" style="padding:10px 20px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; margin-top:20px;">OK</button>`;
+        }
+        
+        modal.innerHTML = `
+            <h2 style="margin:0 0 15px 0; color:#333; font-size:18px;">${title}</h2>
+            <p style="margin:0; color:#666; font-size:14px; line-height:1.6;">${message}</p>
+            ${buttonsHTML}
+        `;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'custom-modal-overlay';
+        overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000;';
+        overlay.onclick = () => {
+            modal.remove();
+            overlay.remove();
+        };
+
+        document.body.appendChild(overlay);
+        document.body.appendChild(modal);
+    };
+
+    const scheduleInterview = (appId, interviewDate, interviewTime) => {
+        if (!interviewDate) {
+            showModal('Missing Date', 'Please select an interview date');
+            return;
+        }
+
+        if (!interviewTime) {
+            showModal('Missing Time', 'Please select an interview time');
+            return;
+        }
+
+        // Combine date and time into datetime format
+        const interviewDateTime = `${interviewDate} ${interviewTime}`;
+
+        fetch(`/api/jobs/applications/${appId}/interview`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-Token': CSRF_TOKEN,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ interview_date: interviewDateTime })
+        })
+        .then(r => r.json())
+        .then(response => {
+            if (response.success) {
+                showModal('Success', 'Interview scheduled successfully!');
+                setTimeout(() => {
+                    document.getElementById('app-modal-overlay').click();
+                }, 1500);
+            } else {
+                showModal('Error', response.message || 'Failed to schedule interview');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showModal('Error', 'Error scheduling interview');
+        });
+    };
+
+    const updateApplicationStatus = (appId, status) => {
+        // For "accepted" status, require interview date and time to be set first
+        if (status === 'accepted') {
+            const interviewDateInput = document.getElementById(`interview-date-${appId}`);
+            const interviewTimeInput = document.getElementById(`interview-time-${appId}`);
+            const interviewDate = interviewDateInput ? interviewDateInput.value : null;
+            const interviewTime = interviewTimeInput ? interviewTimeInput.value : null;
+            
+            if (!interviewDate || !interviewTime) {
+                showModal('Missing Information', 'You must set both interview date and time before accepting an applicant');
+                return;
+            }
+            
+            // Show confirmation modal
+            showModal('Confirm Action', 'Accept this applicant?', [
+                {
+                    text: 'Yes, Accept',
+                    color: '#27ae60',
+                    onclick: `JobsModule.confirmAcceptApplicant(${appId}, '${interviewDate}', '${interviewTime}')`
+                },
+                {
+                    text: 'Cancel',
+                    color: '#95a5a6',
+                    onclick: `document.getElementById('custom-modal-overlay').click()`
+                }
+            ]);
+            return;
+        }
+
+        // For reject, show confirmation modal
+        if (status === 'rejected') {
+            showModal('Confirm Action', 'Reject this applicant?', [
+                {
+                    text: 'Yes, Reject',
+                    color: '#e74c3c',
+                    onclick: `JobsModule.confirmRejectApplicant(${appId})`
+                },
+                {
+                    text: 'Cancel',
+                    color: '#95a5a6',
+                    onclick: `document.getElementById('custom-modal-overlay').click()`
+                }
+            ]);
+        }
+    };
+
+    const confirmAcceptApplicant = (appId, interviewDate, interviewTime) => {
+        const interviewDateTime = `${interviewDate} ${interviewTime}`;
+        
+        // Schedule interview and accept in one action
+        fetch(`/api/jobs/applications/${appId}/interview`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-Token': CSRF_TOKEN,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ interview_date: interviewDateTime })
+        })
+        .then(r => r.json())
+        .then(response => {
+            if (response.success) {
+                // Now update status to accepted
+                return fetch(`/api/jobs/applications/${appId}/status`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'X-CSRF-Token': CSRF_TOKEN,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ status: 'accepted' })
+                });
+            } else {
+                throw new Error(response.message || 'Failed to schedule interview');
+            }
+        })
+        .then(r => r.json())
+        .then(response => {
+            if (response.success) {
+                showModal('Success', 'Applicant accepted! Interview scheduled.');
+                setTimeout(() => {
+                    document.getElementById('app-modal-overlay').click();
+                    // Reload jobs to update notification badge
+                    loadMyJobs();
+                }, 1500);
+            } else {
+                showModal('Error', response.message || 'Failed to accept applicant');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showModal('Error', err.message || 'Error accepting applicant');
+        });
+    };
+
+    const confirmRejectApplicant = (appId) => {
+        fetch(`/api/jobs/applications/${appId}/status`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-Token': CSRF_TOKEN,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ status: 'rejected' })
+        })
+        .then(r => r.json())
+        .then(response => {
+            if (response.success) {
+                showModal('Success', 'Applicant rejected!');
+                setTimeout(() => {
+                    document.getElementById('app-modal-overlay').click();
+                    // Reload jobs to update notification badge
+                    loadMyJobs();
+                }, 1500);
+            } else {
+                showModal('Error', response.message || 'Failed to reject applicant');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showModal('Error', 'Error rejecting applicant');
+        });
     };
 
     const openModal = (modalId) => {
@@ -480,7 +829,11 @@ const JobsModule = (() => {
         openApplyModal,
         closeModals,
         toggleJobStatus,
-        viewApplications
+        viewApplications,
+        scheduleInterview,
+        updateApplicationStatus,
+        confirmAcceptApplicant,
+        confirmRejectApplicant
     };
 })();
 
