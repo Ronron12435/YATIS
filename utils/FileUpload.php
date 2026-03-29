@@ -131,8 +131,8 @@ class FileUpload {
         
         return [
             'success' => true,
-            'path' => 'uploads/profile_photos/' . $filename,
-            'url' => 'uploads/profile_photos/' . $filename
+            'path' => 'storage/profile_photos/' . $filename,
+            'url' => 'storage/profile_photos/' . $filename
         ];
     }
 
@@ -199,8 +199,8 @@ class FileUpload {
         
         return [
             'success' => true,
-            'path' => 'uploads/profile_photos/' . $filename,
-            'url' => 'uploads/profile_photos/' . $filename
+            'path' => 'storage/profile_photos/' . $filename,
+            'url' => 'storage/profile_photos/' . $filename
         ];
     }
 

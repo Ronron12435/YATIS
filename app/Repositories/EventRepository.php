@@ -101,9 +101,9 @@ class EventRepository
         }
     }
 
-    public function getUserAchievements(int $userId): LengthAwarePaginator
+    public function getUserAchievements(int $userId)
     {
-        return UserAchievement::where('user_id', $userId)->with('event')->latest()->paginate(15);
+        return UserAchievement::where('user_id', $userId)->with('event')->latest()->get();
     }
 
     public function getTotalPoints(int $userId): int

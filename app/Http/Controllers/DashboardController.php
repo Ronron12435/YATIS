@@ -37,6 +37,16 @@ class DashboardController extends Controller
             $servicesCount = DB::table('businesses')->where('business_type', 'services')->count();
         }
 
+        // Get pending applications count for business users
+        $pendingApplicationsCount = 0;
+        if ($user->role === 'business' || $user->role === 'employer') {
+            $pendingApplicationsCount = DB::table('job_applications as ja')
+                ->join('job_postings as jp', 'jp.id', '=', 'ja.job_posting_id')
+                ->where('jp.employer_id', $user->id)
+                ->where('ja.status', 'pending')
+                ->count();
+        }
+
         $stats = [
             'users'              => DB::table('users')->count(),
             'businesses'         => DB::table('businesses')->count(),
@@ -47,6 +57,7 @@ class DashboardController extends Controller
             'service_businesses' => $servicesCount,
             'events'             => DB::table('events')->count(),
             'groups'             => DB::table('groups')->count(),
+            'pending_applications' => $pendingApplicationsCount,
         ];
 
         return view('dashboard', ['user' => $user, 'stats' => $stats]);

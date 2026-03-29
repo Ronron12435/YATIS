@@ -83,20 +83,39 @@ class JobService
 
     public function apply(ApplyJobDTO $dto): ApiResponse
     {
+        \Log::info('apply() called', [
+            'jobId' => $dto->jobId,
+            'userId' => $dto->userId,
+            'resumePath' => $dto->resumePath,
+        ]);
+
         if (!$this->jobRepository->findRawById($dto->jobId)) {
+            \Log::warning('Job not found', ['jobId' => $dto->jobId]);
             return new ApiResponse(false, null, 'Job not found', 404);
         }
 
         if ($this->jobRepository->findApplication($dto->jobId, $dto->userId)) {
+            \Log::warning('Already applied', ['jobId' => $dto->jobId, 'userId' => $dto->userId]);
             return new ApiResponse(false, null, 'Already applied to this job', 400);
         }
 
+        \Log::info('Creating application', [
+            'jobId' => $dto->jobId,
+            'userId' => $dto->userId,
+        ]);
+
         $application = $this->jobRepository->createApplication([
-            'job_id'       => $dto->jobId,
-            'user_id'      => $dto->userId,
-            'cover_letter' => $dto->coverLetter,
-            'resume_path'  => $dto->resumePath,
-            'status'       => 'pending',
+            'job_posting_id' => $dto->jobId,
+            'user_id'        => $dto->userId,
+            'cover_letter'   => $dto->coverLetter,
+            'resume'         => $dto->resumePath,
+            'status'         => 'pending',
+        ]);
+
+        \Log::info('Application created', [
+            'applicationId' => $application->id,
+            'jobId' => $dto->jobId,
+            'userId' => $dto->userId,
         ]);
 
         return new ApiResponse(true, $application, 'Application submitted', 201);
@@ -104,7 +123,12 @@ class JobService
 
     public function myApplications(int $userId): ApiResponse
     {
-        return new ApiResponse(true, $this->jobRepository->getApplicationsByUser($userId), 'Success');
+        $applications = $this->jobRepository->getApplicationsByUser($userId);
+        \Log::info('myApplications service', [
+            'userId' => $userId,
+            'count' => count($applications),
+        ]);
+        return new ApiResponse(true, $applications, 'Success');
     }
 
     public function getApplications(int $jobId, int $authId): ApiResponse
@@ -134,7 +158,12 @@ class JobService
             return new ApiResponse(false, null, 'Unauthorized', 403);
         }
 
-        $this->jobRepository->updateApplication($appId, $data);
+        $updateData = ['status' => $data['status']];
+        if (isset($data['interview_date'])) {
+            $updateData['interview_date'] = $data['interview_date'];
+        }
+
+        $this->jobRepository->updateApplication($appId, $updateData);
 
         return new ApiResponse(true, null, 'Application status updated');
     }

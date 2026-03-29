@@ -22,6 +22,17 @@ use App\Http\Controllers\{
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Serve uploaded files
+Route::get('/uploads/{type}/{filename}', function ($type, $filename) {
+    $path = base_path("uploads/{$type}/{$filename}");
+    
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    
+    return response()->file($path);
+})->where('filename', '.*');
+
 // Public endpoints (no auth required)
 Route::get('/businesses', [BusinessController::class, 'index']);
 Route::get('/businesses/{id}', [BusinessController::class, 'show']);
@@ -133,15 +144,17 @@ Route::get('/me', [AuthController::class, 'me']);
     Route::apiResource('events', EventController::class);
     
     // Jobs
-    Route::post('/jobs/{id}/apply', [JobController::class, 'apply']);
+    Route::get('/jobs/pending-applications-count', [JobController::class, 'pendingApplicationsCount']);
     Route::get('/jobs/applications/my-applications', [JobController::class, 'myApplications']);
-    Route::get('/jobs/{id}/applications', [JobController::class, 'applications']);
-    Route::put('/jobs/applications/{id}', [JobController::class, 'updateApplication']);
     Route::get('/jobs/business/{businessId}', [JobController::class, 'businessJobs']);
     Route::get('/my-jobs', [JobController::class, 'myJobs']);
+    Route::post('/jobs/{id}/apply', [JobController::class, 'apply']);
     Route::post('/jobs/{id}/toggle-status', [JobController::class, 'toggleStatus']);
+    Route::get('/jobs/{id}/applications', [JobController::class, 'applications']);
+    Route::put('/jobs/applications/{id}', [JobController::class, 'updateApplication']);
+    Route::post('/jobs/applications/{id}/status', [JobController::class, 'updateApplication']);
+    Route::post('/jobs/applications/{id}/interview', [JobController::class, 'setInterviewDate']);
     Route::post('/jobs/applications/{id}/set-interview-date', [JobController::class, 'setInterviewDate']);
-    Route::get('/jobs/pending-applications-count', [JobController::class, 'pendingApplicationsCount']);
     Route::apiResource('jobs', JobController::class);
     
     // Tables

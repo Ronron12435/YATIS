@@ -32,6 +32,7 @@
         .sidebar-footer { padding: 16px; border-top: 1px solid #3a3a3a; background: #242424; }
         .logout-btn { width: 100%; background: #3a3a3a; color: #ff5252; border: 1px solid #4a4a4a; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .logout-btn:hover { background: #ff5252; color: white; border-color: #ff5252; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,82,82,0.3); }
+
         .premium-btn { background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #1a3a52 !important; font-weight: 600; margin: 10px 8px; box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3); }
         .premium-btn:hover { background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4); }
         .sidebar-item { padding: 14px 18px; margin: 2px 8px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 14px; color: #b0b0b0; font-weight: 500; font-size: 15px; border-radius: 8px; position: relative; }
@@ -39,6 +40,7 @@
         .sidebar-item.active { background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); font-weight: 600; color: #ffffff; box-shadow: 0 2px 8px rgba(25,118,210,0.4); }
         .sidebar-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 60%; background: #42a5f5; border-radius: 0 3px 3px 0; }
         .sidebar-item .sidebar-icon { font-size: 20px; width: 24px; text-align: center; display: flex; align-items: center; justify-content: center; }
+        .notification-badge { background: #ff5252; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-left: auto; box-shadow: 0 2px 6px rgba(255,82,82,0.4); }
         .sidebar-item-parent { position: relative; }
         .sidebar-dropdown { display: none; background: #242424; border-radius: 8px; margin: 4px 8px 8px 8px; padding: 4px 0; border: 1px solid #3a3a3a; }
         .sidebar-item-parent:hover .sidebar-dropdown { display: block; }
@@ -96,6 +98,53 @@
         .btn-skip-location { background: #f0f0f0; color: #666; }
         .btn-skip-location:hover { background: #e0e0e0; }
         @media (max-width: 768px) { .menu-toggle { display: block !important; } .right-section { margin-left: 0; width: 100%; } .sidebar { position: fixed; left: 0; top: 0; height: 100vh; transform: translateX(-100%); z-index: 1000; } .sidebar.active { transform: translateX(0); } .content { padding: 60px 15px 15px 15px !important; width: 100%; } .page-title { font-size: 24px !important; } .stats { grid-template-columns: 1fr !important; } }
+        
+        /* Dark Mode Styles - Eye-Friendly */
+        body.dark-mode { background: #0f1419; }
+        body.dark-mode .navbar { background: #1a1f2e; color: #e8eaed; }
+        body.dark-mode .navbar .user-info { color: #e8eaed; }
+        body.dark-mode .navbar .user-info span { color: #9aa0a6; }
+        body.dark-mode .navbar .user-info strong { color: #e8eaed; }
+        body.dark-mode .content { background: #0f1419; }
+        body.dark-mode .card { background: #1a1f2e; color: #e8eaed; box-shadow: 0 2px 12px rgba(0,0,0,0.5); border-top-color: #4db8d4; }
+        body.dark-mode .card h3 { color: #4db8d4; }
+        body.dark-mode .card p { color: #c5cad1; }
+        body.dark-mode .card h2 { color: #e8eaed; }
+        body.dark-mode .card h4 { color: #e8eaed; }
+        body.dark-mode .card label { color: #c5cad1; }
+        body.dark-mode .page-title { color: #4db8d4; }
+        body.dark-mode .profile-header { background: linear-gradient(135deg, #1a3a52 0%, #0d1f2d 50%, #4db8d4 100%); }
+        body.dark-mode .profile-name { color: #e8eaed; }
+        body.dark-mode .stat-card { background: linear-gradient(135deg, #1a2a3a 0%, #1a3a52 100%); }
+        body.dark-mode .stat-card h3 { color: #4db8d4; }
+        body.dark-mode .stat-card p { color: #c5cad1; }
+        body.dark-mode .job-card { background: #1a1f2e; color: #e8eaed; }
+        body.dark-mode .job-header h4 { color: #4db8d4; }
+        body.dark-mode .job-meta { color: #c5cad1; }
+        body.dark-mode input, body.dark-mode textarea, body.dark-mode select { background: #0f1419; color: #e8eaed; border-color: #3a4150; }
+        body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: #7a8089; }
+        body.dark-mode input:focus, body.dark-mode textarea:focus, body.dark-mode select:focus { background: #1a1f2e; border-color: #4db8d4; outline: none; }
+        body.dark-mode button { color: #e8eaed; }
+        body.dark-mode .btn { background: #1a3a52; color: #e8eaed; border-color: #3a4150; }
+        body.dark-mode .btn:hover { background: #2c5f8d; }
+        body.dark-mode .location-modal-content { background: #1a1f2e; color: #e8eaed; }
+        body.dark-mode .location-modal-content h2 { color: #4db8d4; }
+        body.dark-mode .location-modal-content p { color: #c5cad1; }
+        body.dark-mode .btn-skip-location { background: #262d3a; color: #e8eaed; }
+        body.dark-mode .btn-skip-location:hover { background: #3a4150; }
+        body.dark-mode table { background: #1a1f2e; color: #e8eaed; }
+        body.dark-mode table th { background: #0f1419; color: #4db8d4; border-color: #3a4150; }
+        body.dark-mode table td { border-color: #3a4150; }
+        body.dark-mode table tr:hover { background: #262d3a; }
+        body.dark-mode .modal { background: rgba(0, 0, 0, 0.8); }
+        body.dark-mode .modal-content { background: #1a1f2e; color: #e8eaed; }
+        body.dark-mode .modal-header { background: #0f1419; border-color: #3a4150; }
+        body.dark-mode .modal-footer { background: #0f1419; border-color: #3a4150; }
+        body.dark-mode .alert { background: #262d3a; color: #e8eaed; border-color: #3a4150; }
+        body.dark-mode .alert-info { background: #1a3a52; border-color: #4db8d4; }
+        body.dark-mode .alert-success { background: #1a3a2a; border-color: #2ecc71; }
+        body.dark-mode .alert-warning { background: #3a3a1a; border-color: #f39c12; }
+        body.dark-mode .alert-danger { background: #3a1a1a; border-color: #e74c3c; }
     </style>
 </head>
 <body>
@@ -117,11 +166,15 @@
             const target = document.getElementById(sectionId);
             if(target) target.classList.add('active');
             event.target.closest('.sidebar-item')?.classList.add('active');
+            
+            // Save active section to sessionStorage (cleared on browser close)
+            sessionStorage.setItem('activeSection', sectionId);
+            
             if(sectionId === 'dashboard') setTimeout(() => initDashboardMap(), 100);
             if(sectionId === 'businesses') setTimeout(() => { if(typeof initBusinessesMap === 'function') initBusinessesMap(); }, 100);
             if(sectionId === 'people') setTimeout(() => initPeopleMap(), 150);
             if(sectionId === 'my-friends') setTimeout(() => { if(typeof loadFriendsList === 'function') loadFriendsList(); }, 100);
-            if(sectionId === 'employers') setTimeout(() => { if(typeof EmployersModule !== 'undefined') EmployersModule.init(); }, 100);
+            if(sectionId === 'employers') setTimeout(() => { if(typeof EmployersModule !== 'undefined') EmployersModule.init(); if(typeof loadStats === 'function') loadStats(); }, 100);
             if(sectionId === 'jobs') setTimeout(() => { if(typeof JobsModule !== 'undefined') JobsModule.init(); }, 100);
             if(sectionId === 'job-listings') setTimeout(() => { if(typeof loadJobListings === 'function') loadJobListings(); }, 100);
             if(sectionId === 'my-applications') setTimeout(() => { if(typeof loadMyApplications === 'function') loadMyApplications(); }, 100);
@@ -129,6 +182,34 @@
             if(sectionId === 'profile') setTimeout(() => { if(typeof initProfileSection === 'function') initProfileSection(); }, 100);
             if(sectionId === 'my-business') setTimeout(() => { if(typeof initMyBusinessSection === 'function') initMyBusinessSection(); }, 100);
         };
+
+        // Restore active section on page load - use sessionStorage for refresh, dashboard for fresh login
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if there's a saved section from sessionStorage (page refresh while logged in)
+            const activeSection = sessionStorage.getItem('activeSection') || 'dashboard';
+            const sectionElement = document.getElementById(activeSection);
+            const sidebarItem = document.querySelector(`[onclick="showSection('${activeSection}')"]`);
+            
+            if(sectionElement) {
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                sectionElement.classList.add('active');
+                if(sidebarItem) sidebarItem.classList.add('active');
+                
+                // Initialize the section
+                if(activeSection === 'dashboard') setTimeout(() => initDashboardMap(), 100);
+                if(activeSection === 'businesses') setTimeout(() => { if(typeof initBusinessesMap === 'function') initBusinessesMap(); }, 100);
+                if(activeSection === 'people') setTimeout(() => initPeopleMap(), 150);
+                if(activeSection === 'my-friends') setTimeout(() => { if(typeof loadFriendsList === 'function') loadFriendsList(); }, 100);
+                if(activeSection === 'employers') setTimeout(() => { if(typeof EmployersModule !== 'undefined') EmployersModule.init(); if(typeof loadStats === 'function') loadStats(); }, 100);
+                if(activeSection === 'jobs') setTimeout(() => { if(typeof JobsModule !== 'undefined') JobsModule.init(); }, 100);
+                if(activeSection === 'job-listings') setTimeout(() => { if(typeof loadJobListings === 'function') loadJobListings(); }, 100);
+                if(activeSection === 'my-applications') setTimeout(() => { if(typeof loadMyApplications === 'function') loadMyApplications(); }, 100);
+                if(activeSection === 'destinations') setTimeout(() => { if(typeof initDestinationsSection === 'function') initDestinationsSection(); }, 100);
+                if(activeSection === 'profile') setTimeout(() => { if(typeof initProfileSection === 'function') initProfileSection(); }, 100);
+                if(activeSection === 'my-business') setTimeout(() => { if(typeof initMyBusinessSection === 'function') initMyBusinessSection(); }, 100);
+            }
+        });
 
         window.toggleMobileMenu = function() {
             document.querySelector('.sidebar')?.classList.toggle('active');
@@ -349,5 +430,6 @@
     @endif
     <script src="{{ asset('js/destinations.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/employers.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/business-management.js') }}?v={{ time() }}"></script>
 
     @stack('scripts')

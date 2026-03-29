@@ -168,6 +168,54 @@
             </div>
         </div>
         @endif
+
+        <!-- MY APPLICATIONS (Regular Users) -->
+        @if(!$isBusiness)
+        <div class="modern-card" style="margin-top:20px;">
+            <div class="modern-card-header">
+                <div class="card-title-group">
+                    <div class="card-icon-modern">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/></svg>
+                    </div>
+                    <h3>My Applications</h3>
+                </div>
+            </div>
+            <div class="modern-card-body">
+                <div id="my-applications" style="display:grid; gap:15px;">
+                    <p style="color:#999; text-align:center; padding:20px;">Loading your applications...</p>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <!-- AVAILABLE JOBS (Regular Users) -->
+        @if(!$isBusiness)
+        <div class="modern-card" style="margin-top:20px;">
+            <div class="modern-card-header">
+                <div class="card-title-group">
+                    <div class="card-icon-modern">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    </div>
+                    <h3>Available Jobs</h3>
+                </div>
+            </div>
+            <div class="modern-card-body">
+                <div style="margin-bottom:20px;">
+                    <input type="text" id="job-search" placeholder="Search jobs by title or location..." style="width:100%; padding:12px 14px; border:2px solid #e0e0e0; border-radius:8px; font-size:13px; margin-bottom:12px;">
+                    <select id="job-type-filter" style="width:100%; padding:12px 14px; border:2px solid #e0e0e0; border-radius:8px; font-size:13px;">
+                        <option value="">All Job Types</option>
+                        <option value="full-time">Full-time</option>
+                        <option value="part-time">Part-time</option>
+                        <option value="contract">Contract</option>
+                        <option value="freelance">Freelance</option>
+                    </select>
+                </div>
+                <div id="jobs-list" style="display:grid; gap:15px;">
+                    <p style="color:#999; text-align:center; padding:20px;">Loading jobs...</p>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 

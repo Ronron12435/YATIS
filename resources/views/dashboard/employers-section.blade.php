@@ -10,11 +10,7 @@
         </div>
         <div style="background:linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color:white; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(30,60,114,0.3);">
             <div style="font-size:36px; font-weight:700; color:#00bcd4; margin-bottom:8px;" id="emp-apps-count">0</div>
-            <div style="font-size:16px; font-weight:600;">My Applications</div>
-        </div>
-        <div style="background:linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color:white; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(30,60,114,0.3); cursor:pointer;" onclick="EmployersModule.showActiveEmployers()">
-            <div style="font-size:36px; font-weight:700; color:#00bcd4; margin-bottom:8px;" id="emp-employers-count">0</div>
-            <div style="font-size:16px; font-weight:600;">Active Employers</div>
+            <div style="font-size:16px; font-weight:600;">Pending Applications</div>
         </div>
     </div>
 
@@ -23,14 +19,11 @@
         <h3 style="margin-bottom:10px;"><i class="fas fa-briefcase"></i> Find Your Next Career</h3>
         <p style="color:#666; margin-bottom:20px;">Browse job postings from employers and apply with your resume.</p>
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <button onclick="EmployersModule.showBrowseJobs()" style="padding:12px 24px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
+            <button onclick="showSection('job-listings');" style="padding:12px 24px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
                 <i class="fas fa-list"></i> Browse Jobs
             </button>
-            <button onclick="EmployersModule.showMyApplications()" style="padding:12px 24px; background:#95a5a6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
+            <button onclick="showSection('my-applications');" style="padding:12px 24px; background:#95a5a6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
                 <i class="fas fa-file-alt"></i> My Applications
-            </button>
-            <button onclick="EmployersModule.showActiveEmployers()" style="padding:12px 24px; background:#9b59b6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:8px;">
-                <i class="fas fa-users"></i> View Active Employers
             </button>
         </div>
     </div>

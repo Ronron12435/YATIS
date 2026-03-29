@@ -15,7 +15,7 @@
         <!-- BUSINESS ACCOUNT MENU -->
         @if($isBusiness)
             <!-- Dashboard -->
-            <div class="sidebar-item active" onclick="showSection('dashboard')">
+            <div class="sidebar-item" onclick="showSection('dashboard')">
                 <span class="sidebar-icon"><i class="fas fa-home"></i></span>
                 <div>Dashboard</div>
             </div>
@@ -52,6 +52,9 @@
             <div class="sidebar-item" onclick="showSection('jobs')">
                 <span class="sidebar-icon"><i class="fas fa-plus-circle"></i></span>
                 <div>Post a Job</div>
+                @if(isset($stats['pending_applications']) && $stats['pending_applications'] > 0)
+                <span class="notification-badge">{{ $stats['pending_applications'] }}</span>
+                @endif
             </div>
             
             <!-- My Profile -->
@@ -71,7 +74,7 @@
         <!-- REGULAR USER MENU -->
         @else
             <!-- Dashboard -->
-            <div class="sidebar-item active" onclick="showSection('dashboard')">
+            <div class="sidebar-item" onclick="showSection('dashboard')">
                 <span class="sidebar-icon"><i class="fas fa-home"></i></span>
                 <div>Dashboard</div>
             </div>
@@ -166,8 +169,8 @@
             </div>
             @endif
             
-            <!-- Go Premium (if not premium) -->
-            @if(!auth()->user()->is_premium)
+            <!-- Go Premium (if not premium and not admin) -->
+            @if(!auth()->user()->is_premium && $userRole !== 'admin')
             <div class="sidebar-item" onclick="showSection('premium')" style="background: linear-gradient(135deg, #fff9e6 0%, #ffe082 100%); color: #f57f17; font-weight: 600;">
                 <span class="sidebar-icon"><i class="fas fa-crown"></i></span>
                 <div>Go Premium</div>
