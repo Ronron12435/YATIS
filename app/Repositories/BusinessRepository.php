@@ -54,9 +54,9 @@ class BusinessRepository
         $business->delete();
     }
 
-    public function getByUser(int $userId): LengthAwarePaginator
+    public function getByUser(int $userId)
     {
-        return Business::where('user_id', $userId)->paginate(15);
+        return Business::where('user_id', $userId)->get();
     }
 
     public function createMenuItem(array $data): MenuItem

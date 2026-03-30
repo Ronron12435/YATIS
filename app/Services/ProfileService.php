@@ -8,6 +8,7 @@ use App\DTOs\Profile\CreatePostDTO;
 use App\Repositories\ProfileRepository;
 use App\Models\Post;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class ProfileService
 {
@@ -270,6 +271,14 @@ class ProfileService
     public function deleteAvatar(int $userId)
     {
         try {
+            $user = $this->profileRepository->getUserById($userId);
+            
+            // Delete the file from storage if it exists
+            if ($user && $user->profile_picture) {
+                $filePath = str_replace('/storage/', '', $user->profile_picture);
+                \Storage::disk('public')->delete($filePath);
+            }
+            
             $this->profileRepository->updateUser($userId, [
                 'profile_picture' => null,
             ]);

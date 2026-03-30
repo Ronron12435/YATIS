@@ -110,7 +110,7 @@ class ProfileController extends Controller
     public function uploadAvatar(Request $request)
     {
         $validated = $request->validate([
-            'avatar' => 'required|image|max:2048',
+            'avatar' => 'required|image|max:5120',
         ]);
 
         $response = $this->profileService->uploadAvatar(auth()->id(), $validated['avatar']);

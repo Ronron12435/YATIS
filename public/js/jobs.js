@@ -89,7 +89,10 @@ const JobsModule = (() => {
 
         jobsList.innerHTML = jobs.map(job => {
             const postedDate = new Date(job.created_at).toLocaleDateString();
-            const statusBadge = job.status === 'open' 
+            const isExpired = job.deadline && new Date(job.deadline) < new Date();
+            const statusBadge = isExpired
+                ? '<span style="background:#e74c3c; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Expired</span>'
+                : job.status === 'open' 
                 ? '<span style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Open</span>'
                 : '<span style="background:#95a5a6; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Closed</span>';
 
@@ -232,7 +235,7 @@ const JobsModule = (() => {
         console.log('openApplyModal - hasApplied:', hasApplied);
         
         if (hasApplied) {
-            alert('You have already applied for this position');
+            showModal('Already Applied', 'You have already applied for this position');
             return;
         }
         
@@ -254,7 +257,7 @@ const JobsModule = (() => {
         console.log('Current Job ID:', currentJobId);
 
         if (!resumeInput.files.length) {
-            alert('Please upload a resume');
+            showModal('Missing Resume', 'Please upload a resume');
             return;
         }
 
@@ -293,21 +296,22 @@ const JobsModule = (() => {
             submitBtn.innerHTML = '<i class="fas fa-check"></i> Submit Application';
 
             if (response.success) {
-                alert('Application submitted successfully!');
-                closeModals();
-                // Reload applications to update the list
-                loadMyApplications().then(() => {
-                    console.log('Applications reloaded after submission');
-                });
+                showModal('Success', 'Application submitted successfully!', [
+                    {
+                        text: 'OK',
+                        color: '#27ae60',
+                        onclick: "document.getElementById('custom-modal').remove(); document.getElementById('custom-modal-overlay').remove(); JobsModule.closeModals(); location.reload();"
+                    }
+                ]);
             } else {
-                alert('Error: ' + (response.message || 'Failed to submit application'));
+                showModal('Error', 'Error: ' + (response.message || 'Failed to submit application'));
             }
         })
         .catch(err => {
             console.error('Fetch error:', err);
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-check"></i> Submit Application';
-            alert('Error submitting application: ' + err.message);
+            showModal('Error', 'Error submitting application: ' + err.message);
         });
     };
 
@@ -425,7 +429,10 @@ const JobsModule = (() => {
         }
 
         myJobsList.innerHTML = jobs.map(job => {
-            const statusBadge = job.status === 'open' 
+            const isExpired = job.deadline && new Date(job.deadline) < new Date();
+            const statusBadge = isExpired
+                ? '<span style="background:#e74c3c; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Expired</span>'
+                : job.status === 'open' 
                 ? '<span style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Open</span>'
                 : '<span style="background:#95a5a6; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Closed</span>';
 
@@ -482,10 +489,10 @@ const JobsModule = (() => {
             if (response.success) {
                 loadMyJobs();
             } else {
-                alert('Error: ' + (response.message || 'Failed to toggle status'));
+                showModal('Error', 'Error: ' + (response.message || 'Failed to toggle status'));
             }
         })
-        .catch(err => alert('Error toggling job status'));
+        .catch(err => showModal('Error', 'Error toggling job status'));
     };
 
     const editJob = (jobId) => {
@@ -494,7 +501,7 @@ const JobsModule = (() => {
             .then(response => {
                 const job = response.data || response;
                 if (!job) {
-                    alert('Job not found');
+                    showModal('Error', 'Job not found');
                     return;
                 }
 
@@ -592,32 +599,51 @@ const JobsModule = (() => {
                         submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
 
                         if (response.success) {
-                            alert('Job posting updated successfully!');
+                            showModal('Success', 'Job posting updated successfully!', [
+                                {
+                                    text: 'OK',
+                                    color: '#27ae60',
+                                    onclick: "document.getElementById('custom-modal').remove(); document.getElementById('custom-modal-overlay').remove(); location.reload();"
+                                }
+                            ]);
                             modal.remove();
                             overlay.remove();
-                            loadMyJobs();
                         } else {
-                            alert('Error: ' + (response.message || 'Failed to update job'));
+                            showModal('Error', 'Error: ' + (response.message || 'Failed to update job'));
                         }
                     })
                     .catch(err => {
                         console.error('Error:', err);
                         submitBtn.disabled = false;
                         submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
-                        alert('Error updating job posting');
+                        showModal('Error', 'Error updating job posting');
                     });
                 });
             })
             .catch(err => {
                 console.error('Error loading job:', err);
-                alert('Error loading job details');
+                showModal('Error', 'Error loading job details');
             });
     };
 
     const deleteJob = (jobId) => {
-        if (!confirm('Are you sure you want to delete this job posting? This action cannot be undone.')) {
-            return;
-        }
+        showModal('Confirm Delete', 'Are you sure you want to delete this job posting? This action cannot be undone.', [
+            {
+                text: 'Delete',
+                color: '#e74c3c',
+                onclick: `JobsModule.proceedDeleteJob(${jobId})`
+            },
+            {
+                text: 'Cancel',
+                color: '#95a5a6',
+                onclick: "document.getElementById('custom-modal').remove(); document.getElementById('custom-modal-overlay').remove();"
+            }
+        ]);
+    };
+
+    const proceedDeleteJob = (jobId) => {
+        document.getElementById('custom-modal').remove();
+        document.getElementById('custom-modal-overlay').remove();
 
         fetch(`/api/jobs/${jobId}`, {
             method: 'DELETE',
@@ -631,15 +657,20 @@ const JobsModule = (() => {
         .then(r => r.json())
         .then(response => {
             if (response.success) {
-                alert('Job posting deleted successfully!');
-                loadMyJobs();
+                showModal('Success', 'Job posting deleted successfully!', [
+                    {
+                        text: 'OK',
+                        color: '#27ae60',
+                        onclick: "document.getElementById('custom-modal').remove(); document.getElementById('custom-modal-overlay').remove(); location.reload();"
+                    }
+                ]);
             } else {
-                alert('Error: ' + (response.message || 'Failed to delete job'));
+                showModal('Error', 'Error: ' + (response.message || 'Failed to delete job'));
             }
         })
         .catch(err => {
             console.error('Error:', err);
-            alert('Error deleting job posting');
+            showModal('Error', 'Error deleting job posting');
         });
     };
 
@@ -755,7 +786,7 @@ const JobsModule = (() => {
             })
             .catch(err => {
                 console.error('Error loading applications:', err);
-                alert('Error loading applications');
+                showModal('Error', 'Error loading applications');
             });
     };
 
@@ -997,7 +1028,8 @@ const JobsModule = (() => {
         confirmRejectApplicant,
         showModal,
         editJob,
-        deleteJob
+        deleteJob,
+        proceedDeleteJob
     };
 })();
 

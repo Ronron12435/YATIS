@@ -15,7 +15,10 @@ class JobRepository
             ->leftJoin('users as u', 'u.id', '=', 'jp.employer_id')
             ->leftJoin('businesses as b', 'b.id', '=', 'jp.business_id')
             ->select('jp.*', 'u.username as employer_name', 'b.name as business_name', 'b.category as business_type')
-            ->where('jp.status', '=', 'open');
+            ->where('jp.status', '=', 'open')
+            ->where(function ($q) {
+                $q->whereNull('jp.deadline')->orWhere('jp.deadline', '>=', now());
+            });
 
         if ($search) {
             $query->where(function ($q) use ($search) {

@@ -10,7 +10,20 @@ window.initProfileSection = function () {
     loadVisitors();
     loadPosts();
     setupCharCounters();
+    storeOriginalFormValues();
 };
+
+function storeOriginalFormValues() {
+    const firstName = document.getElementById('firstName');
+    const lastName = document.getElementById('lastName');
+    const bio = document.getElementById('bio');
+    const isPrivate = document.getElementById('isPrivate');
+
+    if (firstName) firstName.setAttribute('data-original', firstName.value);
+    if (lastName) lastName.setAttribute('data-original', lastName.value);
+    if (bio) bio.setAttribute('data-original', bio.value);
+    if (isPrivate) isPrivate.setAttribute('data-original', isPrivate.value);
+}
 
 function setupCharCounters() {
     const bioEl = document.getElementById('bio');
@@ -124,31 +137,41 @@ function loadPosts() {
 }
 
 window.deletePost = function (postId) {
-    if (!confirm('Delete this post?')) return;
-
-    fetch(`/api/profile/posts/${postId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-    })
-        .then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json();
-        })
-        .then(res => {
-            if (res.success) {
-                const card = document.getElementById(`post-${postId}`);
-                if (card) card.remove();
-                loadProfileStats();
-            } else {
-                alert(res.message || 'Failed to delete post');
+    showModal('Confirm Delete', 'Are you sure you want to delete this post?', [
+        {
+            text: 'Delete',
+            onclick: () => {
+                fetch(`/api/profile/posts/${postId}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                    .then(r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                        return r.json();
+                    })
+                    .then(res => {
+                        if (res.success) {
+                            const card = document.getElementById(`post-${postId}`);
+                            if (card) card.remove();
+                            loadProfileStats();
+                            closeModal();
+                        } else {
+                            showModal('Error', res.message || 'Failed to delete post');
+                        }
+                    })
+                    .catch(() => showModal('Error', 'Error deleting post'));
             }
-        })
-        .catch(() => alert('Error deleting post'));
+        },
+        {
+            text: 'Cancel',
+            onclick: closeModal
+        }
+    ]);
 };
 
 // ── Profile Update ────────────────────────────────────────────────────────────
@@ -165,6 +188,17 @@ window.updateProfile = function (e) {
 
     if (!firstName || !lastName) {
         msgEl.innerHTML = '<div class="message error">First and last names are required.</div>';
+        return;
+    }
+
+    // Check if anything actually changed
+    const originalFirstName = document.getElementById('firstName').getAttribute('data-original') || document.getElementById('firstName').value;
+    const originalLastName = document.getElementById('lastName').getAttribute('data-original') || document.getElementById('lastName').value;
+    const originalBio = document.getElementById('bio').getAttribute('data-original') || document.getElementById('bio').value;
+    const originalIsPrivate = document.getElementById('isPrivate').getAttribute('data-original') === '1';
+
+    if (firstName === originalFirstName && lastName === originalLastName && bio === originalBio && isPrivate === originalIsPrivate) {
+        msgEl.innerHTML = '<div class="message error">⚠️ No changes detected. Please modify something before saving.</div>';
         return;
     }
 
@@ -357,11 +391,13 @@ window.uploadAvatar = function (input) {
                 if (res.data.profile_picture) {
                     avatarEl.innerHTML = `<img src="${res.data.profile_picture}" alt="Avatar">`;
                 }
+                showModal('Success', 'Profile picture updated successfully!');
+                setTimeout(() => location.reload(), 1500);
             } else {
-                alert(res.message || 'Failed to upload avatar');
+                showModal('Error', res.message || 'Failed to upload avatar');
             }
         })
-        .catch(() => alert('Error uploading avatar'));
+        .catch(() => showModal('Error', 'Error uploading avatar'));
 
     input.value = '';
 };
@@ -388,38 +424,199 @@ window.uploadCover = function (input) {
                 const coverEl = document.getElementById('profileCover');
                 if (res.data.cover_photo) {
                     coverEl.style.backgroundImage = `url('${res.data.cover_photo}')`;
-                    location.reload();
+                    showModal('Success', 'Cover photo updated successfully!');
+                    setTimeout(() => location.reload(), 1500);
                 }
             } else {
-                alert(res.message || 'Failed to upload cover');
+                showModal('Error', res.message || 'Failed to upload cover');
             }
         })
-        .catch(() => alert('Error uploading cover'));
+        .catch(() => showModal('Error', 'Error uploading cover'));
 
     input.value = '';
 };
 
 window.deleteCover = function () {
-    if (!confirm('Delete cover photo?')) return;
-
-    fetch('/api/profile/cover', {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-    })
-        .then(r => r.json())
-        .then(res => {
-            if (res.success) {
-                location.reload();
-            } else {
-                alert(res.message || 'Failed to delete cover');
+    showModal('Confirm Delete', 'Are you sure you want to delete your cover photo?', [
+        {
+            text: 'Delete',
+            onclick: () => {
+                fetch('/api/profile/cover', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            showModal('Success', 'Cover photo deleted successfully!');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showModal('Error', res.message || 'Failed to delete cover');
+                        }
+                    })
+                    .catch(() => showModal('Error', 'Error deleting cover'));
             }
-        })
-        .catch(() => alert('Error deleting cover'));
+        },
+        {
+            text: 'Cancel',
+            onclick: closeModal
+        }
+    ]);
+};
+
+window.removeProfilePicture = function () {
+    showModal('Confirm Delete', 'Are you sure you want to remove your profile picture?', [
+        {
+            text: 'Remove',
+            color: '#e74c3c',
+            onclick: () => {
+                fetch('/api/profile/avatar', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            showModal('Success', 'Profile picture removed successfully!');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showModal('Error', res.message || 'Failed to remove profile picture');
+                        }
+                    })
+                    .catch(() => showModal('Error', 'Error removing profile picture'));
+            }
+        },
+        {
+            text: 'Cancel',
+            color: '#95a5a6',
+            onclick: closeModal
+        }
+    ]);
+};
+
+window.viewProfilePictureModal = function () {
+    const profileImg = document.querySelector('.modern-avatar img');
+    if (!profileImg) return;
+    
+    const modal = document.createElement('div');
+    modal.id = 'profile-picture-modal';
+    modal.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.9); z-index:10000; display:flex; align-items:center; justify-content:center;';
+    
+    modal.innerHTML = `
+        <div style="position:relative; max-width:90%; max-height:90%; display:flex; flex-direction:column; align-items:center;">
+            <img src="${profileImg.src}" alt="Profile Picture" style="max-width:100%; max-height:80vh; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+            <button onclick="document.getElementById('profile-picture-modal').remove();" style="position:absolute; top:10px; right:10px; background:#e74c3c; color:white; border:none; border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:24px; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(0,0,0,0.3);">✕</button>
+            <p style="color:white; margin-top:15px; font-size:14px;">Click outside or press X to close</p>
+        </div>
+    `;
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    };
+    
+    document.body.appendChild(modal);
+};
+
+window.viewProfilePicture = function (event) {
+    if (event) event.stopPropagation();
+    viewProfilePictureModal();
+};
+
+window.toggleAvatarMenu = function (event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById('avatarMenu');
+    const btn = event && event.target ? event.target.closest('button') : document.querySelector('[onclick*="toggleAvatarMenu"]');
+    
+    if (menu) {
+        if (menu.style.display === 'none' || menu.style.display === '') {
+            // Position menu below and to the right of button
+            if (btn) {
+                const rect = btn.getBoundingClientRect();
+                menu.style.top = (rect.bottom + 8) + 'px';
+                menu.style.left = (rect.right - 160) + 'px'; // Align right edge with button
+            }
+            menu.style.display = 'block';
+        } else {
+            menu.style.display = 'none';
+        }
+    }
+};
+
+window.closeAvatarMenu = function () {
+    const menu = document.getElementById('avatarMenu');
+    if (menu) {
+        menu.style.display = 'none';
+    }
+};
+
+// Close menu when clicking outside
+document.addEventListener('click', function (e) {
+    const menu = document.getElementById('avatarMenu');
+    const btn = document.querySelector('[onclick*="toggleAvatarMenu"]');
+    if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
+        menu.style.display = 'none';
+    }
+});
+
+// ── Modal Functions ──────────────────────────────────────────────────────────
+
+window.showModal = function (title, message, buttons = []) {
+    const modal = document.createElement('div');
+    modal.id = 'custom-modal';
+    modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10001; padding:30px; max-width:400px; text-align:center;';
+    
+    let buttonsHTML = '';
+    if (buttons.length > 0) {
+        buttonsHTML = `<div style="display:flex; gap:10px; margin-top:20px; justify-content:center;">
+            ${buttons.map((btn, idx) => `<button id="modal-btn-${idx}" style="padding:10px 20px; background:${btn.color || '#3498db'}; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">${btn.text}</button>`).join('')}
+        </div>`;
+    } else {
+        buttonsHTML = `<button onclick="closeModal();" style="padding:10px 20px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; margin-top:20px;">OK</button>`;
+    }
+    
+    modal.innerHTML = `
+        <h2 style="margin:0 0 15px 0; color:#333; font-size:18px;">${title}</h2>
+        <p style="margin:0; color:#666; font-size:14px; line-height:1.6;">${message}</p>
+        ${buttonsHTML}
+    `;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'custom-modal-overlay';
+    overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000;';
+    overlay.onclick = () => {
+        modal.remove();
+        overlay.remove();
+    };
+
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    
+    // Attach click handlers to buttons
+    buttons.forEach((btn, idx) => {
+        const btnEl = document.getElementById(`modal-btn-${idx}`);
+        if (btnEl && btn.onclick) {
+            btnEl.onclick = btn.onclick;
+        }
+    });
+};
+
+window.closeModal = function () {
+    const modal = document.getElementById('custom-modal');
+    const overlay = document.getElementById('custom-modal-overlay');
+    if (modal) modal.remove();
+    if (overlay) overlay.remove();
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

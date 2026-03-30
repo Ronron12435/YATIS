@@ -69,18 +69,23 @@
                 @endif
             </div>
             <div class="profile-main">
-                <div class="profile-avatar-wrapper">
-                    <div class="modern-avatar" id="profileAvatar" onclick="document.getElementById('avatarInput').click();" title="Click to change avatar">
+                <div class="profile-avatar-wrapper" style="position: relative; display: inline-block;">
+                    <div class="modern-avatar" id="profileAvatar" style="cursor: pointer; position: relative;">
                         @if(auth()->user()->profile_picture)
-                            <img src="{{ auth()->user()->profile_picture }}" alt="Avatar">
+                            <img src="{{ asset('storage/avatars/' . basename(auth()->user()->profile_picture)) }}" alt="Avatar">
                         @else
                             <span class="avatar-text">{{ strtoupper(substr(auth()->user()->first_name ?? 'U', 0, 1)) }}</span>
                         @endif
-                        <div class="avatar-menu-overlay">
-                            <span class="avatar-menu-icon">📷</span>
-                        </div>
                     </div>
                     <input type="file" id="avatarInput" style="display:none;" accept="image/*" onchange="uploadAvatar(this)">
+                    @if(auth()->user()->profile_picture)
+                        <button onclick="toggleAvatarMenu(event);" style="position: absolute; bottom: 0; right: 0; background: #3498db; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 100;" title="Profile picture options">⋮</button>
+                        <div id="avatarMenu" style="position: fixed; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 101; display: none; min-width: 160px; overflow: hidden;">
+                            <button onclick="viewProfilePictureModal(); closeAvatarMenu();" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: #333; transition: all 0.2s; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">👁️ View</button>
+                            <button onclick="document.getElementById('avatarInput').click(); closeAvatarMenu();" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: #333; transition: all 0.2s; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">📷 Change</button>
+                            <button onclick="removeProfilePicture();" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: #e74c3c; transition: all 0.2s; white-space: nowrap;">🗑️ Delete</button>
+                        </div>
+                    @endif
                 </div>
                 <div class="profile-details">
                     <h1 class="modern-profile-name">{{ auth()->user()->first_name }} {{ auth()->user()->last_name }}</h1>

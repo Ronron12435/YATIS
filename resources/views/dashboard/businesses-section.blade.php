@@ -40,6 +40,70 @@
         <div class="stat-card"><h3 id="goods-count">0</h3><p>Goods Stores</p></div>
         <div class="stat-card"><h3 id="services-count">0</h3><p>Service Providers</p></div>
     </div>
+
+    <!-- Service Management Section (for service business owners) -->
+    <div id="service-management-section" style="display: none; margin-top: 30px;">
+        <div class="card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="font-size: 32px;">🔧</div>
+                <div>
+                    <h2 style="margin: 0; font-size: 22px; font-weight: 700;">Manage Your Services</h2>
+                    <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Add, edit, or remove services from your business</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Business Selector -->
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; font-size: 14px; font-weight: 600; color: #333; margin-bottom: 10px;">Select Service Business</label>
+            <select id="service-business-selector" class="modern-select" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; background: white; cursor: pointer;">
+                <option value="">Choose a business...</option>
+            </select>
+        </div>
+
+        <!-- Services List -->
+        <div id="services-list-container" style="display: none;">
+            <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+                <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px; font-weight: 700;">Current Services</h3>
+                <div id="services-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
+                    <p style="grid-column: 1 / -1; text-align: center; color: #999; padding: 20px;">Loading services...</p>
+                </div>
+            </div>
+
+            <!-- Add Service Form -->
+            <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-top: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px; font-weight: 700;">Add New Service</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Service Name *</label>
+                        <input type="text" id="service-name-input" placeholder="e.g., Web Design" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-family: inherit; box-sizing: border-box;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Price (₱) *</label>
+                        <input type="number" id="service-price-input" placeholder="0.00" min="0" step="0.01" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-family: inherit; box-sizing: border-box;">
+                    </div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Description (Optional)</label>
+                    <textarea id="service-description-input" placeholder="Describe your service..." style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-family: inherit; min-height: 80px; box-sizing: border-box; resize: vertical;"></textarea>
+                </div>
+                <button onclick="addServiceFromBusinesses()" style="width: 100%; padding: 12px 24px; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    <span style="display: inline-flex; align-items: center; gap: 8px; justify-content: center;">
+                        <span>➕</span>
+                        <span>Add Service</span>
+                    </span>
+                </button>
+                <div id="service-message" style="margin-top: 12px; padding: 12px 14px; border-radius: 8px; display: none; font-size: 13px;"></div>
+            </div>
+        </div>
+
+        <!-- No Service Business Message -->
+        <div id="no-service-business-message" style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 20px; text-align: center; color: #856404;">
+            <div style="font-size: 32px; margin-bottom: 10px;">🔧</div>
+            <p style="margin: 0; font-size: 14px; font-weight: 600;">You don't have any service businesses yet</p>
+            <p style="margin: 8px 0 0 0; font-size: 13px; opacity: 0.9;">Create a service business in "My Business" to manage services here</p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -348,4 +412,223 @@ window.showBusinessJobs = function(businessId) {
             document.getElementById('business-items-content').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">Error loading jobs</div>';
         });
 };
+
+// ── Service Management Functions ──────────────────────────────────────────
+
+window.initServiceManagement = function() {
+    loadServiceBusinesses();
+};
+
+function loadServiceBusinesses() {
+    fetch('/api/my-businesses', {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => r.json())
+        .then(res => {
+            // Handle paginated response - data.data contains the actual businesses
+            let businesses = [];
+            if (res.data && res.data.data) {
+                businesses = res.data.data;
+            } else if (Array.isArray(res.data)) {
+                businesses = res.data;
+            }
+            
+            const selector = document.getElementById('service-business-selector');
+            const section = document.getElementById('service-management-section');
+            const noMessage = document.getElementById('no-service-business-message');
+            const listContainer = document.getElementById('services-list-container');
+            
+            if (!selector || !section) return;
+            
+            if (businesses.length === 0) {
+                section.style.display = 'block';
+                noMessage.style.display = 'block';
+                listContainer.style.display = 'none';
+                return;
+            }
+            
+            section.style.display = 'block';
+            noMessage.style.display = 'none';
+            listContainer.style.display = 'block';
+            
+            selector.innerHTML = '<option value="">Choose a business...</option>';
+            businesses.forEach(b => {
+                const option = document.createElement('option');
+                option.value = b.id;
+                option.textContent = b.name + ' (' + (b.category === 'food' ? '🍔 Food' : b.category === 'goods' ? '🛍️ Goods' : '🔧 Services') + ')';
+                selector.appendChild(option);
+            });
+            
+            selector.addEventListener('change', function() {
+                if (this.value) {
+                    loadServicesForBusiness(parseInt(this.value));
+                }
+            });
+        })
+        .catch(err => console.error('Error loading service businesses:', err));
+}
+
+function loadServicesForBusiness(businessId) {
+    const servicesList = document.getElementById('services-list');
+    if (!servicesList) return;
+    
+    servicesList.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #999; padding: 20px;">Loading services...</p>';
+    
+    fetch(`/api/businesses/${businessId}/services`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => r.json())
+        .then(res => {
+            // Handle paginated response - data.data contains the actual services
+            let services = [];
+            if (res.data && res.data.data) {
+                services = res.data.data;
+            } else if (Array.isArray(res.data)) {
+                services = res.data;
+            }
+            
+            if (services.length === 0) {
+                servicesList.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #999; padding: 20px;">No services yet. Add one below!</p>';
+                return;
+            }
+            
+            servicesList.innerHTML = services.map(service => `
+                <div style="background: white; border-radius: 8px; border: 2px solid #e0e0e0; padding: 15px; transition: all 0.2s;"
+                     onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'; this.style.borderColor='#9b59b6';"
+                     onmouseout="this.style.boxShadow='none'; this.style.borderColor='#e0e0e0';">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <div>
+                            <h4 style="margin: 0 0 4px 0; color: #333; font-size: 15px; font-weight: 700;">🔧 ${escapeHtml(service.name)}</h4>
+                            <p style="margin: 0; color: #666; font-size: 12px; line-height: 1.4;">${service.description ? escapeHtml(service.description) : 'No description'}</p>
+                        </div>
+                        <button onclick="deleteServiceFromBusinesses(${service.id})" style="background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap; margin-left: 10px;">Delete</button>
+                    </div>
+                    <div style="color: #9b59b6; font-weight: 700; font-size: 16px;">₱${parseFloat(service.price).toFixed(2)}</div>
+                </div>
+            `).join('');
+        })
+        .catch(err => {
+            console.error('Error loading services:', err);
+            servicesList.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: #e74c3c; padding: 20px;">Error loading services</p>';
+        });
+}
+
+window.addServiceFromBusinesses = function() {
+    const businessId = document.getElementById('service-business-selector').value;
+    const name = document.getElementById('service-name-input').value.trim();
+    const price = document.getElementById('service-price-input').value.trim();
+    const description = document.getElementById('service-description-input').value.trim();
+    const msgEl = document.getElementById('service-message');
+    
+    msgEl.style.display = 'none';
+    msgEl.innerHTML = '';
+    
+    if (!businessId) {
+        showServiceMessage('Please select a business first', 'error');
+        return;
+    }
+    
+    if (!name || !price) {
+        showServiceMessage('Service name and price are required', 'error');
+        return;
+    }
+    
+    if (isNaN(price) || parseFloat(price) < 0) {
+        showServiceMessage('Price must be a valid number', 'error');
+        return;
+    }
+    
+    const payload = {
+        name: name,
+        price: parseFloat(price),
+        description: description || null,
+    };
+    
+    fetch(`/api/businesses/${businessId}/services`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(payload),
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                showServiceMessage('✓ Service added successfully!', 'success');
+                document.getElementById('service-name-input').value = '';
+                document.getElementById('service-price-input').value = '';
+                document.getElementById('service-description-input').value = '';
+                setTimeout(() => {
+                    loadServicesForBusiness(parseInt(businessId));
+                    msgEl.style.display = 'none';
+                }, 1500);
+            } else {
+                showServiceMessage('✗ ' + (res.message || 'Failed to add service'), 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Error adding service:', err);
+            showServiceMessage('✗ Network error. Please try again.', 'error');
+        });
+};
+
+window.deleteServiceFromBusinesses = function(serviceId) {
+    if (!confirm('Are you sure you want to delete this service?')) return;
+    
+    const businessId = document.getElementById('service-business-selector').value;
+    
+    fetch(`/api/businesses/services/${serviceId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                loadServicesForBusiness(parseInt(businessId));
+            } else {
+                alert(res.message || 'Failed to delete service');
+            }
+        })
+        .catch(err => {
+            console.error('Error deleting service:', err);
+            alert('Error deleting service');
+        });
+};
+
+function showServiceMessage(message, type) {
+    const msgEl = document.getElementById('service-message');
+    msgEl.style.display = 'block';
+    msgEl.style.background = type === 'success' ? '#c8e6c9' : '#ffcdd2';
+    msgEl.style.color = type === 'success' ? '#2e7d32' : '#c62828';
+    msgEl.textContent = message;
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Initialize when section becomes active
+document.addEventListener('DOMContentLoaded', function() {
+    const observer = new MutationObserver(function() {
+        const section = document.getElementById('businesses');
+        if (section && section.classList.contains('active')) {
+            initServiceManagement();
+        }
+    });
+    const target = document.getElementById('businesses');
+    if (target) observer.observe(target, { attributes: true, attributeFilter: ['class'] });
+});
 </script>

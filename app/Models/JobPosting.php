@@ -12,7 +12,7 @@ class JobPosting extends Model
     protected $fillable = [
         'employer_id', 'business_id',
         'title', 'position', 'description', 'requirements',
-        'salary_range', 'location', 'job_type', 'status',
+        'salary_range', 'location', 'job_type', 'status', 'deadline',
     ];
 
     // status: 'open' | 'closed'

@@ -430,6 +430,5 @@
     @endif
     <script src="{{ asset('js/destinations.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/employers.js') }}?v={{ time() }}"></script>
-    <script src="{{ asset('js/business-management.js') }}?v={{ time() }}"></script>
 
     @stack('scripts')

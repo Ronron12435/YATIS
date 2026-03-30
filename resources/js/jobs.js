@@ -60,7 +60,10 @@ const JobsModule = (() => {
 
         jobsList.innerHTML = jobs.map(job => {
             const postedDate = new Date(job.created_at).toLocaleDateString();
-            const statusBadge = job.status === 'open' 
+            const isExpired = job.deadline && new Date(job.deadline) < new Date();
+            const statusBadge = isExpired
+                ? '<span style="background:#e74c3c; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Expired</span>'
+                : job.status === 'open' 
                 ? '<span style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Open</span>'
                 : '<span style="background:#95a5a6; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Closed</span>';
 
@@ -344,7 +347,10 @@ const JobsModule = (() => {
 
         myJobsList.innerHTML = jobs.map(job => {
             const applicationsCount = job.applications_count || 0;
-            const statusBadge = job.status === 'open' 
+            const isExpired = job.deadline && new Date(job.deadline) < new Date();
+            const statusBadge = isExpired
+                ? '<span style="background:#e74c3c; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Expired</span>'
+                : job.status === 'open' 
                 ? '<span style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Open</span>'
                 : '<span style="background:#95a5a6; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Closed</span>';
 

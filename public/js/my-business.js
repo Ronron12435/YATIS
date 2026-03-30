@@ -320,8 +320,8 @@ function populateFormWithCurrentData() {
         .then(res => {
             const business = res.data;
             if (business) {
-                document.getElementById('businessName').value = business.business_name || '';
-                document.getElementById('businessType').value = business.business_type || '';
+                document.getElementById('businessName').value = business.name || '';
+                document.getElementById('businessType').value = business.category || '';
                 document.getElementById('description').value = business.description || '';
                 document.getElementById('phone').value = business.phone || '';
                 document.getElementById('email').value = business.email || '';
@@ -499,6 +499,8 @@ function closeModal() {
     }
 }
 
+// ── Register/Update Business ──────────────────────────────────────────────────
+
 window.registerBusiness = function (e) {
     e.preventDefault();
     const msgEl = document.getElementById('businessMessage');
@@ -597,7 +599,159 @@ window.registerBusiness = function (e) {
         });
 };
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// ── Services Management ──────────────────────────────────────────────────────
+
+window.openManageServicesModal = function () {
+    if (!currentBusinessId) {
+        showModal('Error', 'Please select a business first', 'error');
+        return;
+    }
+    
+    const modal = document.getElementById('servicesModal');
+    if (modal) {
+        modal.style.display = 'block';
+        loadServices();
+    }
+};
+
+window.closeServicesModal = function () {
+    const modal = document.getElementById('servicesModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    // Reset form
+    document.getElementById('serviceName').value = '';
+    document.getElementById('servicePrice').value = '';
+    document.getElementById('serviceDescription').value = '';
+    document.getElementById('servicesMessage').innerHTML = '';
+};
+
+function loadServices() {
+    const servicesList = document.getElementById('servicesList');
+    if (!servicesList || !currentBusinessId) return;
+
+    servicesList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Loading services...</p>';
+
+    fetch(`/api/businesses/${currentBusinessId}/services`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        })
+        .then(res => {
+            const services = res.data || [];
+            if (services.length === 0) {
+                servicesList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No services yet. Add one above!</p>';
+                return;
+            }
+            
+            servicesList.innerHTML = services.map(service => `
+                <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: white;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                        <div>
+                            <h5 style="margin: 0 0 4px 0; color: #333; font-size: 14px; font-weight: 600;">${escapeHtml(service.name)}</h5>
+                            <p style="margin: 0; color: #666; font-size: 13px;">${service.description ? escapeHtml(service.description) : 'No description'}</p>
+                        </div>
+                        <button onclick="deleteService(${service.id})" style="background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 600;">Delete</button>
+                    </div>
+                    <div style="color: #00bcd4; font-weight: 600; font-size: 14px;">₱${parseFloat(service.price).toFixed(2)}</div>
+                </div>
+            `).join('');
+        })
+        .catch(() => {
+            servicesList.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading services</p>';
+        });
+}
+
+window.addService = function () {
+    const msgEl = document.getElementById('servicesMessage');
+    msgEl.innerHTML = '';
+
+    const name = document.getElementById('serviceName').value.trim();
+    const price = document.getElementById('servicePrice').value.trim();
+    const description = document.getElementById('serviceDescription').value.trim();
+
+    if (!name || !price) {
+        msgEl.innerHTML = '<div class="message error">Service name and price are required.</div>';
+        return;
+    }
+
+    if (isNaN(price) || parseFloat(price) < 0) {
+        msgEl.innerHTML = '<div class="message error">Price must be a valid number.</div>';
+        return;
+    }
+
+    const payload = {
+        name: name,
+        price: parseFloat(price),
+        description: description || null,
+    };
+
+    fetch(`/api/businesses/${currentBusinessId}/services`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(payload),
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                msgEl.innerHTML = '<div class="message success">✓ Service added successfully!</div>';
+                document.getElementById('serviceName').value = '';
+                document.getElementById('servicePrice').value = '';
+                document.getElementById('serviceDescription').value = '';
+                setTimeout(() => {
+                    loadServices();
+                    msgEl.innerHTML = '';
+                }, 1000);
+            } else {
+                msgEl.innerHTML = `<div class="message error">✗ ${res.message || 'Failed to add service'}</div>`;
+            }
+        })
+        .catch(() => {
+            msgEl.innerHTML = '<div class="message error">✗ Network error. Please try again.</div>';
+        });
+};
+
+window.deleteService = function (serviceId) {
+    if (!confirm('Are you sure you want to delete this service?')) return;
+
+    fetch(`/api/businesses/services/${serviceId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                loadServices();
+            } else {
+                alert(res.message || 'Failed to delete service');
+            }
+        })
+        .catch(() => {
+            alert('Error deleting service');
+        });
+};
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// ── Services Management ──────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', function () {
     const section = document.getElementById('my-business');

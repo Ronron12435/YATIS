@@ -194,12 +194,40 @@
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
                             Register Business
                         </button>
-                        <button type="button" class="modern-btn modern-btn-primary" onclick="openManageBusinessModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.62l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.48.1.62l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.62l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.48-.1-.62l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                            Manage Business
-                        </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Services Management Modal -->
+<div id="servicesModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; overflow-y: auto;">
+    <div style="background: white; border-radius: 12px; max-width: 600px; margin: 40px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Manage Services</h3>
+            <button onclick="closeServicesModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <div id="servicesMessage"></div>
+            
+            <!-- Add Service Form -->
+            <div id="addServiceForm" style="margin-bottom: 20px; padding: 16px; background: #f9f9f9; border-radius: 8px; border: 2px dashed #00bcd4;">
+                <h4 style="margin: 0 0 16px 0; color: #1a3a52; font-size: 14px; font-weight: 600;">Add New Service</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <input type="text" id="serviceName" placeholder="Service Name" class="modern-input" style="padding: 10px 12px; font-size: 13px;">
+                    <input type="number" id="servicePrice" placeholder="Price" class="modern-input" style="padding: 10px 12px; font-size: 13px;" min="0" step="0.01">
+                </div>
+                <textarea id="serviceDescription" placeholder="Service Description (optional)" class="modern-textarea" style="padding: 10px 12px; font-size: 13px; min-height: 80px; margin-bottom: 12px;"></textarea>
+                <button onclick="addService()" class="modern-btn modern-btn-primary" style="width: 100%; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    Add Service
+                </button>
+            </div>
+
+            <!-- Services List -->
+            <div id="servicesList" style="max-height: 400px; overflow-y: auto;">
+                <p style="color: #999; text-align: center; padding: 20px;">Loading services...</p>
             </div>
         </div>
     </div>
