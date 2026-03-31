@@ -32,11 +32,10 @@ const JobsModule = (() => {
     const setupEventListeners = () => {
         const searchInput = document.getElementById('job-search');
         const typeFilter = document.getElementById('job-type-filter');
-        const applicationForm = document.getElementById('application-form');
 
         if (searchInput) searchInput.addEventListener('input', filterJobs);
         if (typeFilter) typeFilter.addEventListener('change', filterJobs);
-        if (applicationForm) applicationForm.addEventListener('submit', submitApplication);
+        // application-form submit is handled globally in DOMContentLoaded below
     };
 
     const getUserRole = () => {
@@ -298,9 +297,9 @@ const JobsModule = (() => {
             if (response.success) {
                 showModal('Success', 'Application submitted successfully!', [
                     {
-                        text: 'OK',
+                        text: 'View My Applications',
                         color: '#27ae60',
-                        onclick: "document.getElementById('custom-modal').remove(); document.getElementById('custom-modal-overlay').remove(); JobsModule.closeModals(); location.reload();"
+                        onclick: "document.getElementById('custom-modal').remove(); document.getElementById('custom-modal-overlay').remove(); JobsModule.closeModals(); showSection('my-applications'); setTimeout(function(){ if(typeof loadMyApplications === 'function') loadMyApplications(); }, 300);"
                     }
                 ]);
             } else {
@@ -1029,9 +1028,25 @@ const JobsModule = (() => {
         showModal,
         editJob,
         deleteJob,
-        proceedDeleteJob
+        proceedDeleteJob,
+        submitApplication
     };
 })();
+
+// Ensure the application form submit handler is always attached, even when
+// JobsModule.init() hasn't been called (e.g. applying from the businesses map pins)
+document.addEventListener('DOMContentLoaded', function () {
+    const applicationForm = document.getElementById('application-form');
+    if (applicationForm) {
+        applicationForm.addEventListener('submit', function (e) {
+            // Only handle if JobsModule hasn't already attached its own listener
+            // JobsModule.submitApplication is exposed via the module — call it directly
+            if (typeof JobsModule !== 'undefined' && JobsModule.submitApplication) {
+                JobsModule.submitApplication(e);
+            }
+        });
+    }
+});
 
 // Global functions for job posting (business accounts)
 function loadBusinessesForJobPosting() {

@@ -185,8 +185,10 @@
 
         // Restore active section on page load - use sessionStorage for refresh, dashboard for fresh login
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if there's a saved section from sessionStorage (page refresh while logged in)
-            const activeSection = sessionStorage.getItem('activeSection') || 'dashboard';
+            // Only restore section if this is a same-tab page refresh (not a fresh navigation)
+            const isRefresh = sessionStorage.getItem('pageLoaded') === 'true';
+            const activeSection = isRefresh ? (sessionStorage.getItem('activeSection') || 'dashboard') : 'dashboard';
+            sessionStorage.setItem('pageLoaded', 'true');
             const sectionElement = document.getElementById(activeSection);
             const sidebarItem = document.querySelector(`[onclick="showSection('${activeSection}')"]`);
             

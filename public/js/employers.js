@@ -147,14 +147,26 @@ const EmployersModule = (() => {
     };
 
     const loadMyApplications = () => {
-        fetch('/api/jobs/applications/my-applications')
+        const container = document.getElementById('jl-apps-list');
+        if (container) container.innerHTML = '<p style="color:#999;padding:20px;text-align:center;">Loading your applications...</p>';
+
+        fetch('/api/jobs/applications/my-applications', { credentials: 'include' })
             .then(r => r.json())
             .then(response => {
                 if (response.success) {
-                    renderMyApplications(response.data || []);
+                    let apps = response.data || [];
+                    if (!Array.isArray(apps)) {
+                        apps = Object.values(apps);
+                    }
+                    renderMyApplications(apps);
+                } else {
+                    if (container) container.innerHTML = '<p style="color:#999;padding:20px;text-align:center;">Could not load applications.</p>';
                 }
             })
-            .catch(err => console.error('Error loading applications:', err));
+            .catch(err => {
+                console.error('Error loading applications:', err);
+                if (container) container.innerHTML = '<p style="color:#e74c3c;padding:20px;text-align:center;">Error loading applications.</p>';
+            });
     };
 
     const renderMyApplications = (applications) => {
@@ -162,7 +174,7 @@ const EmployersModule = (() => {
         if (!container) return;
 
         if (!applications || applications.length === 0) {
-            showModal('No Applications', 'You haven\'t applied to any jobs yet');
+            container.innerHTML = '<p style="color:#999; text-align:center; padding:40px;">You haven\'t applied to any jobs yet.</p>';
             return;
         }
 

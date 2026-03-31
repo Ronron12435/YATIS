@@ -30,10 +30,6 @@
 </div>
 <div id="job-listings" class="content-section">
     <h1 class="page-title">📋 Job Listings</h1>
-    <div style="margin-bottom:20px;">
-        <input type="text" id="jl-search" placeholder="Search jobs by title, company, or location..." 
-            style="width:100%; padding:12px 16px; border:1px solid #ddd; border-radius:8px; font-size:14px;">
-    </div>
     <div id="jl-jobs-list"><p style="color:#999;padding:20px;text-align:center;">Loading job postings...</p></div>
 </div>
 <div id="my-applications" class="content-section">
