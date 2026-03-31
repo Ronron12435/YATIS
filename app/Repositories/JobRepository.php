@@ -120,17 +120,7 @@ class JobRepository
 
     public function getApplicationsByUser(int $userId)
     {
-        \Log::info('getApplicationsByUser called', ['userId' => $userId]);
-        
-        // First, check if there are any applications at all
-        $allApps = DB::table('job_applications')->where('user_id', $userId)->get();
-        \Log::info('Raw applications for user', [
-            'userId' => $userId,
-            'count' => $allApps->count(),
-            'data' => $allApps->toArray(),
-        ]);
-        
-        $applications = DB::table('job_applications as ja')
+        return DB::table('job_applications as ja')
             ->leftJoin('job_postings as jp', 'jp.id', '=', 'ja.job_posting_id')
             ->leftJoin('businesses as b', 'b.id', '=', 'jp.business_id')
             ->select([
@@ -146,14 +136,6 @@ class JobRepository
             ->where('ja.user_id', $userId)
             ->orderByDesc('ja.applied_at')
             ->get();
-        
-        \Log::info('getApplicationsByUser query result', [
-            'userId' => $userId,
-            'count' => $applications->count(),
-            'applications' => $applications->toArray(),
-        ]);
-        
-        return $applications;
     }
 
     public function getApplicationsByJob(int $jobId)

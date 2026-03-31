@@ -60,34 +60,27 @@ function loadDestinationsDashboard() {
 function initDestMap() {
     const container = document.getElementById('dest-map-container');
     if (!container) {
-        console.log('✗ Map container not found');
         return;
     }
 
     if (destMap) {
-        console.log('Map already initialized, refreshing size');
         setTimeout(() => destMap.invalidateSize(), 100);
         return;
     }
 
-    console.log('=== INITIALIZING DESTINATIONS MAP ===');
     destMap = L.map('dest-map-container', { zoomControl: true }).setView([10.8967, 123.4253], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19,
     }).addTo(destMap);
 
-    console.log('✓ Map initialized with default view');
     
     // Create marker immediately with default location
     userLat = 10.8967;
     userLng = 123.4253;
-    console.log('Setting default location:', userLat, userLng);
     createUserLocationMarker(userLat, userLng);
-    console.log('✓ Default marker created');
     
     // Then load actual location from database and update marker
-    console.log('Calling loadUserLocationFromDatabase()');
     loadUserLocationFromDatabase();
 
     // Map search
@@ -105,13 +98,9 @@ function initDestMap() {
 
 function createUserLocationMarker(lat, lng) {
     if (!destMap) {
-        console.log('✗ Map not ready, cannot create marker');
         return;
     }
     
-    console.log('=== CREATING USER LOCATION MARKER ===');
-    console.log('Input coordinates - lat:', lat, 'lng:', lng);
-    console.log('Type - lat:', typeof lat, 'lng:', typeof lng);
     
     // Validate coordinates
     if (isNaN(lat) || isNaN(lng)) {
@@ -124,15 +113,12 @@ function createUserLocationMarker(lat, lng) {
         return;
     }
     
-    console.log('✓ Coordinates are valid');
     
     // Remove old markers
     if (window._destUserMarker) {
-        console.log('Removing old user marker');
         destMap.removeLayer(window._destUserMarker);
     }
     if (window._destUserAccuracy) {
-        console.log('Removing old accuracy circle');
         destMap.removeLayer(window._destUserAccuracy);
     }
     
@@ -144,7 +130,6 @@ function createUserLocationMarker(lat, lng) {
         fillOpacity: 0.15,
         weight: 1
     }).addTo(destMap);
-    console.log('✓ Accuracy circle added');
     
     // Cyan dot marker - LARGER and MORE VISIBLE
     window._destUserMarker = L.circleMarker([lat, lng], {
@@ -157,8 +142,6 @@ function createUserLocationMarker(lat, lng) {
         zIndex: 1000
     }).addTo(destMap).bindPopup('<b>📍 Your Location</b><br>Lat: ' + lat.toFixed(4) + '<br>Lng: ' + lng.toFixed(4));
     
-    console.log('✓ User location marker created at:', lat, lng);
-    console.log('✓ Marker object:', window._destUserMarker);
 }
 
 function updateUserMarker(location) {
@@ -308,7 +291,6 @@ function renderDestMapMarkers(filter) {
 
 window.getDirectionsTo = function (lat, lng, name) {
     if (!userLat || !userLng) {
-        console.log('Location not available, attempting to load...');
         loadUserLocationFromDatabase();
         setTimeout(() => {
             if (userLat && userLng) {
@@ -427,7 +409,6 @@ function initDirectionsMap(fromLat, fromLng, toLat, toLng, destName) {
             const bounds = L.latLngBounds([fromLat, fromLng], [toLat, toLng]);
             window._directionsMap.fitBounds(bounds, { padding: [60, 60] });
         } catch (e) {
-            console.log('Could not fit bounds');
         }
     }, 500);
     
@@ -599,17 +580,14 @@ window.closeWritePanel = function () {
 };
 
 window.submitReview = function () {
-    console.log('=== SUBMIT REVIEW CALLED ===');
     
     const destId = document.getElementById('dest-write-dest-id').value;
     const rating = document.getElementById('dest-write-rating').value;
     const review = document.getElementById('dest-write-text').value.trim();
     const errEl = document.getElementById('dest-write-error');
 
-    console.log('Form data:', { destId, rating, review });
 
     if (!rating || !review) {
-        console.log('✗ Validation failed - missing rating or review');
         errEl.textContent = 'Please fill in all fields.';
         return;
     }
@@ -619,11 +597,8 @@ window.submitReview = function () {
     btn.textContent = 'Submitting...';
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    console.log('CSRF Token:', csrfToken ? 'Present' : 'Missing');
 
     const payload = { rating: parseInt(rating), review };
-    console.log('Payload:', JSON.stringify(payload));
-    console.log('Endpoint: /api/destinations/' + destId + '/reviews');
 
     fetch(`/api/destinations/${destId}/reviews`, {
         method: 'POST',
@@ -637,10 +612,6 @@ window.submitReview = function () {
         body: JSON.stringify(payload),
     })
         .then(r => {
-            console.log('Response Status:', r.status, r.statusText);
-            console.log('Response Headers:', {
-                'Content-Type': r.headers.get('Content-Type'),
-            });
             if (!r.ok) {
                 console.error('✗ HTTP Error:', r.status);
                 throw new Error(`HTTP ${r.status}`);
@@ -648,15 +619,12 @@ window.submitReview = function () {
             return r.json();
         })
         .then(res => {
-            console.log('✓ Response received:', JSON.stringify(res, null, 2));
             btn.disabled = false;
             btn.textContent = 'Submit Review';
             if (res.success) {
-                console.log('✓ Review submitted successfully');
                 closeWritePanel();
                 loadDestinationsDashboard();
             } else {
-                console.log('✗ API returned success: false');
                 errEl.textContent = res.message || 'Failed to submit review.';
             }
         })
@@ -721,31 +689,20 @@ function formatDate(dateStr) {
 }
 
 function loadUserLocationFromDatabase() {
-    console.log('=== LOADING USER LOCATION FROM DATABASE ===');
-    console.log('Current userLat:', userLat, 'userLng:', userLng);
-    console.log('destMap exists:', !!destMap);
     
     fetch('/api/user/location', {
         credentials: 'include',
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     })
         .then(r => {
-            console.log('API Response Status:', r.status, r.statusText);
             if (!r.ok) {
                 throw new Error(`HTTP ${r.status}`);
             }
             return r.json();
         })
         .then(response => {
-            console.log('=== API RESPONSE ===');
-            console.log('Full response:', JSON.stringify(response, null, 2));
-            console.log('response.success:', response.success);
-            console.log('response.data:', response.data);
             
             if (response.success && response.data) {
-                console.log('Data object keys:', Object.keys(response.data));
-                console.log('latitude value:', response.data.latitude, 'type:', typeof response.data.latitude);
-                console.log('longitude value:', response.data.longitude, 'type:', typeof response.data.longitude);
                 
                 if (response.data.latitude !== null && response.data.latitude !== undefined && 
                     response.data.longitude !== null && response.data.longitude !== undefined) {
@@ -753,24 +710,17 @@ function loadUserLocationFromDatabase() {
                     userLat = parseFloat(response.data.latitude);
                     userLng = parseFloat(response.data.longitude);
                     
-                    console.log('✓ Parsed userLat:', userLat, 'userLng:', userLng);
-                    console.log('✓ Location loaded from database:', userLat, userLng);
                     
                     // Update marker immediately with actual location
                     if (destMap) {
-                        console.log('✓ destMap exists, updating marker');
                         createUserLocationMarker(userLat, userLng);
                         updateGpsStatus('active', 'Location loaded from database');
                     } else {
-                        console.log('✗ destMap does not exist yet');
                     }
                 } else {
-                    console.log('✗ latitude or longitude is null/undefined');
                     updateGpsStatus('active', 'Using default location');
                 }
             } else {
-                console.log('✗ response.success is false or response.data is missing');
-                console.log('response.message:', response.message);
                 updateGpsStatus('active', 'Using default location');
             }
         })
@@ -801,7 +751,6 @@ function saveLocationToDatabase(lat, lng) {
         .then(r => r.json())
         .then(response => {
             if (response.success) {
-                console.log('Location saved to database');
             }
         })
         .catch(err => console.log('Error saving location:', err));

@@ -83,25 +83,14 @@ class JobController extends Controller
 
     public function apply(Request $request, $id)
     {
-        \Log::info('=== JOB APPLICATION DEBUG ===');
-        \Log::info('Job ID:', ['id' => $id]);
-        \Log::info('User ID:', ['user_id' => $request->user()->id]);
-        \Log::info('Request all:', $request->all());
-        \Log::info('Has file resume:', ['has_file' => $request->hasFile('resume')]);
-        \Log::info('Files:', $request->files->all());
-
         $validated = $request->validate([
             'cover_letter' => 'nullable|string',
             'resume'       => 'nullable|file|mimes:pdf,doc,docx|max:5120',
         ]);
 
-        \Log::info('Validated data:', $validated);
-
         $resumePath = null;
         if ($request->hasFile('resume')) {
-            \Log::info('Storing resume file...');
             $resumePath = $request->file('resume')->store('resumes', 'public');
-            \Log::info('Resume stored at:', ['path' => $resumePath]);
         }
 
         $dto = new ApplyJobDTO(
@@ -111,15 +100,7 @@ class JobController extends Controller
             resumePath: $resumePath,
         );
 
-        \Log::info('DTO created:', [
-            'jobId' => $dto->jobId,
-            'userId' => $dto->userId,
-            'resumePath' => $dto->resumePath,
-        ]);
-
         $response = $this->jobService->apply($dto);
-        
-        \Log::info('Service response:', $response->toArray());
 
         return response()->json($response->toArray(), $response->statusCode);
     }
