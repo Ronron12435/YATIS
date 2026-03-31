@@ -57,41 +57,7 @@
                     <select class="modern-select" id="businessSelector"></select>
                 </div>
                 
-                <!-- Business Info Display -->
-                <div id="businessInfoDisplay" style="display: none;">
-                    <div class="business-info-grid">
-                        <div class="business-info-card">
-                            <div class="business-info-label">Business Name</div>
-                            <div class="business-info-value" id="displayBusinessName">-</div>
-                        </div>
-                        <div class="business-info-card">
-                            <div class="business-info-label">Business Type</div>
-                            <div class="business-info-value" id="displayBusinessType">-</div>
-                        </div>
-                        <div class="business-info-card">
-                            <div class="business-info-label">Phone</div>
-                            <div class="business-info-value" id="displayPhone">-</div>
-                        </div>
-                        <div class="business-info-card">
-                            <div class="business-info-label">Email</div>
-                            <div class="business-info-value" id="displayEmail">-</div>
-                        </div>
-                        <div class="business-info-card form-row-full">
-                            <div class="business-info-label">Location</div>
-                            <div class="business-info-value" id="displayLocation">-</div>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 12px;">
-                        <button type="button" class="modern-btn modern-btn-primary" onclick="toggleBusinessForm()">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>
-                            Edit Business
-                        </button>
-                        <button type="button" class="modern-btn" onclick="showCreateNewBusinessForm()" style="background: #4caf50; color: white;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                            Create New Business
-                        </button>
-                    </div>
-                </div>
+
 
                 <!-- Business Form -->
                 <form id="businessForm" class="modern-form" onsubmit="registerBusiness(event)">
@@ -194,6 +160,10 @@
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
                             Register Business
                         </button>
+                        <button type="button" class="modern-btn modern-btn-primary" onclick="openManageBusinessModal()" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            Manage Business
+                        </button>
                     </div>
                 </form>
             </div>
@@ -201,34 +171,211 @@
     </div>
 </div>
 
-<!-- Services Management Modal -->
-<div id="servicesModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; overflow-y: auto;">
-    <div style="background: white; border-radius: 12px; max-width: 600px; margin: 40px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;">
+<!-- Manage Business Modal -->
+<div id="manageBusinessModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; overflow-y: auto;">
+    <div style="background: white; border-radius: 12px; max-width: 500px; margin: 40px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;">
         <div style="padding: 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa;">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Manage Services</h3>
-            <button onclick="closeServicesModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Manage Business</h3>
+            <button onclick="closeManageBusinessModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
         </div>
         <div style="padding: 20px;">
-            <div id="servicesMessage"></div>
-            
-            <!-- Add Service Form -->
-            <div id="addServiceForm" style="margin-bottom: 20px; padding: 16px; background: #f9f9f9; border-radius: 8px; border: 2px dashed #00bcd4;">
-                <h4 style="margin: 0 0 16px 0; color: #1a3a52; font-size: 14px; font-weight: 600;">Add New Service</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-                    <input type="text" id="serviceName" placeholder="Service Name" class="modern-input" style="padding: 10px 12px; font-size: 13px;">
-                    <input type="number" id="servicePrice" placeholder="Price" class="modern-input" style="padding: 10px 12px; font-size: 13px;" min="0" step="0.01">
-                </div>
-                <textarea id="serviceDescription" placeholder="Service Description (optional)" class="modern-textarea" style="padding: 10px 12px; font-size: 13px; min-height: 80px; margin-bottom: 12px;"></textarea>
-                <button onclick="addService()" class="modern-btn modern-btn-primary" style="width: 100%; justify-content: center;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                    Add Service
-                </button>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 14px; font-weight: 600; color: #333; margin-bottom: 10px;">Select Business</label>
+                <select id="manageBusinessSelector" class="modern-select" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; background: white; cursor: pointer;">
+                    <option value="">Choose a business...</option>
+                </select>
             </div>
-
-            <!-- Services List -->
-            <div id="servicesList" style="max-height: 400px; overflow-y: auto;">
-                <p style="color: #999; text-align: center; padding: 20px;">Loading services...</p>
+            
+            <div id="manageBusinessActions" style="display: none; display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="editSelectedBusiness()" class="modern-btn modern-btn-primary" style="width: 100%; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg>
+                    Edit Business Info
+                </button>
+                <button id="addMenuBtn" onclick="openMenuListModal()" class="modern-btn" style="width: 100%; justify-content: center; background: #3498db; color: white; display: none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                    Add Menu Items
+                </button>
+                <button id="addProductBtn" onclick="manageProducts()" class="modern-btn" style="width: 100%; justify-content: center; background: #27ae60; color: white; display: none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    Add Products
+                </button>
+                <button id="addServiceBtn" onclick="manageServices()" class="modern-btn" style="width: 100%; justify-content: center; background: #e74c3c; color: white; display: none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                    Add Services
+                </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Menu List Modal -->
+<div id="menuListModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10001; overflow-y: auto; padding: 20px;">
+    <div style="background: white; border-radius: 12px; max-width: 1200px; margin: 0 auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+        <div style="padding: 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa; flex-shrink: 0;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Menu Items</h3>
+            <button onclick="closeMenuListModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
+            <div id="menuItemsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; min-height: 100px;">
+                <div style="text-align: center; color: #999; grid-column: 1 / -1; padding: 40px 20px;">No menu items yet</div>
+            </div>
+        </div>
+        <div style="padding: 20px; border-top: 1px solid #f0f0f0; background: #fafafa; flex-shrink: 0; display: flex; justify-content: center;">
+            <button onclick="openAddMenuItemModal()" class="modern-btn modern-btn-primary" style="width: auto; padding: 12px 32px; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                Add Menu Item
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Menu Item Modal -->
+<div id="addMenuItemModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10002; overflow-y: auto;">
+    <div style="background: white; border-radius: 12px; max-width: 500px; margin: 40px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Add Menu Item</h3>
+            <button onclick="closeAddMenuItemModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <form id="addMenuItemForm" onsubmit="submitMenuItemForm(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Food Name</label>
+                    <input type="text" id="menuItemName" class="modern-input" placeholder="e.g., Adobo" required style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Category</label>
+                    <input type="text" id="menuItemCategory" class="modern-input" placeholder="e.g., Main Course, Appetizer, Dessert" required style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Price</label>
+                    <input type="number" id="menuItemPrice" class="modern-input" placeholder="e.g., 150.00" step="0.01" min="0" required style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Picture</label>
+                    <input type="file" id="menuItemImage" class="modern-input" accept="image/*" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                    <div id="imagePreview" style="margin-top: 10px; display: none;">
+                        <img id="previewImg" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                    </div>
+                </div>
+                <button type="submit" class="modern-btn modern-btn-primary" style="width: 100%; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4z"/></svg>
+                    Add Item
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Product List Modal -->
+<div id="productListModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10001; overflow-y: auto; padding: 20px;">
+    <div style="background: white; border-radius: 12px; max-width: 1200px; margin: 0 auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+        <div style="padding: 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa; flex-shrink: 0;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Products</h3>
+            <button onclick="closeProductListModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
+            <div id="productsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; min-height: 100px;">
+                <div style="text-align: center; color: #999; grid-column: 1 / -1; padding: 40px 20px;">No products yet</div>
+            </div>
+        </div>
+        <div style="padding: 20px; border-top: 1px solid #f0f0f0; background: #fafafa; flex-shrink: 0; display: flex; justify-content: center;">
+            <button onclick="openAddProductModal()" class="modern-btn modern-btn-primary" style="width: auto; padding: 12px 32px; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                Add Product
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div id="addProductModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10002; overflow-y: auto;">
+    <div style="background: white; border-radius: 12px; max-width: 500px; margin: 40px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Add Product</h3>
+            <button onclick="closeAddProductModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <form id="addProductForm" onsubmit="submitProductForm(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Product Name</label>
+                    <input type="text" id="productName" class="modern-input" placeholder="e.g., T-Shirt" required style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Price</label>
+                    <input type="number" id="productPrice" class="modern-input" placeholder="e.g., 299.00" step="0.01" min="0" required style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Stock</label>
+                    <input type="number" id="productStock" class="modern-input" placeholder="e.g., 50" min="0" required style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Picture</label>
+                    <input type="file" id="productImage" class="modern-input" accept="image/*" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                    <div id="productImagePreview" style="margin-top: 10px; display: none;">
+                        <img id="productPreviewImg" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                    </div>
+                </div>
+                <button type="submit" class="modern-btn modern-btn-primary" style="width: 100%; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4z"/></svg>
+                    Add Product
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Service List Modal -->
+<div id="serviceListModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10001; overflow-y: auto; padding: 20px;">
+    <div style="background: white; border-radius: 12px; max-width: 1200px; margin: 0 auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+        <div style="padding: 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa; flex-shrink: 0;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Services</h3>
+            <button onclick="closeServiceListModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
+            <div id="servicesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; min-height: 100px;">
+                <div style="text-align: center; color: #999; grid-column: 1 / -1; padding: 40px 20px;">No services yet</div>
+            </div>
+        </div>
+        <div style="padding: 20px; border-top: 1px solid #f0f0f0; background: #fafafa; flex-shrink: 0; display: flex; justify-content: center;">
+            <button onclick="openAddServiceModal()" class="modern-btn modern-btn-primary" style="width: auto; padding: 12px 32px; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                Add Service
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Service Modal -->
+<div id="addServiceModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10002; overflow-y: auto;">
+    <div style="background: white; border-radius: 12px; max-width: 500px; margin: 40px auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); overflow: hidden;">
+        <div style="padding: 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: #fafafa;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1a3a52;">Add Service</h3>
+            <button onclick="closeAddServiceModal()" style="background: none; border: none; font-size: 28px; color: #999; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div style="padding: 20px;">
+            <form id="addServiceForm" onsubmit="submitServiceForm(event)" style="display: flex; flex-direction: column; gap: 15px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Service Name</label>
+                    <input type="text" id="serviceName" class="modern-input" placeholder="e.g., Web Design" required style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Price</label>
+                    <input type="number" id="servicePrice" class="modern-input" placeholder="e.g., 5000.00" step="0.01" min="0" required style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Picture</label>
+                    <input type="file" id="serviceImage" class="modern-input" accept="image/*" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px;">
+                    <div id="serviceImagePreview" style="margin-top: 10px; display: none;">
+                        <img id="servicePreviewImg" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                    </div>
+                </div>
+                <button type="submit" class="modern-btn modern-btn-primary" style="width: 100%; justify-content: center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4z"/></svg>
+                    Add Service
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+

@@ -135,6 +135,7 @@ class BusinessController extends Controller
     {
         $validated = $request->validate([
             'name'        => 'required|string|max:255',
+            'category'    => 'required|string|max:255',
             'description' => 'nullable|string',
             'price'       => 'required|numeric|min:0',
             'image'       => 'nullable|image|max:2048',

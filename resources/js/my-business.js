@@ -7,6 +7,18 @@ let businessLocationMap = null;
 let businessLocationMarker = null;
 let geocodingTimeout = null;
 
+// Menu management
+let currentMenuBusinessId = null;
+let currentMenuItems = [];
+
+// Product management
+let currentProductBusinessId = null;
+let currentProducts = [];
+
+// Service management
+let currentServiceBusinessId = null;
+let currentServices = [];
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 window.initMyBusinessSection = function () {
@@ -75,7 +87,6 @@ function loadBusinessData() {
 
 function loadSelectedBusiness(businessId) {
     const form = document.getElementById('businessForm');
-    const infoDisplay = document.getElementById('businessInfoDisplay');
     
     fetch(`/api/businesses/${businessId}`, {
         credentials: 'include',
@@ -87,16 +98,8 @@ function loadSelectedBusiness(businessId) {
             if (business) {
                 currentBusinessId = business.id;
                 
-                // Display business info
-                document.getElementById('displayBusinessName').textContent = business.name || '-';
-                document.getElementById('displayBusinessType').textContent = capitalizeType(business.category) || '-';
-                document.getElementById('displayPhone').textContent = business.phone || '-';
-                document.getElementById('displayEmail').textContent = business.email || '-';
-                document.getElementById('displayLocation').textContent = business.address || '-';
-                
-                // Hide form, show info
-                form.style.display = 'none';
-                infoDisplay.style.display = 'block';
+                // Always show form
+                form.style.display = 'block';
             }
         })
         .catch(() => {});
@@ -326,8 +329,13 @@ function populateFormWithCurrentData() {
                 document.getElementById('phone').value = business.phone || '';
                 document.getElementById('email').value = business.email || '';
                 document.getElementById('address').value = business.address || '';
-                document.getElementById('openingTime').value = business.opening_time || '';
-                document.getElementById('closingTime').value = business.closing_time || '';
+                
+                // Strip seconds from time format (H:i:s -> H:i)
+                const openingTime = business.opening_time || '';
+                const closingTime = business.closing_time || '';
+                document.getElementById('openingTime').value = openingTime ? openingTime.substring(0, 5) : '';
+                document.getElementById('closingTime').value = closingTime ? closingTime.substring(0, 5) : '';
+                
                 document.getElementById('businessLatitude').value = business.latitude || '';
                 document.getElementById('businessLongitude').value = business.longitude || '';
                 
@@ -599,131 +607,326 @@ window.registerBusiness = function (e) {
         });
 };
 
-// ── Services Management ──────────────────────────────────────────────────────
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
 
-window.openManageServicesModal = function () {
-    if (!currentBusinessId) {
-        showModal('Error', 'Please select a business first', 'error');
-        return;
-    }
+// ── Manage Business Modal ─────────────────────────────────────────────────────
+
+window.openManageBusinessModal = function () {
+    const modal = document.getElementById('manageBusinessModal');
+    const selector = document.getElementById('manageBusinessSelector');
     
-    const modal = document.getElementById('servicesModal');
-    if (modal) {
-        modal.style.display = 'block';
-        loadServices();
-    }
-};
-
-window.closeServicesModal = function () {
-    const modal = document.getElementById('servicesModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-    // Reset form
-    document.getElementById('serviceName').value = '';
-    document.getElementById('servicePrice').value = '';
-    document.getElementById('serviceDescription').value = '';
-    document.getElementById('servicesMessage').innerHTML = '';
-};
-
-function loadServices() {
-    const servicesList = document.getElementById('servicesList');
-    if (!servicesList || !currentBusinessId) return;
-
-    servicesList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Loading services...</p>';
-
-    fetch(`/api/businesses/${currentBusinessId}/services`, {
+    if (!modal || !selector) return;
+    
+    // Load businesses
+    fetch('/api/my-businesses', {
         credentials: 'include',
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     })
-        .then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json();
-        })
+        .then(r => r.json())
         .then(res => {
-            const services = res.data || [];
-            if (services.length === 0) {
-                servicesList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No services yet. Add one above!</p>';
-                return;
+            let businesses = [];
+            
+            // Handle paginated response
+            if (res.data && res.data.data) {
+                businesses = res.data.data;
+            } else if (Array.isArray(res.data)) {
+                businesses = res.data;
             }
             
-            servicesList.innerHTML = services.map(service => `
-                <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: white;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
-                        <div>
-                            <h5 style="margin: 0 0 4px 0; color: #333; font-size: 14px; font-weight: 600;">${escapeHtml(service.name)}</h5>
-                            <p style="margin: 0; color: #666; font-size: 13px;">${service.description ? escapeHtml(service.description) : 'No description'}</p>
-                        </div>
-                        <button onclick="deleteService(${service.id})" style="background: #e74c3c; color: white; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 12px; font-weight: 600;">Delete</button>
-                    </div>
-                    <div style="color: #00bcd4; font-weight: 600; font-size: 14px;">₱${parseFloat(service.price).toFixed(2)}</div>
-                </div>
-            `).join('');
+            selector.innerHTML = '<option value="">Choose a business...</option>';
+            
+            if (businesses.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No businesses found';
+                option.disabled = true;
+                selector.appendChild(option);
+            } else {
+                businesses.forEach(b => {
+                    const option = document.createElement('option');
+                    option.value = b.id;
+                    option.dataset.businessType = b.business_type || b.category || '';
+                    const businessType = b.business_type || b.category || 'Unknown';
+                    const typeLabel = capitalizeType(businessType);
+                    option.textContent = `${b.business_name || b.name} (${typeLabel})`;
+                    selector.appendChild(option);
+                });
+            }
+            
+            selector.addEventListener('change', function() {
+                const actions = document.getElementById('manageBusinessActions');
+                if (this.value) {
+                    actions.style.display = 'flex';
+                    updateActionButtons(this);
+                } else {
+                    actions.style.display = 'none';
+                }
+            });
+            
+            modal.style.display = 'block';
         })
-        .catch(() => {
-            servicesList.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading services</p>';
+        .catch(err => {
+            console.error('Error loading businesses:', err);
+            alert('Error loading businesses');
+        });
+};
+
+function updateActionButtons(selectElement) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const businessType = selectedOption.dataset.businessType || '';
+    
+    const addMenuBtn = document.getElementById('addMenuBtn');
+    const addProductBtn = document.getElementById('addProductBtn');
+    
+    // Show/hide buttons based on business type
+    if (addMenuBtn) {
+        addMenuBtn.style.display = businessType === 'food' ? 'flex' : 'none';
+    }
+    if (addProductBtn) {
+        addProductBtn.style.display = businessType === 'goods' ? 'flex' : 'none';
+    }
+}
+
+window.closeManageBusinessModal = function () {
+    const modal = document.getElementById('manageBusinessModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+window.editSelectedBusiness = function () {
+    const selector = document.getElementById('manageBusinessSelector');
+    const businessId = selector.value;
+    
+    if (!businessId) {
+        alert('Please select a business');
+        return;
+    }
+    
+    // Load business data and populate form
+    fetch(`/api/businesses/${businessId}`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => r.json())
+        .then(res => {
+            const business = res.data;
+            if (business) {
+                currentBusinessId = business.id;
+                
+                // Populate form with business data
+                document.getElementById('businessName').value = business.business_name || '';
+                
+                // Set business type dropdown and disable it
+                const businessTypeSelect = document.getElementById('businessType');
+                const businessType = business.business_type || business.category || '';
+                businessTypeSelect.value = businessType;
+                businessTypeSelect.disabled = true;
+                
+                document.getElementById('description').value = business.description || '';
+                document.getElementById('phone').value = business.phone || '';
+                document.getElementById('email').value = business.email || '';
+                document.getElementById('address').value = business.address || '';
+                
+                // Strip seconds from time format (H:i:s -> H:i)
+                const openingTime = business.opening_time || '';
+                const closingTime = business.closing_time || '';
+                document.getElementById('openingTime').value = openingTime ? openingTime.substring(0, 5) : '';
+                document.getElementById('closingTime').value = closingTime ? closingTime.substring(0, 5) : '';
+                
+                if (business.latitude && business.longitude) {
+                    document.getElementById('businessLatitude').value = business.latitude;
+                    document.getElementById('businessLongitude').value = business.longitude;
+                    placeBusinessMarker(business.latitude, business.longitude);
+                }
+                
+                // Close modal and scroll to form
+                closeManageBusinessModal();
+                document.getElementById('businessForm').scrollIntoView({ behavior: 'smooth' });
+            }
+        })
+        .catch(err => {
+            console.error('Error loading business:', err);
+            alert('Error loading business details');
+        });
+};
+
+window.manageMenuItems = function () {
+    const selector = document.getElementById('manageBusinessSelector');
+    const businessId = selector.value;
+    
+    if (!businessId) {
+        alert('Please select a business');
+        return;
+    }
+    
+    // Navigate to businesses section with menu management
+    showSection('businesses');
+    closeManageBusinessModal();
+};
+
+// ── Menu Management Modals ────────────────────────────────────────────────────
+
+window.openMenuListModal = function () {
+    const selector = document.getElementById('manageBusinessSelector');
+    const businessId = selector.value;
+    
+    if (!businessId) {
+        alert('Please select a business');
+        return;
+    }
+    
+    currentMenuBusinessId = businessId;
+    loadMenuItems(businessId);
+    document.getElementById('menuListModal').style.display = 'block';
+};
+
+window.closeMenuListModal = function () {
+    document.getElementById('menuListModal').style.display = 'none';
+};
+
+window.openAddMenuItemModal = function () {
+    document.getElementById('addMenuItemForm').reset();
+    document.getElementById('imagePreview').style.display = 'none';
+    document.getElementById('addMenuItemModal').style.display = 'block';
+};
+
+window.closeAddMenuItemModal = function () {
+    document.getElementById('addMenuItemModal').style.display = 'none';
+};
+
+function loadMenuItems(businessId) {
+    fetch(`/api/businesses/${businessId}/menu-items`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => r.json())
+        .then(res => {
+            // Handle paginated response
+            if (res.data && res.data.data) {
+                currentMenuItems = res.data.data;
+            } else if (Array.isArray(res.data)) {
+                currentMenuItems = res.data;
+            } else {
+                currentMenuItems = [];
+            }
+            displayMenuItems();
+        })
+        .catch(err => {
+            console.error('Error loading menu items:', err);
+            currentMenuItems = [];
+            displayMenuItems();
         });
 }
 
-window.addService = function () {
-    const msgEl = document.getElementById('servicesMessage');
-    msgEl.innerHTML = '';
-
-    const name = document.getElementById('serviceName').value.trim();
-    const price = document.getElementById('servicePrice').value.trim();
-    const description = document.getElementById('serviceDescription').value.trim();
-
-    if (!name || !price) {
-        msgEl.innerHTML = '<div class="message error">Service name and price are required.</div>';
+function displayMenuItems() {
+    const container = document.getElementById('menuItemsList');
+    
+    if (currentMenuItems.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #999; grid-column: 1 / -1; padding: 40px 20px;">No menu items yet</div>';
         return;
     }
+    
+    container.innerHTML = currentMenuItems.map(item => {
+        let imageUrl = null;
+        if (item.image) {
+            // Ensure the image path has /storage/ prefix
+            if (item.image.startsWith('/storage/')) {
+                imageUrl = item.image;
+            } else if (item.image.startsWith('storage/')) {
+                imageUrl = '/' + item.image;
+            } else {
+                imageUrl = '/storage/' + item.image;
+            }
+        }
+        
+        return `
+            <div style="background: #f9f9f9; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; transition: all 0.2s; display: flex; flex-direction: column;">
+                ${imageUrl ? `<img src="${imageUrl}" alt="${escapeHtml(item.name)}" style="width: 100%; height: 150px; object-fit: cover; background: #e0e0e0;">` : `<div style="width: 100%; height: 150px; background: #e0e0e0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">No Image</div>`}
+                <div style="padding: 12px; flex-grow: 1; display: flex; flex-direction: column;">
+                    <div style="font-weight: 600; color: #333; font-size: 13px; margin-bottom: 4px;">${escapeHtml(item.name)}</div>
+                    <div style="font-size: 11px; color: #999; margin-bottom: 6px;">${escapeHtml(item.category || 'N/A')}</div>
+                    <div style="color: #00bcd4; font-weight: 700; font-size: 14px; margin-bottom: 8px; margin-top: auto;">₱${parseFloat(item.price).toFixed(2)}</div>
+                    <button onclick="deleteMenuItem(${item.id})" style="width: 100%; padding: 6px; background: #ff6b6b; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600;">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
-    if (isNaN(price) || parseFloat(price) < 0) {
-        msgEl.innerHTML = '<div class="message error">Price must be a valid number.</div>';
+window.submitMenuItemForm = function (e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('menuItemName').value.trim();
+    const category = document.getElementById('menuItemCategory').value.trim();
+    const price = document.getElementById('menuItemPrice').value;
+    const imageFile = document.getElementById('menuItemImage').files[0];
+    
+    if (!name || !category || !price) {
+        alert('Please fill in all required fields');
         return;
     }
-
-    const payload = {
-        name: name,
-        price: parseFloat(price),
-        description: description || null,
-    };
-
-    fetch(`/api/businesses/${currentBusinessId}/services`, {
+    
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('category', category);
+    formData.append('price', price);
+    formData.append('description', '');
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4z"/></svg> Adding...';
+    
+    fetch(`/api/businesses/${currentMenuBusinessId}/menu-items`, {
         method: 'POST',
         credentials: 'include',
         headers: {
-            'Content-Type': 'application/json',
             'Accept': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
             'X-Requested-With': 'XMLHttpRequest',
         },
-        body: JSON.stringify(payload),
+        body: formData,
     })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) {
+                return r.json().then(data => {
+                    throw new Error(data.message || `HTTP ${r.status}`);
+                });
+            }
+            return r.json();
+        })
         .then(res => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            
             if (res.success) {
-                msgEl.innerHTML = '<div class="message success">✓ Service added successfully!</div>';
-                document.getElementById('serviceName').value = '';
-                document.getElementById('servicePrice').value = '';
-                document.getElementById('serviceDescription').value = '';
-                setTimeout(() => {
-                    loadServices();
-                    msgEl.innerHTML = '';
-                }, 1000);
+                showModal('Success', 'Menu item added successfully!', 'success');
+                closeAddMenuItemModal();
+                loadMenuItems(currentMenuBusinessId);
             } else {
-                msgEl.innerHTML = `<div class="message error">✗ ${res.message || 'Failed to add service'}</div>`;
+                showModal('Error', res.message || 'Failed to add menu item', 'error');
             }
         })
-        .catch(() => {
-            msgEl.innerHTML = '<div class="message error">✗ Network error. Please try again.</div>';
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            console.error('Error:', err);
+            showModal('Error', err.message || 'Network error. Please try again.', 'error');
         });
 };
 
-window.deleteService = function (serviceId) {
-    if (!confirm('Are you sure you want to delete this service?')) return;
-
-    fetch(`/api/businesses/services/${serviceId}`, {
+function deleteMenuItem(itemId) {
+    if (!confirm('Are you sure you want to delete this menu item?')) return;
+    
+    fetch(`/api/menu-items/${itemId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -735,20 +938,444 @@ window.deleteService = function (serviceId) {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                loadServices();
+                showModal('Success', 'Menu item deleted successfully!', 'success');
+                loadMenuItems(currentMenuBusinessId);
             } else {
-                alert(res.message || 'Failed to delete service');
+                showModal('Error', res.message || 'Failed to delete menu item', 'error');
             }
         })
-        .catch(() => {
-            alert('Error deleting service');
+        .catch(err => {
+            showModal('Error', 'Network error. Please try again.', 'error');
+        });
+}
+
+// Image preview and validation
+document.addEventListener('DOMContentLoaded', function() {
+    // Menu item image preview
+    const menuImageInput = document.getElementById('menuItemImage');
+    if (menuImageInput) {
+        menuImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 2048 * 1024; // 2MB in bytes
+                if (file.size > maxSize) {
+                    showModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
+                    menuImageInput.value = '';
+                    document.getElementById('imagePreview').style.display = 'none';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('previewImg').src = event.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Product image preview
+    const productImageInput = document.getElementById('productImage');
+    if (productImageInput) {
+        productImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 2048 * 1024;
+                if (file.size > maxSize) {
+                    showModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
+                    productImageInput.value = '';
+                    document.getElementById('productImagePreview').style.display = 'none';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('productPreviewImg').src = event.target.result;
+                    document.getElementById('productImagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Service image preview
+    const serviceImageInput = document.getElementById('serviceImage');
+    if (serviceImageInput) {
+        serviceImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const maxSize = 2048 * 1024;
+                if (file.size > maxSize) {
+                    showModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
+                    serviceImageInput.value = '';
+                    document.getElementById('serviceImagePreview').style.display = 'none';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('servicePreviewImg').src = event.target.result;
+                    document.getElementById('serviceImagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+
+window.manageProducts = function () {
+    const selector = document.getElementById('manageBusinessSelector');
+    const businessId = selector.value;
+    
+    if (!businessId) {
+        alert('Please select a business');
+        return;
+    }
+    
+    currentProductBusinessId = businessId;
+    loadProducts(businessId);
+    document.getElementById('productListModal').style.display = 'block';
+};
+
+window.closeProductListModal = function () {
+    document.getElementById('productListModal').style.display = 'none';
+};
+
+window.openAddProductModal = function () {
+    document.getElementById('addProductForm').reset();
+    document.getElementById('productImagePreview').style.display = 'none';
+    document.getElementById('addProductModal').style.display = 'block';
+};
+
+window.closeAddProductModal = function () {
+    document.getElementById('addProductModal').style.display = 'none';
+};
+
+function loadProducts(businessId) {
+    fetch(`/api/businesses/${businessId}/products`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => r.json())
+        .then(res => {
+            // Handle paginated response
+            if (res.data && res.data.data) {
+                currentProducts = res.data.data;
+            } else if (Array.isArray(res.data)) {
+                currentProducts = res.data;
+            } else {
+                currentProducts = [];
+            }
+            displayProducts();
+        })
+        .catch(err => {
+            console.error('Error loading products:', err);
+            currentProducts = [];
+            displayProducts();
+        });
+}
+
+function displayProducts() {
+    const container = document.getElementById('productsList');
+    
+    if (currentProducts.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #999; grid-column: 1 / -1; padding: 40px 20px;">No products yet</div>';
+        return;
+    }
+    
+    container.innerHTML = currentProducts.map(item => {
+        let imageUrl = null;
+        if (item.image) {
+            if (item.image.startsWith('/storage/')) {
+                imageUrl = item.image;
+            } else if (item.image.startsWith('storage/')) {
+                imageUrl = '/' + item.image;
+            } else {
+                imageUrl = '/storage/' + item.image;
+            }
+        }
+        
+        return `
+            <div style="background: #f9f9f9; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; transition: all 0.2s; display: flex; flex-direction: column;">
+                ${imageUrl ? `<img src="${imageUrl}" alt="${escapeHtml(item.name)}" style="width: 100%; height: 150px; object-fit: cover; background: #e0e0e0;">` : `<div style="width: 100%; height: 150px; background: #e0e0e0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">No Image</div>`}
+                <div style="padding: 12px; flex-grow: 1; display: flex; flex-direction: column;">
+                    <div style="font-weight: 600; color: #333; font-size: 13px; margin-bottom: 4px;">${escapeHtml(item.name)}</div>
+                    <div style="font-size: 11px; color: #999; margin-bottom: 6px;">Stock: ${item.stock || 0}</div>
+                    <div style="color: #00bcd4; font-weight: 700; font-size: 14px; margin-bottom: 8px; margin-top: auto;">₱${parseFloat(item.price).toFixed(2)}</div>
+                    <button onclick="deleteProduct(${item.id})" style="width: 100%; padding: 6px; background: #ff6b6b; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600;">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.submitProductForm = function (e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('productName').value.trim();
+    const price = document.getElementById('productPrice').value;
+    const stock = document.getElementById('productStock').value;
+    const imageFile = document.getElementById('productImage').files[0];
+    
+    if (!name || !price || !stock) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('price', price);
+    formData.append('stock', stock);
+    formData.append('description', '');
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4z"/></svg> Adding...';
+    
+    fetch(`/api/businesses/${currentProductBusinessId}/products`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: formData,
+    })
+        .then(r => {
+            if (!r.ok) {
+                return r.json().then(data => {
+                    throw new Error(data.message || `HTTP ${r.status}`);
+                });
+            }
+            return r.json();
+        })
+        .then(res => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            
+            if (res.success) {
+                showModal('Success', 'Product added successfully!', 'success');
+                closeAddProductModal();
+                loadProducts(currentProductBusinessId);
+            } else {
+                showModal('Error', res.message || 'Failed to add product', 'error');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            console.error('Error:', err);
+            showModal('Error', err.message || 'Network error. Please try again.', 'error');
         });
 };
 
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+function deleteProduct(itemId) {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+    
+    fetch(`/api/products/${itemId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                showModal('Success', 'Product deleted successfully!', 'success');
+                loadProducts(currentProductBusinessId);
+            } else {
+                showModal('Error', res.message || 'Failed to delete product', 'error');
+            }
+        })
+        .catch(err => {
+            showModal('Error', 'Network error. Please try again.', 'error');
+        });
+}
+
+// ── Services Management ──────────────────────────────────────────────────────
+
+window.manageServices = function () {
+    const selector = document.getElementById('manageBusinessSelector');
+    const businessId = selector.value;
+    
+    if (!businessId) {
+        alert('Please select a business');
+        return;
+    }
+    
+    currentServiceBusinessId = businessId;
+    loadServices(businessId);
+    document.getElementById('serviceListModal').style.display = 'block';
+};
+
+window.closeServiceListModal = function () {
+    document.getElementById('serviceListModal').style.display = 'none';
+};
+
+window.openAddServiceModal = function () {
+    document.getElementById('addServiceForm').reset();
+    document.getElementById('serviceImagePreview').style.display = 'none';
+    document.getElementById('addServiceModal').style.display = 'block';
+};
+
+window.closeAddServiceModal = function () {
+    document.getElementById('addServiceModal').style.display = 'none';
+};
+
+function loadServices(businessId) {
+    fetch(`/api/businesses/${businessId}/services`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => r.json())
+        .then(res => {
+            // Handle paginated response
+            if (res.data && res.data.data) {
+                currentServices = res.data.data;
+            } else if (Array.isArray(res.data)) {
+                currentServices = res.data;
+            } else {
+                currentServices = [];
+            }
+            displayServices();
+        })
+        .catch(err => {
+            console.error('Error loading services:', err);
+            currentServices = [];
+            displayServices();
+        });
+}
+
+function displayServices() {
+    const container = document.getElementById('servicesList');
+    
+    if (currentServices.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #999; grid-column: 1 / -1; padding: 40px 20px;">No services yet</div>';
+        return;
+    }
+    
+    container.innerHTML = currentServices.map(item => {
+        let imageUrl = null;
+        if (item.image) {
+            if (item.image.startsWith('/storage/')) {
+                imageUrl = item.image;
+            } else if (item.image.startsWith('storage/')) {
+                imageUrl = '/' + item.image;
+            } else {
+                imageUrl = '/storage/' + item.image;
+            }
+        }
+        
+        return `
+            <div style="background: #f9f9f9; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; transition: all 0.2s; display: flex; flex-direction: column;">
+                ${imageUrl ? `<img src="${imageUrl}" alt="${escapeHtml(item.name)}" style="width: 100%; height: 150px; object-fit: cover; background: #e0e0e0;">` : `<div style="width: 100%; height: 150px; background: #e0e0e0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px;">No Image</div>`}
+                <div style="padding: 12px; flex-grow: 1; display: flex; flex-direction: column;">
+                    <div style="font-weight: 600; color: #333; font-size: 13px; margin-bottom: 4px;">${escapeHtml(item.name)}</div>
+                    <div style="font-size: 11px; color: #999; margin-bottom: 6px;">Service</div>
+                    <div style="color: #00bcd4; font-weight: 700; font-size: 14px; margin-bottom: 8px; margin-top: auto;">₱${parseFloat(item.price).toFixed(2)}</div>
+                    <button onclick="deleteService(${item.id})" style="width: 100%; padding: 6px; background: #ff6b6b; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600;">Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.submitServiceForm = function (e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('serviceName').value.trim();
+    const price = document.getElementById('servicePrice').value;
+    const imageFile = document.getElementById('serviceImage').files[0];
+    
+    if (!name || !price) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('price', price);
+    formData.append('description', '');
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4z"/></svg> Adding...';
+    
+    fetch(`/api/businesses/${currentServiceBusinessId}/services`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: formData,
+    })
+        .then(r => {
+            if (!r.ok) {
+                return r.json().then(data => {
+                    throw new Error(data.message || `HTTP ${r.status}`);
+                });
+            }
+            return r.json();
+        })
+        .then(res => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            
+            if (res.success) {
+                showModal('Success', 'Service added successfully!', 'success');
+                closeAddServiceModal();
+                loadServices(currentServiceBusinessId);
+            } else {
+                showModal('Error', res.message || 'Failed to add service', 'error');
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            console.error('Error:', err);
+            showModal('Error', err.message || 'Network error. Please try again.', 'error');
+        });
+};
+
+function deleteService(itemId) {
+    if (!confirm('Are you sure you want to delete this service?')) return;
+    
+    fetch(`/api/services/${itemId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                showModal('Success', 'Service deleted successfully!', 'success');
+                loadServices(currentServiceBusinessId);
+            } else {
+                showModal('Error', res.message || 'Failed to delete service', 'error');
+            }
+        })
+        .catch(err => {
+            showModal('Error', 'Network error. Please try again.', 'error');
+        });
 }
 
 // ── Services Management ──────────────────────────────────────────────────────

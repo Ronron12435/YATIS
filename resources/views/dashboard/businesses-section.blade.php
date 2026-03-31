@@ -41,69 +41,7 @@
         <div class="stat-card"><h3 id="services-count">0</h3><p>Service Providers</p></div>
     </div>
 
-    <!-- Service Management Section (for service business owners) -->
-    <div id="service-management-section" style="display: none; margin-top: 30px;">
-        <div class="card" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                <div style="font-size: 32px;">🔧</div>
-                <div>
-                    <h2 style="margin: 0; font-size: 22px; font-weight: 700;">Manage Your Services</h2>
-                    <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Add, edit, or remove services from your business</p>
-                </div>
-            </div>
-        </div>
 
-        <!-- Service Business Selector -->
-        <div style="margin-bottom: 20px;">
-            <label style="display: block; font-size: 14px; font-weight: 600; color: #333; margin-bottom: 10px;">Select Service Business</label>
-            <select id="service-business-selector" class="modern-select" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: inherit; background: white; cursor: pointer;">
-                <option value="">Choose a business...</option>
-            </select>
-        </div>
-
-        <!-- Services List -->
-        <div id="services-list-container" style="display: none;">
-            <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
-                <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px; font-weight: 700;">Current Services</h3>
-                <div id="services-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
-                    <p style="grid-column: 1 / -1; text-align: center; color: #999; padding: 20px;">Loading services...</p>
-                </div>
-            </div>
-
-            <!-- Add Service Form -->
-            <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-top: 20px;">
-                <h3 style="margin: 0 0 15px 0; color: #333; font-size: 16px; font-weight: 700;">Add New Service</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Service Name *</label>
-                        <input type="text" id="service-name-input" placeholder="e.g., Web Design" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-family: inherit; box-sizing: border-box;">
-                    </div>
-                    <div>
-                        <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Price (₱) *</label>
-                        <input type="number" id="service-price-input" placeholder="0.00" min="0" step="0.01" style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-family: inherit; box-sizing: border-box;">
-                    </div>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 8px;">Description (Optional)</label>
-                    <textarea id="service-description-input" placeholder="Describe your service..." style="width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-family: inherit; min-height: 80px; box-sizing: border-box; resize: vertical;"></textarea>
-                </div>
-                <button onclick="addServiceFromBusinesses()" style="width: 100%; padding: 12px 24px; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                    <span style="display: inline-flex; align-items: center; gap: 8px; justify-content: center;">
-                        <span>➕</span>
-                        <span>Add Service</span>
-                    </span>
-                </button>
-                <div id="service-message" style="margin-top: 12px; padding: 12px 14px; border-radius: 8px; display: none; font-size: 13px;"></div>
-            </div>
-        </div>
-
-        <!-- No Service Business Message -->
-        <div id="no-service-business-message" style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 12px; padding: 20px; text-align: center; color: #856404;">
-            <div style="font-size: 32px; margin-bottom: 10px;">🔧</div>
-            <p style="margin: 0; font-size: 14px; font-weight: 600;">You don't have any service businesses yet</p>
-            <p style="margin: 8px 0 0 0; font-size: 13px; opacity: 0.9;">Create a service business in "My Business" to manage services here</p>
-        </div>
-    </div>
 </div>
 
 <script>
@@ -290,11 +228,13 @@ window.showBusinessItems = function(businessId, itemType) {
                         } else {
                             itemsHtml = items.map(item => `
                                 <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: inline-block; width: 180px; margin: 10px;">
-                                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 48px;">🍽️</div>
+                                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 48px; overflow: hidden;">
+                                        ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover;">` : '🍽️'}
+                                    </div>
                                     <div style="padding: 12px;">
                                         <div style="font-weight: 700; color: #333; margin-bottom: 4px; font-size: 14px;">${item.name}</div>
-                                        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">Food</div>
-                                        <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${item.price}</div>
+                                        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">${item.category || 'Food'}</div>
+                                        <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${parseFloat(item.price).toFixed(2)}</div>
                                         <button style="width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">✓ Available</button>
                                     </div>
                                 </div>
@@ -315,11 +255,13 @@ window.showBusinessItems = function(businessId, itemType) {
                         } else {
                             itemsHtml = items.map(item => `
                                 <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: inline-block; width: 180px; margin: 10px;">
-                                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 48px;">📦</div>
+                                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 48px; overflow: hidden;">
+                                        ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover;">` : '📦'}
+                                    </div>
                                     <div style="padding: 12px;">
                                         <div style="font-weight: 700; color: #333; margin-bottom: 4px; font-size: 14px;">${item.name}</div>
-                                        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">Product</div>
-                                        <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${item.price}</div>
+                                        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">${item.category || 'Product'}</div>
+                                        <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${parseFloat(item.price).toFixed(2)}</div>
                                         <button style="width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">✓ Available</button>
                                     </div>
                                 </div>
@@ -340,11 +282,13 @@ window.showBusinessItems = function(businessId, itemType) {
                         } else {
                             itemsHtml = items.map(item => `
                                 <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: inline-block; width: 180px; margin: 10px;">
-                                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 48px;">🔧</div>
+                                    <div style="width: 100%; height: 120px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 48px; overflow: hidden;">
+                                        ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover;">` : '🔧'}
+                                    </div>
                                     <div style="padding: 12px;">
                                         <div style="font-weight: 700; color: #333; margin-bottom: 4px; font-size: 14px;">${item.name}</div>
-                                        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">Service</div>
-                                        <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${item.price}</div>
+                                        <div style="font-size: 12px; color: #999; margin-bottom: 8px;">${item.duration || 'Service'}</div>
+                                        <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${parseFloat(item.price).toFixed(2)}</div>
                                         <button style="width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">✓ Available</button>
                                     </div>
                                 </div>

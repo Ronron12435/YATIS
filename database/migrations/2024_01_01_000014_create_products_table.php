@@ -16,7 +16,7 @@ return new class extends Migration
             $table->decimal('price', 10, 2);
             $table->integer('stock')->default(0);
             $table->string('image')->nullable();
-            $table->string('category');
+            $table->string('category')->default('general');
             $table->boolean('is_available')->default(true);
             $table->timestamps();
         });
