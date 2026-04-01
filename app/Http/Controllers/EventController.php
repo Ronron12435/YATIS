@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\DTOs\Event\CreateEventDTO;
 use App\DTOs\Event\CreateTaskDTO;
 use App\Services\EventService;
+use App\Services\DailyStepsService;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
 {
-    public function __construct(private EventService $eventService) {}
+    public function __construct(
+        private EventService $eventService,
+        private DailyStepsService $stepsService
+    ) {}
 
     public function index(Request $request)
     {
@@ -84,6 +88,8 @@ class EventController extends Controller
             'task_type'     => 'required|in:steps,location,qr_scan,custom',
             'reward_points' => 'required|integer|min:1',
             'target_value'  => 'nullable|integer|min:1',
+            'qr_code'       => 'nullable|string|max:255',
+            'badge'         => 'nullable|string|max:255',
         ]);
 
         $dto = new CreateTaskDTO(
@@ -93,6 +99,8 @@ class EventController extends Controller
             rewardPoints: $validated['reward_points'],
             description: $validated['description'] ?? null,
             targetValue: $validated['target_value'] ?? null,
+            qrCode: $validated['qr_code'] ?? null,
+            badge: $validated['badge'] ?? null,
         );
 
         $response = $this->eventService->createTask($dto, $request->user()->id, $request->user()->role);
@@ -107,20 +115,28 @@ class EventController extends Controller
 
     public function completeTask(Request $request)
     {
-        $validated = $request->validate([
-            'event_id'   => 'required|exists:events,id',
-            'task_id'    => 'required|exists:event_tasks,id',
-            'proof_data' => 'nullable|array',
-        ]);
+        try {
+            $validated = $request->validate([
+                'event_id'   => 'required|exists:events,id',
+                'task_id'    => 'required|exists:event_tasks,id',
+                'proof_data' => 'nullable|array',
+            ]);
 
-        $response = $this->eventService->completeTask(
-            $request->user()->id,
-            $validated['event_id'],
-            $validated['task_id'],
-            $validated['proof_data'] ?? null,
-        );
+            $response = $this->eventService->completeTask(
+                $request->user()->id,
+                $validated['event_id'],
+                $validated['task_id'],
+                $validated['proof_data'] ?? null,
+            );
 
-        return response()->json($response->toArray(), $response->statusCode);
+            return response()->json($response->toArray(), $response->statusCode);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Task completion validation error', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all(),
+            ]);
+            throw $e;
+        }
     }
 
     public function deleteTask(Request $request, $taskId)
@@ -139,6 +155,32 @@ class EventController extends Controller
     public function leaderboard(Request $request)
     {
         $response = $this->eventService->getLeaderboard((int) $request->input('limit', 50));
+        return response()->json($response->toArray(), $response->statusCode);
+    }
+
+    public function getTodaySteps(Request $request)
+    {
+        $response = $this->stepsService->getTodaySteps($request->user()->id);
+        return response()->json($response->toArray(), $response->statusCode);
+    }
+
+    public function recordSteps(Request $request)
+    {
+        $validated = $request->validate([
+            'steps' => 'required|integer|min:0',
+        ]);
+
+        $response = $this->stepsService->recordSteps($request->user()->id, $validated['steps']);
+        return response()->json($response->toArray(), $response->statusCode);
+    }
+
+    public function incrementSteps(Request $request)
+    {
+        $validated = $request->validate([
+            'increment' => 'nullable|integer|min:1',
+        ]);
+
+        $response = $this->stepsService->incrementSteps($request->user()->id, $validated['increment'] ?? 1);
         return response()->json($response->toArray(), $response->statusCode);
     }
 }

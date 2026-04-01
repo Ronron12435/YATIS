@@ -1,4 +1,4 @@
-<div id="events" class="content-section">
+<div id="events" class="content-section" data-user-id="{{ auth()->id() }}">
     <h1 class="page-title">🎯 Events & Challenges</h1>
     
     <div class="stats">
@@ -13,10 +13,6 @@
         <div class="stat-card">
             <h3 id="user-rank">#0</h3>
             <p>Your Rank</p>
-        </div>
-        <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
-            <h3 id="daily-steps-count">0</h3>
-            <p>👟 Steps Today</p>
         </div>
     </div>
 
@@ -37,7 +33,6 @@
                 </div>
                 <div style="text-align: right;">
                     <div style="font-size: 14px; color: #999;" id="step-tracking-status">Initializing...</div>
-                    <button class="btn btn-secondary" onclick="resetDailySteps()" style="margin-top: 10px; font-size: 12px; padding: 6px 12px;">Reset Steps</button>
                 </div>
             </div>
         </div>

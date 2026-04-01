@@ -11,5 +11,7 @@ class CreateTaskDTO
         public readonly int $rewardPoints,
         public readonly ?string $description = null,
         public readonly ?int $targetValue = null,
+        public readonly ?string $qrCode = null,
+        public readonly ?string $badge = null,
     ) {}
 }

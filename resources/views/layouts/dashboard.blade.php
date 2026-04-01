@@ -14,6 +14,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     @stack('styles')
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -181,6 +182,8 @@
             if(sectionId === 'destinations') setTimeout(() => { if(typeof initDestinationsSection === 'function') initDestinationsSection(); }, 100);
             if(sectionId === 'profile') setTimeout(() => { if(typeof initProfileSection === 'function') initProfileSection(); }, 100);
             if(sectionId === 'my-business') setTimeout(() => { if(typeof initMyBusinessSection === 'function') initMyBusinessSection(); }, 100);
+            if(sectionId === 'admin-panel') setTimeout(() => { if(typeof AdminModule !== 'undefined') AdminModule.init(); }, 100);
+            if(sectionId === 'events') setTimeout(() => { if(typeof EventsModule !== 'undefined') EventsModule.init(); }, 100);
         };
 
         // Restore active section on page load - use sessionStorage for refresh, dashboard for fresh login
@@ -208,6 +211,8 @@
                 if(activeSection === 'job-listings') setTimeout(() => { if(typeof loadJobListings === 'function') loadJobListings(); }, 100);
                 if(activeSection === 'my-applications') setTimeout(() => { if(typeof loadMyApplications === 'function') loadMyApplications(); }, 100);
                 if(activeSection === 'destinations') setTimeout(() => { if(typeof initDestinationsSection === 'function') initDestinationsSection(); }, 100);
+                if(activeSection === 'admin-panel') setTimeout(() => { if(typeof AdminModule !== 'undefined') AdminModule.init(); }, 100);
+                if(activeSection === 'events') setTimeout(() => { if(typeof EventsModule !== 'undefined') EventsModule.init(); }, 100);
                 if(activeSection === 'profile') setTimeout(() => { if(typeof initProfileSection === 'function') initProfileSection(); }, 100);
                 if(activeSection === 'my-business') setTimeout(() => { if(typeof initMyBusinessSection === 'function') initMyBusinessSection(); }, 100);
             }
@@ -422,7 +427,7 @@
     <!-- Load all module scripts globally -->
     <script src="{{ asset('js/jobs.js') }}"></script>
     <script src="{{ asset('js/messages.js') }}"></script>
-    <script src="{{ asset('js/events.js') }}"></script>
+    <script src="{{ asset('js/events.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/groups.js') }}"></script>
     <script src="{{ asset('js/people.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/profile.js') }}?v={{ time() }}"></script>

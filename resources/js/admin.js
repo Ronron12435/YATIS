@@ -1,13 +1,73 @@
 const AdminModule = (() => {
     let allUsers = [];
     let allEvents = [];
+    let initialized = false;
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     const init = () => {
+        if (initialized) {
+            console.log('AdminModule already initialized, skipping...');
+            return;
+        }
+        initialized = true;
+        console.log('AdminModule initializing...');
         loadStatistics();
         loadUsers();
         loadEvents();
         setupEventListeners();
+        createModalHTML();
+    };
+
+    const createModalHTML = () => {
+        if (!document.getElementById('admin-modal')) {
+            const modalHTML = `
+                <div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+                    <div style="background:white; border-radius:12px; padding:30px; max-width:400px; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:center;">
+                        <div id="modal-icon" style="font-size:48px; margin-bottom:15px;"></div>
+                        <h2 id="modal-title" style="margin:0 0 10px 0; color:#333; font-size:20px;"></h2>
+                        <p id="modal-message" style="margin:0 0 25px 0; color:#666; font-size:14px; line-height:1.5;"></p>
+                        <button id="modal-btn" onclick="AdminModule.closeModal()" style="padding:10px 30px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px;">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+        }
+    };
+
+    const showModal = (title, message, icon = '✓', type = 'success') => {
+        const modal = document.getElementById('admin-modal');
+        const titleEl = document.getElementById('modal-title');
+        const messageEl = document.getElementById('modal-message');
+        const iconEl = document.getElementById('modal-icon');
+        const btnEl = document.getElementById('modal-btn');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        iconEl.textContent = icon;
+
+        const colors = {
+            'success': '#27ae60',
+            'error': '#e74c3c',
+            'warning': '#f39c12',
+            'info': '#3498db'
+        };
+
+        btnEl.style.background = colors[type] || colors['info'];
+        modal.style.display = 'flex';
+
+        // Auto-close success modals after 1 second
+        if (type === 'success') {
+            setTimeout(() => {
+                closeModal();
+            }, 1000);
+        }
+    };
+
+    const closeModal = () => {
+        const modal = document.getElementById('admin-modal');
+        modal.style.display = 'none';
     };
 
     const setupEventListeners = () => {
@@ -29,11 +89,8 @@ const AdminModule = (() => {
             .then(response => {
                 const stats = response.data || {};
                 document.getElementById('stat-total-users').textContent = stats.total_users || 0;
-                document.getElementById('stat-total-businesses').textContent = stats.total_businesses || 0;
-
-                const usersByRole = stats.users_by_role || [];
-                const employers = usersByRole.find(r => r.role === 'employer');
-                document.getElementById('stat-total-employers').textContent = employers?.count || 0;
+                document.getElementById('stat-total-business-users').textContent = stats.total_business_users || 0;
+                document.getElementById('stat-total-posts').textContent = stats.total_posts || 0;
             })
             .catch(err => {
                 console.error('Error loading statistics:', err);
@@ -47,7 +104,16 @@ const AdminModule = (() => {
                 return r.json();
             })
             .then(response => {
-                allUsers = response.data || [];
+                // Handle both paginated and direct array responses
+                if (response.data && Array.isArray(response.data)) {
+                    allUsers = response.data;
+                } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    allUsers = response.data.data;
+                } else if (Array.isArray(response.data)) {
+                    allUsers = response.data;
+                } else {
+                    allUsers = [];
+                }
                 renderUsers(allUsers);
             })
             .catch(err => {
@@ -126,16 +192,18 @@ const AdminModule = (() => {
         .then(r => r.json())
         .then(response => {
             if (response.success) {
-                alert('User deleted successfully');
-                loadUsers();
-                loadStatistics();
+                showModal('Success', 'User deleted successfully', '✓', 'success');
+                setTimeout(() => {
+                    loadUsers();
+                    loadStatistics();
+                }, 1500);
             } else {
-                alert('Error: ' + (response.message || 'Failed to delete user'));
+                showModal('Error', response.message || 'Failed to delete user', '✕', 'error');
             }
         })
         .catch(err => {
             console.error('Error deleting user:', err);
-            alert('Error deleting user');
+            showModal('Error', 'Error deleting user', '✕', 'error');
         });
     };
 
@@ -150,21 +218,20 @@ const AdminModule = (() => {
         const confirmPassword = document.getElementById('business-confirm-password').value;
 
         if (!username || !email || !firstName || !lastName || !password || !confirmPassword) {
-            alert('All fields are required');
+            showModal('Validation Error', 'All fields are required', '⚠', 'warning');
             return;
         }
 
         if (password !== confirmPassword) {
-            alert('Passwords do not match');
+            showModal('Validation Error', 'Passwords do not match', '⚠', 'warning');
             return;
         }
 
         if (password.length < 6) {
-            alert('Password must be at least 6 characters');
+            showModal('Validation Error', 'Password must be at least 6 characters', '⚠', 'warning');
             return;
         }
 
-        // Create business account via admin endpoint
         fetch('/api/admin/create-business-account', {
             method: 'POST',
             credentials: 'include',
@@ -185,17 +252,19 @@ const AdminModule = (() => {
         .then(r => r.json())
         .then(response => {
             if (response.success) {
-                alert('Business account created successfully!');
+                showModal('Success', 'Business account created successfully!', '✓', 'success');
                 document.getElementById('create-business-form').reset();
-                loadUsers();
-                loadStatistics();
+                setTimeout(() => {
+                    loadUsers();
+                    loadStatistics();
+                }, 1500);
             } else {
-                alert('Error: ' + (response.message || 'Failed to create business account'));
+                showModal('Error', response.message || 'Failed to create business account', '✕', 'error');
             }
         })
         .catch(err => {
             console.error('Error creating business account:', err);
-            alert('Error creating business account');
+            showModal('Error', 'Error creating business account', '✕', 'error');
         });
     };
 
@@ -208,12 +277,12 @@ const AdminModule = (() => {
         const description = document.getElementById('event-description').value.trim();
 
         if (!title || !startDate || !endDate || !description) {
-            alert('All fields are required');
+            showModal('Validation Error', 'All fields are required', '⚠', 'warning');
             return;
         }
 
         if (new Date(startDate) >= new Date(endDate)) {
-            alert('End date must be after start date');
+            showModal('Validation Error', 'End date must be after start date', '⚠', 'warning');
             return;
         }
 
@@ -235,67 +304,107 @@ const AdminModule = (() => {
         .then(r => r.json())
         .then(response => {
             if (response.success) {
-                alert('Event created successfully!');
+                showModal('Success', 'Event created successfully!', '✓', 'success');
                 document.getElementById('create-event-form').reset();
-                loadEvents();
-                loadStatistics();
+                setTimeout(() => {
+                    loadEvents();
+                    loadStatistics();
+                }, 1200);
             } else {
-                alert('Error: ' + (response.message || 'Failed to create event'));
+                showModal('Error', response.message || 'Failed to create event', '✕', 'error');
             }
         })
         .catch(err => {
             console.error('Error creating event:', err);
-            alert('Error creating event');
+            showModal('Error', 'Error creating event', '✕', 'error');
         });
     };
 
     const loadEvents = () => {
-        fetch('/api/admin/events', { credentials: 'include' })
+        fetch('/api/events', { credentials: 'include' })
             .then(r => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
             })
             .then(response => {
-                allEvents = response.data || [];
-                renderEvents(allEvents);
+                console.log('Full events response:', response);
+                
+                // The response structure is: { success, message, data: { data: [...], ... } }
+                const events = response.data && response.data.data ? response.data.data : [];
+                console.log('Extracted events array:', events);
+                console.log('Events count:', events.length);
+                
+                allEvents = events;
+                
+                // Force a small delay to ensure DOM is ready
+                setTimeout(() => {
+                    renderEvents(allEvents);
+                }, 50);
             })
             .catch(err => {
                 console.error('Error loading events:', err);
-                document.getElementById('events-list').innerHTML = '<p style="color:#e74c3c;">Error loading events</p>';
+                const eventsList = document.getElementById('events-list');
+                if (eventsList) {
+                    eventsList.innerHTML = '<p style="color:#e74c3c;">Error loading events</p>';
+                }
             });
     };
 
     const renderEvents = (events) => {
         const eventsList = document.getElementById('events-list');
 
+        console.log('renderEvents function called');
+        console.log('eventsList element found:', !!eventsList);
+        console.log('events array:', events);
+
+        if (!eventsList) {
+            console.error('CRITICAL: events-list element not found in DOM!');
+            return;
+        }
+
         if (!events || events.length === 0) {
+            console.log('No events to display');
             eventsList.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No events created yet</p>';
             return;
         }
 
-        eventsList.innerHTML = events.map(event => {
+        console.log('Building HTML for', events.length, 'events');
+        
+        let html = '';
+        for (let i = 0; i < events.length; i++) {
+            const event = events[i];
             const startDate = new Date(event.start_date).toLocaleDateString();
             const endDate = new Date(event.end_date).toLocaleDateString();
-
-            return `
-                <div style="border:1px solid #ddd; border-radius:8px; padding:15px; background:white;">
+            
+            html += `<div style="border:1px solid #ddd; border-radius:8px; padding:15px; background:white;">
                     <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
-                        <div>
+                        <div style="flex:1;">
                             <h4 style="margin:0 0 5px 0; color:#333;">${escapeHtml(event.title)}</h4>
                             <p style="margin:0; color:#666; font-size:13px;">
                                 <i class="fas fa-calendar"></i> ${startDate} to ${endDate}
                             </p>
                         </div>
-                        <button onclick="AdminModule.deleteEvent(${event.id})" style="padding:6px 12px; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px;">
+                        <button onclick="AdminModule.deleteEvent(${event.id})" style="padding:6px 12px; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; white-space:nowrap; margin-left:10px;">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
                     <p style="margin:10px 0 0 0; color:#555; font-size:13px; line-height:1.5;">
                         ${escapeHtml(event.description)}
                     </p>
-                </div>
-            `;
-        }).join('');
+                </div>`;
+        }
+
+        console.log('HTML to insert:', html.substring(0, 100) + '...');
+        eventsList.innerHTML = html;
+        console.log('HTML inserted into events-list');
+        console.log('events-list innerHTML length:', eventsList.innerHTML.length);
+        console.log('eventsList children count:', eventsList.children.length);
+        
+        // Scroll events into view
+        setTimeout(() => {
+            eventsList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            console.log('Scrolled events into view');
+        }, 100);
     };
 
     const deleteEvent = (eventId) => {
@@ -315,16 +424,18 @@ const AdminModule = (() => {
         .then(r => r.json())
         .then(response => {
             if (response.success) {
-                alert('Event deleted successfully');
-                loadEvents();
-                loadStatistics();
+                showModal('Success', 'Event deleted successfully', '✓', 'success');
+                setTimeout(() => {
+                    loadEvents();
+                    loadStatistics();
+                }, 1500);
             } else {
-                alert('Error: ' + (response.message || 'Failed to delete event'));
+                showModal('Error', response.message || 'Failed to delete event', '✕', 'error');
             }
         })
         .catch(err => {
             console.error('Error deleting event:', err);
-            alert('Error deleting event');
+            showModal('Error', 'Error deleting event', '✕', 'error');
         });
     };
 
@@ -338,7 +449,8 @@ const AdminModule = (() => {
     return {
         init,
         deleteUser,
-        deleteEvent
+        deleteEvent,
+        closeModal
     };
 })();
 

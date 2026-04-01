@@ -21,8 +21,8 @@ class AdminService
             'total_businesses'   => DB::table('businesses')->count(),
             'total_posts'        => DB::table('posts')->count(),
             'total_events'       => DB::table('events')->count(),
-            'users_by_role'      => DB::table('users')->select('role', DB::raw('count(*) as count'))->groupBy('role')->get(),
-            'businesses_by_type' => DB::table('businesses')->select('business_type', DB::raw('count(*) as count'))->groupBy('business_type')->get(),
+            'users_by_role'      => DB::table('users')->select('role', DB::raw('count(*) as count'))->groupBy('role')->get()->toArray(),
+            'businesses_by_category' => DB::table('businesses')->select('category', DB::raw('count(*) as count'))->groupBy('category')->get()->toArray(),
         ];
 
         return new ApiResponse(true, $stats, 'Success');
@@ -56,27 +56,45 @@ class AdminService
         try {
             $stats = [
                 'total_users'               => DB::table('users')->count(),
-                'total_businesses'          => DB::table('businesses')->count(),
+                'total_business_users'      => DB::table('users')->where('role', 'business')->count(),
                 'total_posts'               => DB::table('posts')->count(),
                 'total_events'              => DB::table('events')->count(),
-                'users_by_role'             => DB::table('users')->select('role', DB::raw('count(*) as count'))->groupBy('role')->get(),
-                'businesses_by_type'        => DB::table('businesses')->select('business_type', DB::raw('count(*) as count'))->groupBy('business_type')->get(),
+                'users_by_role'             => DB::table('users')->select('role', DB::raw('count(*) as count'))->groupBy('role')->get()->toArray(),
+                'businesses_by_category'    => DB::table('businesses')->select('category', DB::raw('count(*) as count'))->groupBy('category')->get()->toArray(),
                 'new_users_this_month'      => DB::table('users')->where('created_at', '>=', now()->startOfMonth())->count(),
-                'new_businesses_this_month' => DB::table('businesses')->where('created_at', '>=', now()->startOfMonth())->count(),
+                'new_business_users_this_month' => DB::table('users')->where('role', 'business')->where('created_at', '>=', now()->startOfMonth())->count(),
             ];
 
             return new ApiResponse(true, $stats, 'Success');
         } catch (\Exception $e) {
-            return new ApiResponse(true, [
-                'total_users' => 0,
-                'total_businesses' => 0,
-                'total_posts' => 0,
-                'total_events' => 0,
-                'users_by_role' => [],
-                'businesses_by_type' => [],
-                'new_users_this_month' => 0,
-                'new_businesses_this_month' => 0,
-            ], 'Success');
+            \Log::error('AdminService getStatistics error', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return new ApiResponse(false, null, 'Error fetching statistics: ' . $e->getMessage(), 500);
+        }
+    }
+
+    public function getBusinessUsers(): ApiResponse
+    {
+        try {
+            $businessUsers = DB::table('users')
+                ->where('role', 'business')
+                ->select('id', 'username', 'email', 'first_name', 'last_name', 'created_at')
+                ->orderByDesc('created_at')
+                ->get()
+                ->toArray();
+
+            return new ApiResponse(true, $businessUsers, 'Success');
+        } catch (\Exception $e) {
+            \Log::error('AdminService getBusinessUsers error', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return new ApiResponse(false, null, 'Error fetching business users: ' . $e->getMessage(), 500);
         }
     }
 }

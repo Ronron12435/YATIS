@@ -364,7 +364,7 @@ function initDirectionsMap(fromLat, fromLng, toLat, toLng, destName) {
     }
     
     // Create new map
-    window._directionsMap = L.map('directions-map-container').setView(
+    window._directionsMap = L.map('directions-map-container', { zoomControl: false }).setView(
         [(fromLat + toLat) / 2, (fromLng + toLng) / 2],
         13
     );

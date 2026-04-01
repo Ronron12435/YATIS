@@ -30,6 +30,12 @@ class AdminController extends Controller
         return response()->json($response->toArray(), $response->statusCode);
     }
 
+    public function businessUsers()
+    {
+        $response = $this->adminService->getBusinessUsers();
+        return response()->json($response->toArray(), $response->statusCode);
+    }
+
     public function events()
     {
         $response = $this->adminService->getEvents();

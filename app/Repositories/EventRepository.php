@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\EventTask;
 use App\Models\UserAchievement;
 use App\Models\UserTaskCompletion;
+use App\Models\UserDailySteps;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -13,7 +14,7 @@ class EventRepository
 {
     public function search(?string $search): LengthAwarePaginator
     {
-        $query = Event::where('is_active', true);
+        $query = Event::where('is_active', true)->withCount('tasks');
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -55,9 +56,9 @@ class EventRepository
         return EventTask::find($id);
     }
 
-    public function getTasksByEvent(int $eventId): LengthAwarePaginator
+    public function getTasksByEvent(int $eventId)
     {
-        return EventTask::where('event_id', $eventId)->paginate(15);
+        return EventTask::where('event_id', $eventId)->get();
     }
 
     public function deleteTask(EventTask $task): void
@@ -103,12 +104,12 @@ class EventRepository
 
     public function getUserAchievements(int $userId)
     {
-        return UserAchievement::where('user_id', $userId)->with('event')->latest()->get();
+        return UserAchievement::where('user_id', $userId)->with(['event', 'task'])->latest()->get();
     }
 
     public function getTotalPoints(int $userId): int
     {
-        return UserAchievement::where('user_id', $userId)->sum('points_earned');
+        return UserTaskCompletion::where('user_id', $userId)->sum('points_earned');
     }
 
     public function getTasksCompleted(int $userId): int
@@ -133,5 +134,13 @@ class EventRepository
             ->orderByDesc('total_points')
             ->limit($limit)
             ->get();
+    }
+
+    public function getUserTodaySteps(int $userId): int
+    {
+        $today = now()->toDateString();
+        return UserDailySteps::where('user_id', $userId)
+            ->whereDate('date', $today)
+            ->sum('steps') ?? 0;
     }
 }

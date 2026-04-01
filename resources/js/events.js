@@ -79,52 +79,83 @@ const EventsModule = {
      * Load active events
      */
     loadEvents() {
+        console.log('loadEvents called');
         fetch(`${this.apiBase}/events`, { credentials: 'include' })
             .then(response => {
+                console.log('loadEvents - fetch response status:', response.status);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
             })
             .then(data => {
+                console.log('loadEvents - API response:', data);
                 if (data.success) {
+                    console.log('loadEvents - calling renderEvents with:', data.data);
                     this.renderEvents(data.data);
+                } else {
+                    console.error('loadEvents - API returned success: false');
                 }
             })
             .catch(error => {
                 console.error('Error loading events:', error);
-                document.getElementById('events-list').innerHTML =
-                    '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading events.</p>';
+                const eventsList = document.getElementById('events-list');
+                if (eventsList) {
+                    eventsList.innerHTML =
+                        '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading events.</p>';
+                }
             });
     },
 
     /**
      * Render events list
      */
-    renderEvents(events) {
+    renderEvents(data) {
         const eventsList = document.getElementById('events-list');
 
-        if (!Array.isArray(events) || events.length === 0) {
+        if (!eventsList) {
+            console.error('events-list element not found');
+            return;
+        }
+
+        // Handle paginated response structure: { data: [...], ...pagination... }
+        let events = [];
+        if (data && data.data && Array.isArray(data.data)) {
+            events = data.data;
+        } else if (Array.isArray(data)) {
+            events = data;
+        }
+
+        console.log('renderEvents - events array:', events);
+        console.log('renderEvents - events count:', events.length);
+
+        if (events.length === 0) {
             eventsList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No active events at the moment.</p>';
             return;
         }
 
-        eventsList.innerHTML = events.map(event => `
-            <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; border-left: 4px solid #667eea;">
-                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                    <div>
-                        <h4 style="margin: 0 0 5px 0; color: #667eea; font-size: 18px;">${event.title || 'Event'}</h4>
-                        <p style="margin: 0; color: #666; font-size: 14px;">${event.description || ''}</p>
+        try {
+            eventsList.innerHTML = events.map(event => `
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; border-left: 4px solid #667eea;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; color: #667eea; font-size: 18px;">${event.title || 'Event'}</h4>
+                            <p style="margin: 0; color: #666; font-size: 14px;">${event.description || ''}</p>
+                        </div>
+                        <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                            ${event.is_active ? 'Active' : 'Inactive'}
+                        </span>
                     </div>
-                    <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
-                        ${event.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin: 10px 0; font-size: 14px; color: #666;">
+                        <span><i class="fas fa-calendar"></i> ${new Date(event.start_date).toLocaleDateString()}</span>
+                        <span><i class="fas fa-tasks"></i> ${event.tasks_count || 0} tasks</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="EventsModule.viewEventTasks(${event.id})" style="margin-top: 10px;">View Tasks</button>
                 </div>
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin: 10px 0; font-size: 14px; color: #666;">
-                    <span><i class="fas fa-calendar"></i> ${new Date(event.start_date).toLocaleDateString()}</span>
-                    <span><i class="fas fa-tasks"></i> ${event.tasks_count || 0} tasks</span>
-                </div>
-                <button class="btn btn-primary" onclick="EventsModule.viewEventTasks(${event.id})" style="margin-top: 10px;">View Tasks</button>
-            </div>
-        `).join('');
+            `).join('');
+            console.log('renderEvents - HTML rendered successfully');
+        } catch (error) {
+            console.error('renderEvents - Error rendering HTML:', error);
+            eventsList.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error rendering events.</p>';
+        }
     },
 
     /**
@@ -267,13 +298,40 @@ const EventsModule = {
      */
     initStepTracking() {
         const statusEl = document.getElementById('step-tracking-status');
-        
+
         if ('Pedometer' in window) {
             statusEl.textContent = 'Tracking enabled';
             this.startStepTracking();
         } else if ('DeviceMotionEvent' in window) {
-            statusEl.textContent = 'Using motion detection';
-            this.startMotionTracking();
+            // iOS 13+ requires explicit permission
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                statusEl.textContent = 'Tap to enable step tracking';
+                statusEl.style.cursor = 'pointer';
+                statusEl.style.color = '#3498db';
+                statusEl.style.textDecoration = 'underline';
+                statusEl.onclick = () => {
+                    DeviceMotionEvent.requestPermission()
+                        .then(permission => {
+                            if (permission === 'granted') {
+                                statusEl.textContent = 'Using motion detection';
+                                statusEl.style.cursor = '';
+                                statusEl.style.color = '';
+                                statusEl.style.textDecoration = '';
+                                statusEl.onclick = null;
+                                this.startMotionTracking();
+                            } else {
+                                statusEl.textContent = 'Permission denied';
+                            }
+                        })
+                        .catch(() => {
+                            statusEl.textContent = 'Step tracking unavailable';
+                        });
+                };
+            } else {
+                // Android / desktop with motion support
+                statusEl.textContent = 'Using motion detection';
+                this.startMotionTracking();
+            }
         } else {
             statusEl.textContent = 'Step tracking unavailable';
         }
@@ -331,6 +389,19 @@ const EventsModule = {
                         this.dailySteps = stepCount;
                         document.getElementById('daily-steps-display').textContent = stepCount;
                         document.getElementById('daily-steps-count').textContent = stepCount;
+                        
+                        // Send to backend
+                        fetch('/api/steps/increment', {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ increment: 1 })
+                        }).catch(err => console.error('Failed to sync steps:', err));
+                        
                         lastStepTime = currentTime;
                     }
                 }

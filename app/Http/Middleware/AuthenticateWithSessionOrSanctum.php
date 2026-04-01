@@ -12,11 +12,17 @@ class AuthenticateWithSessionOrSanctum
     {
         // Try Sanctum first (for token-based auth)
         if (Auth::guard('sanctum')->check()) {
+            $request->setUserResolver(function () {
+                return Auth::guard('sanctum')->user();
+            });
             return $next($request);
         }
 
         // Fall back to session (for session-based auth from dashboard)
         if (Auth::guard('web')->check()) {
+            $request->setUserResolver(function () {
+                return Auth::guard('web')->user();
+            });
             return $next($request);
         }
 

@@ -13,7 +13,7 @@ class EventTask extends Model
         'event_id', 'title', 'description',
         'task_type', 'target_value',
         'reward_points', 'reward_description',
-        'qr_code', 'is_active',
+        'qr_code', 'is_active', 'badge',
     ];
 
     protected $casts = ['is_active' => 'boolean'];

@@ -194,6 +194,11 @@ Route::get('/me', [AuthController::class, 'me']);
     Route::get('/achievements', [EventController::class, 'userAchievements']);
     Route::get('/leaderboard', [EventController::class, 'leaderboard']);
     
+    // Daily steps tracking
+    Route::get('/steps/today', [EventController::class, 'getTodaySteps']);
+    Route::post('/steps/record', [EventController::class, 'recordSteps']);
+    Route::post('/steps/increment', [EventController::class, 'incrementSteps']);
+    
     // Group messaging
     Route::post('/groups/{id}/messages', [MessageController::class, 'sendGroupMessage']);
     Route::get('/groups/{id}/messages', [MessageController::class, 'getGroupMessages']);
@@ -204,6 +209,7 @@ Route::get('/me', [AuthController::class, 'me']);
         // Admin features
         Route::middleware(\App\Http\Middleware\AdminMiddleware::class)->prefix('admin')->group(function () {
             Route::get('/businesses', [AdminController::class, 'businesses']);
+            Route::get('/business-users', [AdminController::class, 'businessUsers']);
             Route::get('/events', [AdminController::class, 'events']);
             Route::delete('/events/{id}', [AdminController::class, 'deleteEvent']);
             Route::get('/statistics', [AdminController::class, 'statistics']);
