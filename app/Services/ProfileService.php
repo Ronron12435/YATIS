@@ -247,8 +247,10 @@ class ProfileService
     {
         try {
             $path = $file->store('avatars', 'public');
+            $filename = basename($path);
+            
             $this->profileRepository->updateUser($userId, [
-                'profile_picture' => '/storage/' . $path,
+                'profile_picture' => $filename,
             ]);
 
             $user = $this->profileRepository->getUserById($userId);

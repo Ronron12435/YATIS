@@ -61,7 +61,7 @@
             <div class="sidebar-item" onclick="showSection('profile')">
                 <span class="sidebar-icon">
                     @if(auth()->user()->profile_picture)
-                        <img src="{{ asset(auth()->user()->profile_picture) }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <img src="{{ asset('storage/avatars/' . auth()->user()->profile_picture) }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: none; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
                     @else
                         <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
@@ -160,7 +160,7 @@
             <div class="sidebar-item" onclick="showSection('profile')">
                 <span class="sidebar-icon">
                     @if(auth()->user()->profile_picture)
-                        <img src="{{ asset(auth()->user()->profile_picture) }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <img src="{{ asset('storage/avatars/' . auth()->user()->profile_picture) }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                         <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: none; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
                     @else
                         <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
