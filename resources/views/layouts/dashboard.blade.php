@@ -88,16 +88,6 @@
         .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s; text-decoration: none; display: inline-block; font-weight: 600; }
         .btn-primary { background: linear-gradient(135deg, #2c5f8d 0%, #00bcd4 100%); color: white; box-shadow: 0 3px 10px rgba(0,188,212,0.3); }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,188,212,0.4); }
-        #location-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: center; justify-content: center; }
-        .location-modal-content { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); max-width: 400px; text-align: center; }
-        .location-modal-content h2 { color: #1a3a52; margin-bottom: 15px; font-size: 24px; }
-        .location-modal-content p { color: #666; margin-bottom: 25px; line-height: 1.6; }
-        .location-modal-buttons { display: flex; gap: 10px; justify-content: center; }
-        .location-modal-buttons button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
-        .btn-enable-location { background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: white; }
-        .btn-enable-location:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3); }
-        .btn-skip-location { background: #f0f0f0; color: #666; }
-        .btn-skip-location:hover { background: #e0e0e0; }
         @media (max-width: 768px) { .menu-toggle { display: block !important; } .right-section { margin-left: 0; width: 100%; } .sidebar { position: fixed; left: 0; top: 0; height: 100vh; transform: translateX(-100%); z-index: 1000; } .sidebar.active { transform: translateX(0); } .content { padding: 60px 15px 15px 15px !important; width: 100%; } .page-title { font-size: 24px !important; } .stats { grid-template-columns: 1fr !important; } }
         
         /* Dark Mode Styles - Eye-Friendly */
@@ -128,11 +118,6 @@
         body.dark-mode button { color: #e8eaed; }
         body.dark-mode .btn { background: #1a3a52; color: #e8eaed; border-color: #3a4150; }
         body.dark-mode .btn:hover { background: #2c5f8d; }
-        body.dark-mode .location-modal-content { background: #1a1f2e; color: #e8eaed; }
-        body.dark-mode .location-modal-content h2 { color: #4db8d4; }
-        body.dark-mode .location-modal-content p { color: #c5cad1; }
-        body.dark-mode .btn-skip-location { background: #262d3a; color: #e8eaed; }
-        body.dark-mode .btn-skip-location:hover { background: #3a4150; }
         body.dark-mode table { background: #1a1f2e; color: #e8eaed; }
         body.dark-mode table th { background: #0f1419; color: #4db8d4; border-color: #3a4150; }
         body.dark-mode table td { border-color: #3a4150; }
@@ -184,6 +169,7 @@
             if(sectionId === 'my-business') setTimeout(() => { if(typeof initMyBusinessSection === 'function') initMyBusinessSection(); }, 100);
             if(sectionId === 'admin-panel') setTimeout(() => { if(typeof AdminModule !== 'undefined') AdminModule.init(); }, 100);
             if(sectionId === 'events') setTimeout(() => { if(typeof EventsModule !== 'undefined') EventsModule.init(); }, 100);
+            if(sectionId === 'groups') setTimeout(() => { if(typeof initGroupsSection === 'function') initGroupsSection(); }, 100);
         };
 
         // Restore active section on page load - use sessionStorage for refresh, dashboard for fresh login
@@ -215,6 +201,7 @@
                 if(activeSection === 'events') setTimeout(() => { if(typeof EventsModule !== 'undefined') EventsModule.init(); }, 100);
                 if(activeSection === 'profile') setTimeout(() => { if(typeof initProfileSection === 'function') initProfileSection(); }, 100);
                 if(activeSection === 'my-business') setTimeout(() => { if(typeof initMyBusinessSection === 'function') initMyBusinessSection(); }, 100);
+                if(activeSection === 'groups') setTimeout(() => { if(typeof initGroupsSection === 'function') initGroupsSection(); }, 100);
             }
         });
 
@@ -283,11 +270,6 @@
                     }
                 }).catch(() => {});
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            updateBadges();
-            setInterval(updateBadges, 60000);
-        });
 
         let dashboardMap = null;
         function initDashboardMap() {

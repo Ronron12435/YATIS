@@ -85,6 +85,8 @@
                             <button onclick="document.getElementById('avatarInput').click(); closeAvatarMenu();" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: #333; transition: all 0.2s; border-bottom: 1px solid #f0f0f0; white-space: nowrap;">📷 Change</button>
                             <button onclick="removeProfilePicture();" style="width: 100%; padding: 12px 16px; border: none; background: none; text-align: left; cursor: pointer; font-size: 13px; color: #e74c3c; transition: all 0.2s; white-space: nowrap;">🗑️ Delete</button>
                         </div>
+                    @else
+                        <button onclick="document.getElementById('avatarInput').click();" style="position: absolute; bottom: 0; right: 0; background: #3498db; color: white; border: none; border-radius: 50%; width: 36px; height: 36px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 100;" title="Upload profile picture">📷</button>
                     @endif
                 </div>
                 <div class="profile-details">

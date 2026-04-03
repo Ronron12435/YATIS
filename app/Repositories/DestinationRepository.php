@@ -136,7 +136,7 @@ class DestinationRepository
     {
         return DB::table('destination_reviews as dr')
             ->join('users as u', 'u.id', '=', 'dr.user_id')
-            ->select('dr.id', 'dr.rating', 'dr.review', 'dr.created_at', 'u.username', 'u.first_name', 'u.last_name')
+            ->select('dr.id', 'dr.rating', 'dr.review', 'dr.created_at', 'u.id as user_id', 'u.username', 'u.first_name', 'u.last_name', 'u.profile_picture')
             ->where('dr.destination_id', $destinationId)
             ->latest('dr.created_at')
             ->paginate(10);

@@ -8,7 +8,6 @@
         .groups-container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
         .groups-left { display: flex; flex-direction: column; gap: 20px; }
         .groups-right { display: flex; flex-direction: column; gap: 20px; }
-        .modern-card { background: white; border-radius: 12px; padding: 0; box-shadow: 0 2px 12px rgba(0,0,0,.08); overflow: hidden; }
         .modern-card-header { padding: 20px; border-bottom: 1px solid #f0f0f0; background: #fafafa; }
         .card-title-group { display: flex; align-items: center; gap: 12px; }
         .card-icon-modern { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #e3f2fd; border-radius: 8px; color: #1976d2; }
@@ -51,6 +50,10 @@
         .group-btn-view:hover { background: #1976d2; color: white; }
         .group-btn-leave { background: #ffebee; color: #c62828; }
         .group-btn-leave:hover { background: #c62828; color: white; }
+        .group-btn-delete { background: #ffebee; color: #c62828; }
+        .group-btn-delete:hover { background: #c62828; color: white; }
+        .group-btn-join { background: #c8e6c9; color: #2e7d32; }
+        .group-btn-join:hover { background: #2e7d32; color: white; }
         .empty-state { text-align: center; padding: 40px 20px; }
         .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
         .empty-state-text { font-size: 14px; color: #999; }
@@ -124,8 +127,8 @@
                 </div>
             </div>
 
-            {{-- Right Column: Your Groups --}}
-            <div class="groups-right">
+            {{-- Right Column: Your Groups & All Public Groups --}}
+            <div class="groups-right" id="your-groups-right">
                 {{-- Your Groups & Communities Card --}}
                 <div class="modern-card">
                     <div class="modern-card-header">
@@ -133,15 +136,39 @@
                             <div class="card-icon-modern">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
                             </div>
-                            <h3>Your Groups & Communities</h3>
+                            <h3>Groups & Communities</h3>
                         </div>
                     </div>
                     <div class="modern-card-body">
-                        <p style="font-size: 12px; color: #999; margin-bottom: 20px;">Free accounts limited to 50 members per group.</p>
+                        <p style="font-size: 12px; color: #999; margin-bottom: 20px;">Join public groups created by other users or manage your own groups.</p>
                         <div id="groupsList" class="groups-list">
                             <div class="empty-state">
                                 <div class="empty-state-icon">👥</div>
-                                <p class="empty-state-text">No groups yet. Create one to get started!</p>
+                                <p class="empty-state-text">No groups available yet.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Browse Groups Tab --}}
+            <div class="groups-right" id="browse-groups-tab" style="display: none;">
+                {{-- Browse Public Groups Card --}}
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon-modern">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
+                            </div>
+                            <h3>Discover Public Groups</h3>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
+                        <p style="font-size: 12px; color: #999; margin-bottom: 20px;">Join public groups created by other users in your community.</p>
+                        <div id="publicGroupsList" class="groups-list">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🌍</div>
+                                <p class="empty-state-text">Loading public groups...</p>
                             </div>
                         </div>
                     </div>
@@ -186,6 +213,35 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+{{-- Join Group Modal --}}
+<div id="joinGroupModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); max-width: 400px; text-align: center;">
+        <div id="joinGroupIcon" style="font-size: 48px; margin-bottom: 20px;">✓</div>
+        <h2 id="joinGroupTitle" style="color: #1a3a52; margin-bottom: 12px; font-size: 24px; font-weight: 700;">Success!</h2>
+        <p id="joinGroupMessage" style="color: #666; margin-bottom: 25px; line-height: 1.6; font-size: 14px;"></p>
+        <button onclick="event.stopPropagation(); closeJoinGroupModal();" style="background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+            OK
+        </button>
+    </div>
+</div>
+
+{{-- Leave Group Confirmation Modal --}}
+<div id="leaveGroupConfirmModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); max-width: 400px; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+        <h2 style="color: #1a3a52; margin-bottom: 12px; font-size: 24px; font-weight: 700;">Leave Group?</h2>
+        <p style="color: #666; margin-bottom: 30px; line-height: 1.6; font-size: 14px;">Are you sure you want to leave this group? You can rejoin later if it's public.</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="closeLeaveGroupConfirmModal()" style="background: #e0e0e0; color: #333; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                Cancel
+            </button>
+            <button id="confirmLeaveBtn" onclick="confirmLeaveGroup()" style="background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s;">
+                Leave Group
+            </button>
+        </div>
     </div>
 </div>
 
@@ -307,7 +363,7 @@
 
     .group-message {
         display: flex;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
     }
 
     .group-message-other {
@@ -334,6 +390,27 @@
     .group-message-own .group-message-content {
         background: #00bcd4;
         color: white;
+    }
+
+    .group-message-sender-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+        font-size: 12px;
+    }
+
+    .group-message-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid #e0e0e0;
+    }
+
+    .group-message-sender-name {
+        font-weight: 600;
+        color: #1a3a52;
     }
 
     .group-message-text {

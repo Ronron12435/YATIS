@@ -437,44 +437,91 @@ window.uploadCover = function (input) {
 };
 
 window.deleteCover = function () {
-    showModal('Confirm Delete', 'Are you sure you want to delete your cover photo?', [
-        {
-            text: 'Delete',
-            onclick: () => {
-                fetch('/api/profile/cover', {
-                    method: 'DELETE',
-                    credentials: 'include',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
+    console.log('deleteCover called');
+    console.log('Creating modal with buttons...');
+    
+    const deleteButton = {
+        text: 'Delete',
+        color: '#e74c3c',
+        onclick: function() {
+            console.log('✅ Delete button onclick fired!');
+            console.log('Sending DELETE request to /api/profile/cover');
+            
+            fetch('/api/profile/cover', {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+                .then(r => {
+                    console.log('=== DELETE RESPONSE ===');
+                    console.log('Status:', r.status);
+                    console.log('Status Text:', r.statusText);
+                    return r.json();
                 })
-                    .then(r => r.json())
-                    .then(res => {
-                        if (res.success) {
-                            showModal('Success', 'Cover photo deleted successfully!');
-                            setTimeout(() => location.reload(), 1500);
-                        } else {
-                            showModal('Error', res.message || 'Failed to delete cover');
+                .then(res => {
+                    console.log('=== PARSED RESPONSE ===');
+                    console.log('Full response:', res);
+                    console.log('Success:', res.success);
+                    console.log('Message:', res.message);
+                    console.log('Debug Info:', res.debug);
+                    
+                    if (res.debug) {
+                        console.log('--- DEBUG DETAILS ---');
+                        Object.keys(res.debug).forEach(key => {
+                            console.log(`${key}:`, res.debug[key]);
+                        });
+                    }
+                    
+                    if (res.success) {
+                        console.log('✅ Cover photo deleted successfully, reloading page');
+                        showProfileModal('Success', 'Cover photo deleted successfully!', [
+                            { text: 'OK', onclick: () => { closeProfileModal(); location.reload(); } }
+                        ]);
+                    } else {
+                        console.error('❌ Delete failed:', res.message);
+                        let errorMsg = res.message || 'Failed to delete cover photo';
+                        if (res.debug) {
+                            errorMsg += '\n\nDebug: ' + JSON.stringify(res.debug, null, 2);
                         }
-                    })
-                    .catch(() => showModal('Error', 'Error deleting cover'));
-            }
-        },
-        {
-            text: 'Cancel',
-            onclick: closeModal
+                        showProfileModal('Error', errorMsg, [
+                            { text: 'OK', onclick: closeProfileModal }
+                        ]);
+                    }
+                })
+                .catch(err => {
+                    console.error('=== FETCH ERROR ===');
+                    console.error('Error:', err);
+                    console.error('Error message:', err.message);
+                    showProfileModal('Error', 'Error deleting cover photo: ' + err.message, [
+                        { text: 'OK', onclick: closeProfileModal }
+                    ]);
+                });
         }
-    ]);
+    };
+    
+    const cancelButton = {
+        text: 'Cancel',
+        color: '#95a5a6',
+        onclick: closeProfileModal
+    };
+    
+    console.log('Calling showProfileModal with buttons...');
+    showProfileModal('Confirm Delete', 'Are you sure you want to delete your cover photo?', [deleteButton, cancelButton]);
+    console.log('Modal should now be visible');
 };
 
 window.removeProfilePicture = function () {
-    showModal('Confirm Delete', 'Are you sure you want to remove your profile picture?', [
+    showProfileModal('Confirm Delete', 'Are you sure you want to remove your profile picture?', [
         {
             text: 'Remove',
             color: '#e74c3c',
-            onclick: () => {
+            onclick: function() {
+                console.log('Deleting profile picture...');
+                
                 fetch('/api/profile/avatar', {
                     method: 'DELETE',
                     credentials: 'include',
@@ -484,22 +531,37 @@ window.removeProfilePicture = function () {
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                 })
-                    .then(r => r.json())
+                    .then(r => {
+                        console.log('Delete response status:', r.status);
+                        return r.json();
+                    })
                     .then(res => {
+                        console.log('Delete response:', res);
+                        
                         if (res.success) {
-                            showModal('Success', 'Profile picture removed successfully!');
-                            setTimeout(() => location.reload(), 1500);
+                            console.log('✅ Avatar deleted successfully');
+                            showProfileModal('Success', 'Profile picture removed successfully!', [
+                                { text: 'OK', onclick: () => { closeProfileModal(); location.reload(); } }
+                            ]);
                         } else {
-                            showModal('Error', res.message || 'Failed to remove profile picture');
+                            console.error('❌ Delete failed:', res.message);
+                            showProfileModal('Error', res.message || 'Failed to delete profile picture', [
+                                { text: 'OK', onclick: closeProfileModal }
+                            ]);
                         }
                     })
-                    .catch(() => showModal('Error', 'Error removing profile picture'));
+                    .catch(err => {
+                        console.error('Delete error:', err);
+                        showProfileModal('Error', 'Error deleting profile picture: ' + err.message, [
+                            { text: 'OK', onclick: closeProfileModal }
+                        ]);
+                    });
             }
         },
         {
             text: 'Cancel',
             color: '#95a5a6',
-            onclick: closeModal
+            onclick: closeProfileModal
         }
     ]);
 };
@@ -572,18 +634,24 @@ document.addEventListener('click', function (e) {
 
 // ── Modal Functions ──────────────────────────────────────────────────────────
 
-window.showModal = function (title, message, buttons = []) {
+window.showProfileModal = function (title, message, buttons = []) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('profile-modal');
+    const existingOverlay = document.getElementById('profile-modal-overlay');
+    if (existingModal) existingModal.remove();
+    if (existingOverlay) existingOverlay.remove();
+    
     const modal = document.createElement('div');
-    modal.id = 'custom-modal';
+    modal.id = 'profile-modal';
     modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10001; padding:30px; max-width:400px; text-align:center;';
     
     let buttonsHTML = '';
     if (buttons.length > 0) {
         buttonsHTML = `<div style="display:flex; gap:10px; margin-top:20px; justify-content:center;">
-            ${buttons.map((btn, idx) => `<button id="modal-btn-${idx}" style="padding:10px 20px; background:${btn.color || '#3498db'}; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">${btn.text}</button>`).join('')}
+            ${buttons.map((btn, idx) => `<button id="profile-modal-btn-${idx}" style="padding:10px 20px; background:${btn.color || '#3498db'}; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">${btn.text}</button>`).join('')}
         </div>`;
     } else {
-        buttonsHTML = `<button onclick="closeModal();" style="padding:10px 20px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; margin-top:20px;">OK</button>`;
+        buttonsHTML = `<button id="profile-modal-btn-default" style="padding:10px 20px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; margin-top:20px;">OK</button>`;
     }
     
     modal.innerHTML = `
@@ -593,28 +661,46 @@ window.showModal = function (title, message, buttons = []) {
     `;
 
     const overlay = document.createElement('div');
-    overlay.id = 'custom-modal-overlay';
+    overlay.id = 'profile-modal-overlay';
     overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000;';
-    overlay.onclick = () => {
-        modal.remove();
-        overlay.remove();
+    overlay.onclick = (e) => {
+        if (e.target === overlay) {
+            modal.remove();
+            overlay.remove();
+        }
     };
 
     document.body.appendChild(overlay);
     document.body.appendChild(modal);
     
     // Attach click handlers to buttons
+    console.log('showProfileModal - Creating modal with', buttons.length, 'buttons');
     buttons.forEach((btn, idx) => {
-        const btnEl = document.getElementById(`modal-btn-${idx}`);
+        const btnEl = document.getElementById(`profile-modal-btn-${idx}`);
+        console.log(`showProfileModal - Button ${idx} (${btn.text}):`, btnEl ? 'FOUND' : 'NOT FOUND');
+        
         if (btnEl && btn.onclick) {
-            btnEl.onclick = btn.onclick;
+            btnEl.addEventListener('click', function(e) {
+                console.log(`✅ Button ${idx} clicked: ${btn.text}`);
+                e.preventDefault();
+                e.stopPropagation();
+                btn.onclick();
+            });
         }
     });
+    
+    // Handle default button
+    if (buttons.length === 0) {
+        const defaultBtn = document.getElementById('profile-modal-btn-default');
+        if (defaultBtn) {
+            defaultBtn.addEventListener('click', closeProfileModal);
+        }
+    }
 };
 
-window.closeModal = function () {
-    const modal = document.getElementById('custom-modal');
-    const overlay = document.getElementById('custom-modal-overlay');
+window.closeProfileModal = function () {
+    const modal = document.getElementById('profile-modal');
+    const overlay = document.getElementById('profile-modal-overlay');
     if (modal) modal.remove();
     if (overlay) overlay.remove();
 };

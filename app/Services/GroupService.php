@@ -37,7 +37,11 @@ class GroupService
             'member_limit' => 50,
         ]);
 
+        \Log::info('GroupService::create - Group created', ['group_id' => $group->id, 'creator_id' => $dto->creatorId, 'name' => $dto->name]);
+
         $this->groupRepository->addMember($group, $dto->creatorId);
+
+        \Log::info('GroupService::create - Creator added as member', ['group_id' => $group->id, 'user_id' => $dto->creatorId]);
 
         return new ApiResponse(true, $group->load('creator', 'members'), 'Group created', 201);
     }

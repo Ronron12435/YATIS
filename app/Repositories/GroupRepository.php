@@ -3,14 +3,30 @@
 namespace App\Repositories;
 
 use App\Models\Group;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class GroupRepository
 {
-    public function getPublic(): LengthAwarePaginator
+    public function getPublic()
     {
-        return Group::where('is_private', false)->with('creator', 'members')->latest()->paginate(15);
+        $groups = Group::where('is_private', false)
+            ->with('members')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return $groups->map(function ($group) {
+            return (object) [
+                'id' => (int) $group->id,
+                'name' => (string) $group->name,
+                'description' => $group->description ? (string) $group->description : null,
+                'is_private' => (bool) $group->is_private,
+                'member_limit' => (int) $group->member_limit,
+                'creator_id' => (int) $group->creator_id,
+                'created_at' => (string) $group->created_at,
+                'member_count' => (int) $group->members->count(),
+                'is_creator' => false,
+            ];
+        })->toArray();
     }
 
     public function findById(int $id): ?Group
@@ -71,6 +87,8 @@ class GroupRepository
             ->orderByDesc('created_at')
             ->get();
 
+        \Log::info('getUserGroups - Creator groups for user ' . $userId, ['count' => $creatorGroups->count()]);
+
         // Get all groups where user is a member
         $memberGroups = Group::whereHas('members', function ($query) use ($userId) {
             $query->where('user_id', $userId);
@@ -79,11 +97,16 @@ class GroupRepository
             ->orderByDesc('created_at')
             ->get();
 
+        \Log::info('getUserGroups - Member groups for user ' . $userId, ['count' => $memberGroups->count()]);
+
         // Merge and remove duplicates
         $allGroups = $creatorGroups->merge($memberGroups)->unique('id')->values();
 
+        \Log::info('getUserGroups - Total unique groups for user ' . $userId, ['count' => $allGroups->count()]);
+
         // Map to array format for JSON serialization
         return $allGroups->map(function ($group) {
+            $currentUserId = auth()->id();
             return (object) [
                 'id' => (int) $group->id,
                 'name' => (string) $group->name,
@@ -93,6 +116,7 @@ class GroupRepository
                 'creator_id' => (int) $group->creator_id,
                 'created_at' => (string) $group->created_at,
                 'member_count' => (int) $group->members->count(),
+                'is_creator' => (bool) ($group->creator_id === $currentUserId),
             ];
         })->sortByDesc('created_at')->values()->toArray();
     }

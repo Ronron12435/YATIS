@@ -16,13 +16,20 @@ class GroupController extends Controller
         return response()->json($response->toArray(), $response->statusCode);
     }
 
+    public function publicGroups()
+    {
+        $response = $this->groupService->getPublic();
+        return response()->json($response->toArray(), $response->statusCode);
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'is_private'  => 'boolean',
-            'avatar'      => 'nullable|image|max:2048',
+            'name'          => 'required|string|max:255',
+            'description'   => 'nullable|string',
+            'privacy'       => 'nullable|string|in:public,private',
+            'member_limit'  => 'nullable|integer|min:10|max:500',
+            'avatar'        => 'nullable|image|max:2048',
         ]);
 
         $avatarPath = null;
@@ -30,11 +37,13 @@ class GroupController extends Controller
             $avatarPath = $request->file('avatar')->store('groups', 'public');
         }
 
+        $isPrivate = ($validated['privacy'] ?? 'public') === 'private';
+
         $dto = new CreateGroupDTO(
             creatorId: $request->user()->id,
             name: $validated['name'],
             description: $validated['description'] ?? null,
-            isPrivate: $validated['is_private'] ?? false,
+            isPrivate: $isPrivate,
             avatar: $avatarPath,
         );
 

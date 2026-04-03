@@ -77,13 +77,25 @@ class MessageController extends Controller
         if (!auth()->check()) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
+        
+        $userId = auth()->id();
+        $user = auth()->user();
+        
+        // Log for debugging
+        \Log::info('sendGroupMessage', [
+            'authenticated_user_id' => $userId,
+            'authenticated_username' => $user?->username,
+            'group_id' => $groupId,
+            'guard' => auth()->getDefaultDriver(),
+        ]);
+        
         $validated = $request->validate([
             'content' => 'required|string|max:5000',
         ]);
 
         $dto = new SendGroupMessageDTO(
             groupId: (int) $groupId,
-            senderId: auth()->id(),
+            senderId: $userId,
             content: $validated['content'],
         );
 

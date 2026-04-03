@@ -54,6 +54,10 @@ function loadDestinationsDashboard() {
             setEl('dest-my-avg', (d.my_avg_rating || 0).toFixed(1));
 
             allDestinations = d.destinations || [];
+            
+            // Get user's real-time GPS location
+            getRealTimeGPSLocation();
+            
             renderDestinationsList(allDestinations);
             
             // Load destinations on map if map is ready
@@ -593,19 +597,40 @@ window.viewReviews = function (destId, destName) {
                 body.innerHTML = '<p style="color:#999;padding:20px;text-align:center;">No reviews yet. Be the first!</p>';
                 return;
             }
-            body.innerHTML = reviews.map(rv => `
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">${(rv.first_name || rv.username || 'U')[0].toUpperCase()}</div>
-                        <div>
-                            <strong>${rv.first_name ? rv.first_name + ' ' + rv.last_name : rv.username}</strong>
-                            <div style="font-size:12px;color:#999;">${formatDate(rv.created_at)}</div>
+            body.innerHTML = reviews.map(rv => {
+                console.log('Review data:', rv);
+                // Generate avatar - use profile picture if available, otherwise generate initials avatar
+                const firstName = rv.first_name || '';
+                const lastName = rv.last_name || '';
+                const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || '?';
+                let avatarHtml;
+                
+                console.log('Profile picture value:', rv.profile_picture);
+                
+                if (rv.profile_picture) {
+                    avatarHtml = `<img src="/storage/avatars/${rv.profile_picture}" alt="${firstName} ${lastName}" class="review-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid #e0e0e0;">`;
+                } else {
+                    // Generate initials avatar with color
+                    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+                    const colorIndex = (rv.user_id % colors.length);
+                    const bgColor = colors[colorIndex];
+                    avatarHtml = `<div class="review-avatar" style="width:40px;height:40px;border-radius:50%;background:${bgColor};color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;">${initials}</div>`;
+                }
+                
+                return `
+                    <div class="review-card">
+                        <div class="review-header">
+                            ${avatarHtml}
+                            <div>
+                                <strong>${rv.first_name ? rv.first_name + ' ' + rv.last_name : rv.username}</strong>
+                                <div style="font-size:12px;color:#999;">${formatDate(rv.created_at)}</div>
+                            </div>
+                            <div style="margin-left:auto;">${renderStars(rv.rating)}</div>
                         </div>
-                        <div style="margin-left:auto;">${renderStars(rv.rating)}</div>
+                        <p class="review-text">${rv.review}</p>
                     </div>
-                    <p class="review-text">${rv.review}</p>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         })
         .catch(() => { body.innerHTML = '<p style="color:#e74c3c;padding:20px;">Error loading reviews.</p>'; });
 };
@@ -750,6 +775,49 @@ function escapeHtml(str) {
 function formatDate(dateStr) {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Get real-time GPS location from browser
+function getRealTimeGPSLocation() {
+    if (!navigator.geolocation) {
+        console.warn('Geolocation not supported by browser');
+        loadUserLocationFromDatabase();
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            console.log(`✓ GPS Location obtained: ${lat.toFixed(6)}, ${lng.toFixed(6)} (accuracy: ${accuracy.toFixed(0)}m)`);
+
+            userLat = lat;
+            userLng = lng;
+
+            // Update marker on map if map exists
+            if (destMap) {
+                createUserLocationMarker(lat, lng);
+            }
+
+            // Save to database for future use
+            saveLocationToDatabase(lat, lng);
+
+            // Update GPS status
+            updateGpsStatus('active', `GPS Active (${accuracy.toFixed(0)}m accuracy)`);
+        },
+        (error) => {
+            console.warn('GPS Error:', error.message);
+            // Fallback to database location
+            loadUserLocationFromDatabase();
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
 }
 
 function loadUserLocationFromDatabase() {

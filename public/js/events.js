@@ -502,12 +502,12 @@ const EventsModule = {
                                 this.submitTaskCompletion(taskId, eventId, proofData);
                             },
                             error => {
-                                alert('Unable to get your location. Please enable location services.');
+                                this.showErrorModal('Location Error', 'Unable to get your location. Please enable location services.');
                             }
                         );
                         return;
                     } else {
-                        alert('Geolocation is not supported by your browser');
+                        this.showErrorModal('Geolocation Not Supported', 'Geolocation is not supported by your browser');
                         return;
                     }
                 } else if (task.task_type === 'qr_scan') {
@@ -564,16 +564,16 @@ const EventsModule = {
             .then(data => {
                 if (data.success) {
                     const pointsEarned = data.data?.points_earned || 0;
-                    alert('Task completed! You earned ' + pointsEarned + ' points!');
+                    this.showSuccessModal('Task Completed!', 'You earned ' + pointsEarned + ' points!');
                     this.loadUserAchievements();
                     this.loadLeaderboard();
                 } else {
-                    alert(data.message || 'Error completing task');
+                    this.showErrorModal('Invalid QR Code', data.message || 'Error completing task');
                 }
             })
             .catch(error => {
                 console.error('Error completing task:', error);
-                alert('Error: ' + error.message);
+                this.showErrorModal('Error', error.message || 'Error completing task');
             });
     },
 
@@ -686,7 +686,7 @@ const EventsModule = {
         const qrCode = qrCodeInput ? qrCodeInput.value.trim() : '';
         
         if (!qrCode) {
-            alert('Please enter or scan the QR code');
+            this.showErrorModal('Empty QR Code', 'Please enter or scan the QR code');
             return;
         }
 
@@ -702,7 +702,7 @@ const EventsModule = {
         const fileInput = document.getElementById('proof-image-input');
         
         if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-            alert('Please select an image file');
+            this.showErrorModal('No File Selected', 'Please select an image file');
             return;
         }
 
@@ -719,7 +719,7 @@ const EventsModule = {
         };
 
         reader.onerror = () => {
-            alert('Error reading file');
+            this.showErrorModal('File Error', 'Error reading file');
         };
 
         reader.readAsDataURL(file);
@@ -779,8 +779,9 @@ const EventsModule = {
             const initials = ((firstName || '')[0] || '').toUpperCase() + ((lastName || '')[0] || '').toUpperCase();
             
             // Determine avatar display
-            const avatarHtml = profilePicture 
-                ? `<img src="${profilePicture}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #667eea;">`
+            const avatarUrl = profilePicture ? `/storage/avatars/${profilePicture}` : null;
+            const avatarHtml = avatarUrl 
+                ? `<img src="${avatarUrl}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #667eea;">`
                 : `<div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border: 2px solid #667eea;">${initials}</div>`;
 
             return `
@@ -919,6 +920,73 @@ const EventsModule = {
             });
         }
     },
+
+    /**
+     * Show error modal
+     */
+    showErrorModal(title, message) {
+        const modalHTML = `
+            <div id="event-error-modal" style="display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:12px; padding:40px; max-width:450px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:center;">
+                    <div style="font-size:60px; margin-bottom:20px;">✕</div>
+                    <h2 style="margin:0 0 15px 0; color:#e74c3c; font-size:22px; font-weight:700;">${title}</h2>
+                    <p style="margin:0 0 25px 0; color:#666; font-size:14px; line-height:1.6;">${message}</p>
+                    <button onclick="EventsModule.closeErrorModal()" style="padding:12px 30px; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s;">
+                        OK
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        const existing = document.getElementById('event-error-modal');
+        if (existing) existing.remove();
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    },
+
+    /**
+     * Close error modal
+     */
+    closeErrorModal() {
+        const modal = document.getElementById('event-error-modal');
+        if (modal) modal.remove();
+    },
+
+    /**
+     * Show success modal
+     */
+    showSuccessModal(title, message) {
+        const modalHTML = `
+            <div id="event-success-modal" style="display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:12px; padding:40px; max-width:450px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:center;">
+                    <div style="font-size:60px; margin-bottom:20px;">✓</div>
+                    <h2 style="margin:0 0 15px 0; color:#27ae60; font-size:22px; font-weight:700;">${title}</h2>
+                    <p style="margin:0 0 25px 0; color:#666; font-size:14px; line-height:1.6;">${message}</p>
+                    <button onclick="EventsModule.closeSuccessModal()" style="padding:12px 30px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s;">
+                        OK
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        const existing = document.getElementById('event-success-modal');
+        if (existing) existing.remove();
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Auto-close after 2 seconds
+        setTimeout(() => {
+            this.closeSuccessModal();
+        }, 2000);
+    },
+
+    /**
+     * Close success modal
+     */
+    closeSuccessModal() {
+        const modal = document.getElementById('event-success-modal');
+        if (modal) modal.remove();
+    }
 };
 
 /**

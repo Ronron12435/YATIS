@@ -62,7 +62,12 @@ class MessageRepository
 
     public function getGroupMessages(int $groupId)
     {
-        return GroupMessage::where('group_id', $groupId)->with('sender')->oldest()->get();
+        return GroupMessage::where('group_id', $groupId)
+            ->with(['sender' => function ($query) {
+                $query->select('id', 'first_name', 'last_name', 'profile_picture', 'username');
+            }])
+            ->oldest()
+            ->get();
     }
 
     public function findGroupMessageById(int $id): ?GroupMessage

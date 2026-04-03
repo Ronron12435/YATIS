@@ -426,12 +426,50 @@ const AdminModule = (() => {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
                 
-                showModal('Success', 'QR code downloaded successfully!', '📥', 'success');
+                // Show success modal with download confirmation
+                showDownloadSuccessModal(qrValue);
             });
         } catch (err) {
             console.error('Error downloading QR code:', err);
             showModal('Error', 'Error downloading QR code', '✕', 'error');
         }
+    };
+
+    const showDownloadSuccessModal = (qrValue) => {
+        const modalHTML = `
+            <div id="download-success-modal" style="display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; align-items:center; justify-content:center;">
+                <div style="background:white; border-radius:12px; padding:40px; max-width:450px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:center;">
+                    <div style="font-size:60px; margin-bottom:20px;">✓</div>
+                    <h2 style="margin:0 0 15px 0; color:#27ae60; font-size:22px; font-weight:700;">Download Successful!</h2>
+                    <p style="margin:0 0 20px 0; color:#666; font-size:14px; line-height:1.6;">
+                        Your QR code has been downloaded successfully.<br>
+                        <strong>File name:</strong> qr-code-${qrValue.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png
+                    </p>
+                    <p style="margin:0 0 25px 0; color:#999; font-size:12px; padding:12px; background:#f5f5f5; border-radius:6px; border-left:4px solid #27ae60;">
+                        <i class="fas fa-info-circle"></i> You can now print or share this QR code with participants.
+                    </p>
+                    <button onclick="AdminModule.closeDownloadModal()" style="padding:12px 30px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s;">
+                        OK
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        const existing = document.getElementById('download-success-modal');
+        if (existing) existing.remove();
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Auto-close after 3 seconds
+        setTimeout(() => {
+            closeDownloadModal();
+        }, 3000);
+    };
+
+    const closeDownloadModal = () => {
+        const modal = document.getElementById('download-success-modal');
+        if (modal) modal.remove();
     };
 
     const handleCreateTask = (e) => {

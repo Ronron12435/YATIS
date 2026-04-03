@@ -127,12 +127,11 @@ Route::get('/me', [AuthController::class, 'me']);
     Route::post('/profile/update-location', [ProfileController::class, 'updateLocation']);
     
     // Groups
+    Route::get('/groups/user/my-groups', [GroupController::class, 'userGroups']);
+    Route::get('/groups/public', [GroupController::class, 'publicGroups']);
     Route::apiResource('groups', GroupController::class);
     Route::post('/groups/{id}/members', [GroupController::class, 'addMember']);
     Route::delete('/groups/{id}/members/{userId}', [GroupController::class, 'removeMember']);
-    Route::get('/groups/{id}/messages', [GroupController::class, 'messages']);
-    Route::post('/groups/{id}/messages', [GroupController::class, 'sendMessage']);
-    Route::get('/groups/user/my-groups', [GroupController::class, 'userGroups']);
     
     // Destinations
     Route::apiResource('destinations', DestinationController::class);

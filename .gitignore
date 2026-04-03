@@ -41,8 +41,4 @@ dashboard_full_content.txt
 dashboard_source.php
 Project_ojt/
 *.result.cache
-artisan
 package-lock.json
-composer.json
-composer.lock
-phpunit.xml

@@ -9,7 +9,7 @@ class GroupMessage extends Model
     // No updated_at in actual DB
     const UPDATED_AT = null;
 
-    protected $fillable = ['group_id', 'sender_id', 'content'];
+    protected $fillable = ['group_id', 'user_id', 'message'];
 
     public function group()
     {
@@ -18,6 +18,6 @@ class GroupMessage extends Model
 
     public function sender()
     {
-        return $this->belongsTo(User::class, 'sender_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

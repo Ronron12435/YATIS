@@ -74,9 +74,9 @@ class MessageService
         }
 
         $message = $this->messageRepository->createGroupMessage([
-            'group_id'  => $dto->groupId,
-            'sender_id' => $dto->senderId,
-            'content'   => $dto->content,
+            'group_id' => $dto->groupId,
+            'user_id'  => $dto->senderId,
+            'message'  => $dto->content,
         ]);
 
         return new ApiResponse(true, $message, 'Message sent', 201);

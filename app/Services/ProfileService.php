@@ -272,32 +272,57 @@ class ProfileService
 
     public function deleteAvatar(int $userId)
     {
+        $debug = [];
         try {
+            $debug['step_1'] = 'Getting user';
             $user = $this->profileRepository->getUserById($userId);
+            $debug['user_found'] = $user ? true : false;
             
-            // Delete the file from storage if it exists
-            if ($user && $user->profile_picture) {
-                $filePath = str_replace('/storage/', '', $user->profile_picture);
-                \Storage::disk('public')->delete($filePath);
+            if ($user) {
+                $debug['profile_picture'] = $user->profile_picture;
             }
             
-            $this->profileRepository->updateUser($userId, [
+            if ($user && $user->profile_picture) {
+                $debug['step_2'] = 'Deleting file';
+                $filename = $user->profile_picture;
+                $filePath = storage_path('app/public/avatars/' . $filename);
+                $debug['file_path'] = $filePath;
+                $debug['file_exists'] = file_exists($filePath);
+                
+                if (file_exists($filePath)) {
+                    $deleted = unlink($filePath);
+                    $debug['file_deleted'] = $deleted;
+                } else {
+                    $debug['file_deleted'] = false;
+                    $debug['reason'] = 'File does not exist';
+                }
+            } else {
+                $debug['step_2'] = 'No file to delete';
+            }
+            
+            $debug['step_3'] = 'Updating database';
+            $updated = $this->profileRepository->updateUser($userId, [
                 'profile_picture' => null,
             ]);
+            $debug['db_updated'] = $updated;
 
             $user = $this->profileRepository->getUserById($userId);
+            $debug['profile_picture_after'] = $user->profile_picture;
 
             return [
                 'success' => true,
                 'message' => 'Avatar deleted successfully',
                 'data' => $user,
+                'debug' => $debug,
             ];
         } catch (\Exception $e) {
+            $debug['error'] = $e->getMessage();
+            $debug['trace'] = $e->getTraceAsString();
             return [
                 'success' => false,
-                'message' => 'Failed to delete avatar',
+                'message' => 'Failed to delete avatar: ' . $e->getMessage(),
                 'data' => null,
-                'error' => $e->getMessage(),
+                'debug' => $debug,
             ];
         }
     }
@@ -329,24 +354,61 @@ class ProfileService
 
     public function deleteCover(int $userId)
     {
+        $debug = [];
         try {
-            $this->profileRepository->updateUser($userId, [
+            $debug['step_1'] = 'Getting user';
+            $user = $this->profileRepository->getUserById($userId);
+            $debug['user_found'] = $user ? true : false;
+            
+            if ($user) {
+                $debug['cover_photo'] = $user->cover_photo;
+            }
+            
+            if ($user && $user->cover_photo) {
+                $debug['step_2'] = 'Deleting file';
+                // Extract filename from stored path (e.g., "/storage/covers/filename.jpg" -> "covers/filename.jpg")
+                $coverPath = $user->cover_photo;
+                if (strpos($coverPath, '/storage/') === 0) {
+                    $coverPath = substr($coverPath, 9); // Remove "/storage/" prefix
+                }
+                $filePath = storage_path('app/public/' . $coverPath);
+                $debug['file_path'] = $filePath;
+                $debug['file_exists'] = file_exists($filePath);
+                
+                if (file_exists($filePath)) {
+                    $deleted = unlink($filePath);
+                    $debug['file_deleted'] = $deleted;
+                } else {
+                    $debug['file_deleted'] = false;
+                    $debug['reason'] = 'File does not exist';
+                }
+            } else {
+                $debug['step_2'] = 'No file to delete';
+            }
+            
+            $debug['step_3'] = 'Updating database';
+            $updated = $this->profileRepository->updateUser($userId, [
                 'cover_photo' => null,
             ]);
+            $debug['db_updated'] = $updated;
 
             $user = $this->profileRepository->getUserById($userId);
+            $debug['cover_photo_after'] = $user->cover_photo;
 
             return [
                 'success' => true,
                 'message' => 'Cover photo deleted successfully',
                 'data' => $user,
+                'debug' => $debug,
             ];
         } catch (\Exception $e) {
+            $debug['error'] = $e->getMessage();
+            $debug['trace'] = $e->getTraceAsString();
             return [
                 'success' => false,
-                'message' => 'Failed to delete cover photo',
+                'message' => 'Failed to delete cover photo: ' . $e->getMessage(),
                 'data' => null,
-                'error' => $e->getMessage(),
+                'debug' => $debug,
             ];
         }
     }
