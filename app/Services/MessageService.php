@@ -23,8 +23,8 @@ class MessageService
     {
         $message = $this->messageRepository->createPrivate([
             'sender_id'   => $dto->senderId,
-            'receiver_id' => $dto->recipientId,
-            'content'     => $dto->content,
+            'recipient_id' => $dto->recipientId,
+            'message'     => $dto->content,
         ]);
 
         return new ApiResponse(true, $message, 'Message sent', 201);
@@ -60,7 +60,7 @@ class MessageService
             return new ApiResponse(false, null, 'Message not found', 404);
         }
 
-        if ($authId !== $message->receiver_id) {
+        if ($authId !== $message->recipient_id) {
             return new ApiResponse(false, null, 'Unauthorized', 403);
         }
 

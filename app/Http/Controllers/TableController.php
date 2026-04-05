@@ -80,4 +80,10 @@ class TableController extends Controller
         $response = $this->tableService->getAvailable((int) $validated['business_id']);
         return response()->json($response->toArray(), $response->statusCode);
     }
+
+    public function getByBusiness($businessId)
+    {
+        $response = $this->tableService->getByBusiness((int) $businessId);
+        return response()->json($response->toArray(), $response->statusCode);
+    }
 }

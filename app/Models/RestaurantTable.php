@@ -9,17 +9,13 @@ class RestaurantTable extends Model
 {
     use HasFactory;
 
-    // No updated_at in actual DB
-    const UPDATED_AT = null;
-
     protected $fillable = [
         'business_id', 'table_number',
-        'seats', 'is_occupied', 'occupied_at',
+        'capacity', 'status', 'reserved_until',
     ];
 
     protected $casts = [
-        'is_occupied' => 'boolean',
-        'occupied_at' => 'datetime',
+        'reserved_until' => 'datetime',
     ];
 
     public function business()

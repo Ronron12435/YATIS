@@ -58,7 +58,6 @@ window.initPeopleMap = function() {
 
     // Delay loading markers to ensure map is ready
     setTimeout(() => {
-        console.log('⏱️ Delayed loadPeopleMarkers() call after 500ms');
         loadPeopleMarkers();
     }, 500);
     
@@ -67,26 +66,18 @@ window.initPeopleMap = function() {
 };
 
 function loadPeopleMarkers() {
-    console.log('🔄 loadPeopleMarkers() called');
-    console.log('peopleMap exists:', !!peopleMap);
-    
     if (!peopleMap) {
-        console.error('❌ Map not initialized yet');
         return;
     }
     
-    console.log('📡 Fetching /api/people-map...');
     fetch('/api/people-map', { credentials: 'include' })
         .then(r => {
-            console.log('📊 Response status:', r.status);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             return r.json();
         })
         .then(response => {
-            console.log('✅ People map response:', response);
             const users = response.data || [];
-            console.log('👥 Users to display:', users);
-            console.log('📍 Number of users:', users.length);
+
             
             if (!users.length) {
                 console.warn('⚠️ No users returned from API');
@@ -95,12 +86,11 @@ function loadPeopleMarkers() {
             
             // Clear existing markers (except your own)
             if (window._existingMarkers) {
-                console.log('🗑️ Clearing', window._existingMarkers.length, 'existing markers');
                 window._existingMarkers.forEach(marker => {
                     try {
                         peopleMap.removeLayer(marker);
                     } catch (e) {
-                        console.warn('Error removing marker:', e);
+                        // Silently ignore marker removal errors
                     }
                 });
             }
@@ -110,19 +100,15 @@ function loadPeopleMarkers() {
             
             users.forEach(user => {
                 try {
-                    console.log('📌 Adding marker for:', user.username, 'at', user.latitude, user.longitude);
                     const lat = parseFloat(user.latitude);
                     const lng = parseFloat(user.longitude);
                     
                     // Validate coordinates are within Philippines bounds (5-20 lat, 120-130 lng)
                     if (isNaN(lat) || isNaN(lng) || lat < 5 || lat > 20 || lng < 120 || lng > 130) {
-                        console.warn('⚠️ Invalid coordinates for', user.username, '- skipping marker');
                         return;
                     }
                     
                     const initials = ((user.first_name||'')[0]||'').toUpperCase() + ((user.last_name||'')[0]||'').toUpperCase();
-                    
-                    console.log('  Initials:', initials, 'Coords:', lat, lng);
                     
                     // Create colored circle with initials
                     const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
@@ -167,20 +153,16 @@ function loadPeopleMarkers() {
                     marker.bindPopup(popupHtml, { maxWidth: 260, className: 'people-popup', autoPan: false });
                     window._existingMarkers.push(marker);
                     bounds.extend([lat, lng]);
-                    console.log('✅ Marker added for:', user.username);
                 } catch (e) {
-                    console.error('❌ Error adding marker for user:', user.username, e);
+                    // Silently ignore marker errors
                 }
             });
-            
-            // Don't fit bounds - keep map centered on Sagay City
-            console.log('✅ All markers loaded successfully!');
             
             // Display nearby users list
             displayNearbyUsersList(users);
         })
         .catch(err => {
-            console.error('❌ Error fetching people map:', err);
+            // Silently ignore fetch errors
         });
 }
 
@@ -277,20 +259,42 @@ function loadFriendsList() {
                     </div>
                 </div>`;
             }).join('');
+            
+            // After friends list is loaded, restore active chat if it exists
+            const activeChatUserId = sessionStorage.getItem('activeChatUserId');
+            if (activeChatUserId) {
+                const chatName = sessionStorage.getItem('activeChatName');
+                const chatInitials = sessionStorage.getItem('activeChatInitials');
+                setTimeout(() => {
+                    openFriendChat(parseInt(activeChatUserId), chatName, chatInitials);
+                }, 50);
+            }
         }).catch(err => { 
-            console.error('Error loading friends:', err);
             document.getElementById('friends-count').textContent = 0; 
         });
 }
 
 window.openFriendChat = function(userId, name, initials) {
+    // Clear any existing interval before starting a new one
+    if (fcPollInterval) {
+        clearInterval(fcPollInterval);
+        fcPollInterval = null;
+    }
+    
     fcUserId = userId;
     document.getElementById('fc-name').textContent = name;
     document.getElementById('fc-avatar').textContent = initials;
     document.getElementById('friends-list-view').style.display = 'none';
     document.getElementById('friends-chat-view').style.display = 'block';
+    
+    // Save chat state to sessionStorage
+    sessionStorage.setItem('activeChatUserId', userId);
+    sessionStorage.setItem('activeChatName', name);
+    sessionStorage.setItem('activeChatInitials', initials);
+    
     loadFriendMessages();
-    clearInterval(fcPollInterval);
+    
+    // Start polling only after initial load
     fcPollInterval = setInterval(loadFriendMessages, 3000);
 };
 
@@ -299,13 +303,24 @@ window.closeFriendChat = function() {
     fcUserId = null;
     document.getElementById('friends-chat-view').style.display = 'none';
     document.getElementById('friends-list-view').style.display = 'block';
+    
+    // Clear chat state from sessionStorage
+    sessionStorage.removeItem('activeChatUserId');
+    sessionStorage.removeItem('activeChatName');
+    sessionStorage.removeItem('activeChatInitials');
+    
     if (typeof updateBadges === 'function') updateBadges();
 };
 
 function loadFriendMessages() {
     if (!fcUserId) return;
     fetch('/api/messages/' + fcUserId)
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) {
+                throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+            }
+            return r.json();
+        })
         .then(response => {
             const msgs = response.data || [];
             const box = document.getElementById('fc-messages');
@@ -324,7 +339,15 @@ function loadFriendMessages() {
             }).join('');
             box.scrollTop = box.scrollHeight;
             if (typeof updateBadges === 'function') updateBadges();
-        }).catch(() => {});
+        })
+        .catch(err => {
+            const box = document.getElementById('fc-messages');
+            if (box) {
+                box.innerHTML = `<p style="color:#e74c3c;text-align:center;margin-top:40px;">Error loading messages</p>`;
+            }
+            // Stop polling on error
+            clearInterval(fcPollInterval);
+        });
 }
 
 window.sendFriendMessage = function() {
@@ -344,7 +367,36 @@ window.sendFriendMessage = function() {
 window.openChat = window.openFriendChat;
 
 window.unfriend = function(userId) {
-    if (!confirm('Remove this friend?')) return;
+    // Create modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+            <h2 style="margin: 0 0 15px 0; color: #1a3a52; font-size: 20px;">Remove Friend?</h2>
+            <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">Are you sure you want to remove this friend? This action cannot be undone.</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="this.closest('div').parentElement.remove()" style="padding: 10px 24px; background: #ecf0f1; color: #2c3e50; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Cancel</button>
+                <button onclick="confirmUnfriend(${userId}); this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Remove</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+window.confirmUnfriend = function(userId) {
     fetch(`/api/friends/${userId}`, {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
@@ -353,11 +405,37 @@ window.unfriend = function(userId) {
 };
 
 window.addFriend = function(userId, userName) {
-    if (!confirm(`Send friend request to ${userName}?`)) return;
+    // Create modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
     
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+            <h2 style="margin: 0 0 15px 0; color: #1a3a52; font-size: 20px;">Send Friend Request?</h2>
+            <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">Send a friend request to <strong>${userName}</strong>?</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="this.closest('div').parentElement.remove()" style="padding: 10px 24px; background: #ecf0f1; color: #2c3e50; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Cancel</button>
+                <button onclick="confirmAddFriend(${userId}, '${userName}'); this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #3498db; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Send Request</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+window.confirmAddFriend = function(userId, userName) {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    console.log('CSRF Token:', csrfToken);
-    console.log('Sending request to:', `/api/friends/${userId}/add`);
     
     fetch(`/api/friends/${userId}/add`, {
         method: 'POST',
@@ -368,26 +446,89 @@ window.addFriend = function(userId, userName) {
         },
         credentials: 'include'
     }).then(r => {
-        console.log('Response status:', r.status);
-        console.log('Response headers:', r.headers);
         if (!r.ok) {
             return r.text().then(text => {
-                console.error('Error response:', text);
                 throw new Error(`HTTP ${r.status}: ${text.substring(0, 100)}`);
             });
         }
         return r.json();
     }).then(response => {
-        console.log('Success response:', response);
         if (response.success) {
-            alert(`Friend request sent to ${userName}!`);
-            location.reload();
+            // Show success modal
+            const successModal = document.createElement('div');
+            successModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            successModal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                    <h2 style="margin: 0 0 15px 0; color: #27ae60; font-size: 20px;">✓ Request Sent!</h2>
+                    <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">Friend request sent to <strong>${userName}</strong>!</p>
+                    <button onclick="this.closest('div').parentElement.remove(); location.reload();" style="padding: 10px 24px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+                </div>
+            `;
+            
+            document.body.appendChild(successModal);
         } else {
-            alert('Error: ' + (response.message || 'Failed to send friend request'));
+            // Show error modal
+            const errorModal = document.createElement('div');
+            errorModal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            errorModal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                    <h2 style="margin: 0 0 15px 0; color: #e74c3c; font-size: 20px;">✗ Error</h2>
+                    <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">${response.message || 'Failed to send friend request'}</p>
+                    <button onclick="this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+                </div>
+            `;
+            
+            document.body.appendChild(errorModal);
         }
     }).catch(err => {
-        console.error('Full error:', err);
-        alert('Error sending friend request: ' + err.message);
+        // Show error modal
+        const errorModal = document.createElement('div');
+        errorModal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
+        errorModal.innerHTML = `
+            <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                <h2 style="margin: 0 0 15px 0; color: #e74c3c; font-size: 20px;">✗ Error</h2>
+                <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">Error sending friend request: ${err.message}</p>
+                <button onclick="this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+            </div>
+        `;
+        
+        document.body.appendChild(errorModal);
     });
 };
 
@@ -398,34 +539,197 @@ window.acceptFriend = function(userId) {
         credentials: 'include'
     }).then(r => r.json()).then(response => {
         if (response.success) {
-            alert('Friend request accepted!');
+            // Show success modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                    <h2 style="margin: 0 0 15px 0; color: #27ae60; font-size: 20px;">✓ Friend Request Accepted!</h2>
+                    <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">You are now friends!</p>
+                    <button onclick="this.closest('div').parentElement.remove(); location.reload();" style="padding: 10px 24px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
             loadFriendsList();
-            setTimeout(() => location.reload(), 500);
         } else {
-            alert('Error: ' + (response.message || 'Failed to accept request'));
+            // Show error modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                    <h2 style="margin: 0 0 15px 0; color: #e74c3c; font-size: 20px;">✗ Error</h2>
+                    <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">${response.message || 'Failed to accept request'}</p>
+                    <button onclick="this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
         }
     }).catch(err => {
-        console.error('Error:', err);
-        alert('Error accepting friend request');
+        // Show error modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                <h2 style="margin: 0 0 15px 0; color: #e74c3c; font-size: 20px;">✗ Error</h2>
+                <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">Error accepting friend request</p>
+                <button onclick="this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
     });
 };
 
 window.rejectFriend = function(userId) {
-    if (!confirm('Reject this friend request?')) return;
+    // Create confirmation modal
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+            <h2 style="margin: 0 0 15px 0; color: #1a3a52; font-size: 20px;">Reject Request?</h2>
+            <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">Are you sure you want to reject this friend request?</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="this.closest('div').parentElement.remove()" style="padding: 10px 24px; background: #ecf0f1; color: #2c3e50; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Cancel</button>
+                <button onclick="confirmRejectFriend(${userId}); this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">Reject</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+};
+
+window.confirmRejectFriend = function(userId) {
     fetch(`/api/friends/${userId}/reject`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
         credentials: 'include'
     }).then(r => r.json()).then(response => {
         if (response.success) {
-            alert('Friend request rejected');
-            setTimeout(() => location.reload(), 500);
+            // Show success modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                    <h2 style="margin: 0 0 15px 0; color: #27ae60; font-size: 20px;">✓ Request Rejected</h2>
+                    <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">Friend request has been rejected.</p>
+                    <button onclick="this.closest('div').parentElement.remove(); location.reload();" style="padding: 10px 24px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
         } else {
-            alert('Error: ' + (response.message || 'Failed to reject request'));
+            // Show error modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                    <h2 style="margin: 0 0 15px 0; color: #e74c3c; font-size: 20px;">✗ Error</h2>
+                    <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">${response.message || 'Failed to reject request'}</p>
+                    <button onclick="this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
         }
     }).catch(err => {
-        console.error('Error:', err);
-        alert('Error rejecting friend request');
+        // Show error modal
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+        
+        modal.innerHTML = `
+            <div style="background: white; border-radius: 12px; padding: 30px; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center;">
+                <h2 style="margin: 0 0 15px 0; color: #e74c3c; font-size: 20px;">✗ Error</h2>
+                <p style="margin: 0 0 25px 0; color: #666; font-size: 15px;">Error rejecting friend request</p>
+                <button onclick="this.closest('div').parentElement.remove();" style="padding: 10px 24px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px;">OK</button>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
     });
 };
 

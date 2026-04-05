@@ -12,7 +12,7 @@ class PrivateMessage extends Model
     // No updated_at in actual DB
     const UPDATED_AT = null;
 
-    protected $fillable = ['sender_id', 'receiver_id', 'content', 'is_read'];
+    protected $fillable = ['sender_id', 'recipient_id', 'message', 'is_read'];
 
     protected $casts = ['is_read' => 'boolean'];
 
@@ -21,8 +21,8 @@ class PrivateMessage extends Model
         return $this->belongsTo(User::class, 'sender_id');
     }
 
-    public function receiver()
+    public function recipient()
     {
-        return $this->belongsTo(User::class, 'receiver_id');
+        return $this->belongsTo(User::class, 'recipient_id');
     }
 }

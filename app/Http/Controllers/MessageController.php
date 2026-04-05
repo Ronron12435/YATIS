@@ -21,8 +21,22 @@ class MessageController extends Controller
         if (!auth()->check()) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
-        $response = $this->messageService->getConversation(auth()->id(), (int) $userId);
-        return response()->json($response->toArray(), $response->statusCode);
+        try {
+            $response = $this->messageService->getConversation(auth()->id(), (int) $userId);
+            return response()->json($response->toArray(), $response->statusCode);
+        } catch (\Exception $e) {
+            \Log::error('MessageController@show error: ' . $e->getMessage(), [
+                'user_id' => $userId,
+                'auth_id' => auth()->id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading messages',
+                'data' => null,
+                'errors' => ['error' => $e->getMessage()],
+            ], 500);
+        }
     }
 
     public function store(Request $request)
@@ -59,7 +73,11 @@ class MessageController extends Controller
         if (!auth()->check()) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
-        $response = $this->messageService->unreadCount(auth()->id());
+        
+        $userId = auth()->id();
+        \Log::info('Unread count endpoint called', ['user_id' => $userId]);
+        
+        $response = $this->messageService->unreadCount($userId);
         return response()->json($response->toArray(), $response->statusCode);
     }
 

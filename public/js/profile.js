@@ -345,7 +345,14 @@ window.createPost = function (e) {
         },
         body: formData,
     })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok && r.status === 422) {
+                return r.json().then(data => {
+                    throw new Error(JSON.stringify(data.errors || data.message));
+                });
+            }
+            return r.json();
+        })
         .then(res => {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -356,7 +363,9 @@ window.createPost = function (e) {
                 loadPosts();
                 setTimeout(() => msgEl.innerHTML = '', 3000);
             } else {
-                msgEl.innerHTML = `<div class="message error">${res.message || 'Failed to create post'}</div>`;
+                const errorMsg = res.message || 'Failed to create post';
+                const errorDetails = res.errors ? ' - ' + JSON.stringify(res.errors) : '';
+                msgEl.innerHTML = `<div class="message error">${errorMsg}${errorDetails}</div>`;
             }
         })
         .catch(() => {
@@ -437,16 +446,10 @@ window.uploadCover = function (input) {
 };
 
 window.deleteCover = function () {
-    console.log('deleteCover called');
-    console.log('Creating modal with buttons...');
-    
     const deleteButton = {
         text: 'Delete',
         color: '#e74c3c',
         onclick: function() {
-            console.log('✅ Delete button onclick fired!');
-            console.log('Sending DELETE request to /api/profile/cover');
-            
             fetch('/api/profile/cover', {
                 method: 'DELETE',
                 credentials: 'include',
@@ -456,46 +459,20 @@ window.deleteCover = function () {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             })
-                .then(r => {
-                    console.log('=== DELETE RESPONSE ===');
-                    console.log('Status:', r.status);
-                    console.log('Status Text:', r.statusText);
-                    return r.json();
-                })
+                .then(r => r.json())
                 .then(res => {
-                    console.log('=== PARSED RESPONSE ===');
-                    console.log('Full response:', res);
-                    console.log('Success:', res.success);
-                    console.log('Message:', res.message);
-                    console.log('Debug Info:', res.debug);
-                    
-                    if (res.debug) {
-                        console.log('--- DEBUG DETAILS ---');
-                        Object.keys(res.debug).forEach(key => {
-                            console.log(`${key}:`, res.debug[key]);
-                        });
-                    }
-                    
                     if (res.success) {
-                        console.log('✅ Cover photo deleted successfully, reloading page');
                         showProfileModal('Success', 'Cover photo deleted successfully!', [
                             { text: 'OK', onclick: () => { closeProfileModal(); location.reload(); } }
                         ]);
                     } else {
-                        console.error('❌ Delete failed:', res.message);
                         let errorMsg = res.message || 'Failed to delete cover photo';
-                        if (res.debug) {
-                            errorMsg += '\n\nDebug: ' + JSON.stringify(res.debug, null, 2);
-                        }
                         showProfileModal('Error', errorMsg, [
                             { text: 'OK', onclick: closeProfileModal }
                         ]);
                     }
                 })
                 .catch(err => {
-                    console.error('=== FETCH ERROR ===');
-                    console.error('Error:', err);
-                    console.error('Error message:', err.message);
                     showProfileModal('Error', 'Error deleting cover photo: ' + err.message, [
                         { text: 'OK', onclick: closeProfileModal }
                     ]);
@@ -509,9 +486,7 @@ window.deleteCover = function () {
         onclick: closeProfileModal
     };
     
-    console.log('Calling showProfileModal with buttons...');
     showProfileModal('Confirm Delete', 'Are you sure you want to delete your cover photo?', [deleteButton, cancelButton]);
-    console.log('Modal should now be visible');
 };
 
 window.removeProfilePicture = function () {
@@ -520,8 +495,6 @@ window.removeProfilePicture = function () {
             text: 'Remove',
             color: '#e74c3c',
             onclick: function() {
-                console.log('Deleting profile picture...');
-                
                 fetch('/api/profile/avatar', {
                     method: 'DELETE',
                     credentials: 'include',
@@ -531,27 +504,19 @@ window.removeProfilePicture = function () {
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                 })
-                    .then(r => {
-                        console.log('Delete response status:', r.status);
-                        return r.json();
-                    })
+                    .then(r => r.json())
                     .then(res => {
-                        console.log('Delete response:', res);
-                        
                         if (res.success) {
-                            console.log('✅ Avatar deleted successfully');
                             showProfileModal('Success', 'Profile picture removed successfully!', [
                                 { text: 'OK', onclick: () => { closeProfileModal(); location.reload(); } }
                             ]);
                         } else {
-                            console.error('❌ Delete failed:', res.message);
                             showProfileModal('Error', res.message || 'Failed to delete profile picture', [
                                 { text: 'OK', onclick: closeProfileModal }
                             ]);
                         }
                     })
                     .catch(err => {
-                        console.error('Delete error:', err);
                         showProfileModal('Error', 'Error deleting profile picture: ' + err.message, [
                             { text: 'OK', onclick: closeProfileModal }
                         ]);
@@ -674,14 +639,11 @@ window.showProfileModal = function (title, message, buttons = []) {
     document.body.appendChild(modal);
     
     // Attach click handlers to buttons
-    console.log('showProfileModal - Creating modal with', buttons.length, 'buttons');
     buttons.forEach((btn, idx) => {
         const btnEl = document.getElementById(`profile-modal-btn-${idx}`);
-        console.log(`showProfileModal - Button ${idx} (${btn.text}):`, btnEl ? 'FOUND' : 'NOT FOUND');
         
         if (btnEl && btn.onclick) {
             btnEl.addEventListener('click', function(e) {
-                console.log(`✅ Button ${idx} clicked: ${btn.text}`);
                 e.preventDefault();
                 e.stopPropagation();
                 btn.onclick();

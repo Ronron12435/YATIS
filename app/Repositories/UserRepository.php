@@ -115,9 +115,9 @@ class UserRepository
             return collect([]);
         }
         
-        // Get ALL users except auth user
-        // Show everyone: regular users, employers, business owners, admins, etc.
+        // Get only regular users (role = 'user'), exclude business accounts, employers, and admins
         $users = User::where('id', '!=', $authId)
+            ->where('role', 'user')
             ->select('id', 'username', 'first_name', 'last_name', 'location_name', 'latitude', 'longitude')
             ->get();
         

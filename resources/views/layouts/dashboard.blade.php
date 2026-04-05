@@ -156,10 +156,19 @@
             // Save active section to sessionStorage (cleared on browser close)
             sessionStorage.setItem('activeSection', sectionId);
             
+            // If closing chat, clear chat state
+            if (sectionId !== 'people') {
+                sessionStorage.removeItem('activeChatUserId');
+                sessionStorage.removeItem('activeChatName');
+                sessionStorage.removeItem('activeChatInitials');
+            }
+            
             if(sectionId === 'dashboard') setTimeout(() => initDashboardMap(), 100);
             if(sectionId === 'businesses') setTimeout(() => { if(typeof initBusinessesMap === 'function') initBusinessesMap(); }, 100);
             if(sectionId === 'people') setTimeout(() => initPeopleMap(), 150);
             if(sectionId === 'my-friends') setTimeout(() => { if(typeof loadFriendsList === 'function') loadFriendsList(); }, 100);
+            if(sectionId === 'friend-requests') setTimeout(() => { if(typeof loadFriendRequests === 'function') loadFriendRequests(); }, 100);
+            if(sectionId === 'messages') setTimeout(() => { if(typeof loadConversations === 'function') loadConversations(); }, 100);
             if(sectionId === 'employers') setTimeout(() => { if(typeof EmployersModule !== 'undefined') EmployersModule.init(); if(typeof loadStats === 'function') loadStats(); }, 100);
             if(sectionId === 'jobs') setTimeout(() => { if(typeof JobsModule !== 'undefined') JobsModule.init(); }, 100);
             if(sectionId === 'job-listings') setTimeout(() => { if(typeof loadJobListings === 'function') loadJobListings(); }, 100);
@@ -192,6 +201,8 @@
                 if(activeSection === 'businesses') setTimeout(() => { if(typeof initBusinessesMap === 'function') initBusinessesMap(); }, 100);
                 if(activeSection === 'people') setTimeout(() => initPeopleMap(), 150);
                 if(activeSection === 'my-friends') setTimeout(() => { if(typeof loadFriendsList === 'function') loadFriendsList(); }, 100);
+                if(activeSection === 'friend-requests') setTimeout(() => { if(typeof loadFriendRequests === 'function') loadFriendRequests(); }, 100);
+                if(activeSection === 'messages') setTimeout(() => { if(typeof loadConversations === 'function') loadConversations(); }, 100);
                 if(activeSection === 'employers') setTimeout(() => { if(typeof EmployersModule !== 'undefined') EmployersModule.init(); if(typeof loadStats === 'function') loadStats(); }, 100);
                 if(activeSection === 'jobs') setTimeout(() => { if(typeof JobsModule !== 'undefined') JobsModule.init(); }, 100);
                 if(activeSection === 'job-listings') setTimeout(() => { if(typeof loadJobListings === 'function') loadJobListings(); }, 100);
@@ -235,41 +246,76 @@
         });
 
         // Badge polling — unread messages + pending friend requests
+        let badgeUpdateInProgress = false;
+        
         function updateBadges() {
+            if (badgeUpdateInProgress) return; // Prevent overlapping requests
+            badgeUpdateInProgress = true;
+            
+            let unreadCount = 0;
+            let friendRequestCount = 0;
+            let completed = 0;
+            
             // Unread messages badge
             fetch('/api/messages/unread/count', { credentials: 'include' })
-                .then(r => {
-                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                    return r.json();
-                })
+                .then(r => r.json())
                 .then(data => {
-                    const count = data?.unread_count || 0;
-                    ['unread-msg-badge', 'unread-msg-badge-parent'].forEach(id => {
-                        const badge = document.getElementById(id);
-                        if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'inline-flex' : 'none'; }
-                    });
-                }).catch(() => {});
+                    // API response structure: { success, message, data: { unread_count } }
+                    unreadCount = data?.data?.unread_count || 0;
+                    const badge = document.getElementById('unread-msg-badge');
+                    if (badge) { 
+                        badge.textContent = unreadCount; 
+                        badge.style.display = unreadCount > 0 ? 'inline-flex' : 'none'; 
+                    }
+                    completed++;
+                    if (completed === 2) updatePeopleBadge(unreadCount, friendRequestCount);
+                }).catch(() => {
+                    completed++;
+                    if (completed === 2) updatePeopleBadge(0, friendRequestCount);
+                });
 
             // Friend requests badge
             fetch('/api/friends/requests', { credentials: 'include' })
-                .then(r => {
-                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                    return r.json();
-                })
+                .then(r => r.json())
                 .then(data => {
                     const requests = data?.data || [];
-                    const count = Array.isArray(requests) ? requests.length : 0;
+                    friendRequestCount = Array.isArray(requests) ? requests.length : 0;
                     const badge = document.getElementById('friend-req-badge');
                     if (badge) {
-                        if (count > 0) {
-                            badge.textContent = count;
-                            badge.style.display = 'inline-flex';
-                        } else {
-                            badge.style.display = 'none';
-                        }
+                        badge.textContent = friendRequestCount;
+                        badge.style.display = friendRequestCount > 0 ? 'inline-flex' : 'none';
                     }
-                }).catch(() => {});
+                    completed++;
+                    if (completed === 2) updatePeopleBadge(unreadCount, friendRequestCount);
+                }).catch(() => {
+                    completed++;
+                    if (completed === 2) updatePeopleBadge(unreadCount, 0);
+                });
         }
+
+        // Helper function to update People badge with combined count
+        function updatePeopleBadge(unreadCount, friendRequestCount) {
+            const peopleBadge = document.getElementById('people-badge');
+            if (!peopleBadge) return;
+            
+            const totalCount = (unreadCount || 0) + (friendRequestCount || 0);
+            
+            if (totalCount > 0) {
+                peopleBadge.textContent = totalCount;
+                peopleBadge.style.display = 'inline-flex';
+            } else {
+                peopleBadge.style.display = 'none';
+            }
+            
+            badgeUpdateInProgress = false;
+        }
+
+        // Start badge polling on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateBadges();
+            // Poll every 2 seconds for badge updates
+            setInterval(updateBadges, 2000);
+        });
 
         let dashboardMap = null;
         function initDashboardMap() {
@@ -411,9 +457,11 @@
     <script src="{{ asset('js/messages.js') }}"></script>
     <script src="{{ asset('js/events.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/groups.js') }}"></script>
-    <script src="{{ asset('js/people.js') }}?v={{ time() }}"></script>
-    <script src="{{ asset('js/profile.js') }}?v={{ time() }}"></script>
-    <script src="{{ asset('js/my-business.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/people.js') }}?v={{ microtime(true) }}"></script>
+    <script src="{{ asset('js/profile.js') }}?v={{ microtime(true) }}"></script>
+    <script src="{{ asset('js/my-business.js') }}?v={{ microtime(true) }}"></script>
+    <script src="{{ asset('js/businesses.js') }}?v={{ microtime(true) }}"></script>
+    <script src="{{ asset('js/business-management.js') }}?v={{ microtime(true) }}"></script>
     @if(auth()->user()->role === 'admin')
     <script src="{{ asset('js/admin.js') }}?v={{ time() }}"></script>
     @endif
@@ -421,3 +469,15 @@
     <script src="{{ asset('js/employers.js') }}?v={{ time() }}"></script>
 
     @stack('scripts')
+    
+    <!-- Force reload businesses.js with inline version -->
+    <script>
+        // This ensures the latest version is always loaded
+        fetch('{{ asset("js/businesses.js") }}?v={{ microtime(true) }}')
+            .then(r => r.text())
+            .then(code => {
+                eval(code);
+                console.log('✅ Businesses.js reloaded from server');
+            })
+            .catch(err => console.error('Failed to reload businesses.js:', err));
+    </script>

@@ -7,10 +7,20 @@ const BusinessManagementModule = (() => {
 
     const openManageBusinessModal = () => {
         // Fetch all businesses for this user
-        fetch('/api/user/businesses', { credentials: 'include' })
+        fetch('/api/my-businesses', { credentials: 'include' })
             .then(r => r.json())
             .then(response => {
-                const businesses = response.data || [];
+                let businesses = [];
+                
+                // Handle paginated response (response.data.data)
+                if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    businesses = response.data.data;
+                }
+                // Handle direct array response (response.data)
+                else if (Array.isArray(response.data)) {
+                    businesses = response.data;
+                }
+                
                 if (businesses.length === 0) {
                     showModal('No Business', 'You don\'t have any registered business yet. Please register one first.');
                     return;
@@ -28,7 +38,7 @@ const BusinessManagementModule = (() => {
         let currentBusiness = businesses[0]; // Default to first business
 
         const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10001; padding:30px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto;';
+        modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10001; padding:0; max-width:600px; width:90%; max-height:80vh; display:flex; flex-direction:column; overflow:hidden;';
         
         let businessSelectorHTML = '';
         if (businesses.length > 1) {
@@ -42,27 +52,47 @@ const BusinessManagementModule = (() => {
             `;
         }
         
-        modal.innerHTML = `
-            <button onclick="this.closest('div').remove(); document.getElementById('manage-business-overlay').remove();" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; color:#999; cursor:pointer;">&times;</button>
-            
-            <h2 style="margin:0 0 20px 0; color:#333; font-size:20px;">Manage Business</h2>
-            
-            ${businessSelectorHTML}
-            
-            <div style="background:#f0f4ff; border-left:4px solid #667eea; padding:12px 16px; border-radius:6px; margin-bottom:20px;">
-                <p style="margin:0; color:#333; font-weight:600;" id="business-name-display">${escapeHtml(currentBusiness.name)}</p>
-                <p style="margin:5px 0 0 0; color:#666; font-size:13px;" id="business-info-display">${escapeHtml(currentBusiness.category)} • ${escapeHtml(currentBusiness.address)}</p>
-            </div>
+        // Build tables button HTML
+        let tablesButtonHTML = '';
+        
+        if (currentBusiness.category === 'food') {
+            tablesButtonHTML = `<button onclick="BusinessManagementModule.manageTables(${currentBusiness.id})" style="padding:12px 16px; background:#9b59b6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;"><i class="fas fa-chair"></i> 🪑 Manage Tables</button>`;
+        }
+        
+        const scrollContent = `
+            <div style="padding:30px; overflow-y:auto; flex:1;">
+                <button onclick="document.getElementById('manage-business-overlay').click();" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; color:#999; cursor:pointer; z-index:10002;">&times;</button>
+                
+                <h2 style="margin:0 0 20px 0; color:#333; font-size:20px;">Manage Business</h2>
+                
+                ${businessSelectorHTML}
+                
+                <div style="background:#f0f4ff; border-left:4px solid #667eea; padding:12px 16px; border-radius:6px; margin-bottom:20px;">
+                    <p style="margin:0; color:#333; font-weight:600;" id="business-name-display">${escapeHtml(currentBusiness.name)}</p>
+                    <p style="margin:5px 0 0 0; color:#666; font-size:13px;" id="business-info-display">${escapeHtml(currentBusiness.category)} • ${escapeHtml(currentBusiness.address)}</p>
+                </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
-                <button onclick="BusinessManagementModule.editLocation(${currentBusiness.id})" style="padding:12px 16px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <i class="fas fa-map-marker-alt"></i> Edit Location
-                </button>
-                <button onclick="BusinessManagementModule.editInfo(${currentBusiness.id})" style="padding:12px 16px; background:#2ecc71; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <i class="fas fa-info-circle"></i> Edit Info
-                </button>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px;">
+                    <button onclick="BusinessManagementModule.editLocation(${currentBusiness.id})" style="padding:12px 16px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <i class="fas fa-map-marker-alt"></i> Edit Location
+                    </button>
+                    <button onclick="BusinessManagementModule.editInfo(${currentBusiness.id})" style="padding:12px 16px; background:#2ecc71; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <i class="fas fa-info-circle"></i> Edit Info
+                    </button>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr; gap:12px; margin-bottom:20px;">
+                    <button onclick="BusinessManagementModule.viewTableStatus(${currentBusiness.id})" style="padding:12px 16px; background:#e67e22; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <i class="fas fa-eye"></i> View Table Status
+                    </button>
+                </div>
+            </div>
+            
+            <div style="padding:20px 30px; border-top:1px solid #eee; background:#fafafa; display:grid; grid-template-columns:1fr; gap:12px;" id="tables-button-container">
+                ${tablesButtonHTML}
             </div>
         `;
+        
+        modal.innerHTML = scrollContent;
 
         const overlay = document.createElement('div');
         overlay.id = 'manage-business-overlay';
@@ -262,16 +292,27 @@ const BusinessManagementModule = (() => {
         document.getElementById('business-name-display').textContent = escapeHtml(business.name);
         document.getElementById('business-info-display').textContent = `${escapeHtml(business.category)} • ${escapeHtml(business.address)}`;
         
-        // Update button onclick handlers
-        const buttons = document.querySelectorAll('[onclick*="editLocation"], [onclick*="editInfo"]');
-        buttons.forEach(btn => {
-            btn.onclick = null;
-            if (btn.textContent.includes('Edit Location')) {
-                btn.onclick = () => BusinessManagementModule.editLocation(business.id);
-            } else if (btn.textContent.includes('Edit Info')) {
-                btn.onclick = () => BusinessManagementModule.editInfo(business.id);
+        // Update or show/hide tables button
+        const tablesContainer = document.getElementById('tables-button-container');
+        
+        if (tablesContainer) {
+            if (business.category === 'food') {
+                tablesContainer.innerHTML = `<button onclick="BusinessManagementModule.manageTables(${business.id})" style="padding:12px 16px; background:#9b59b6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; display:flex; align-items:center; justify-content:center; gap:8px; width:100%;"><i class="fas fa-chair"></i> 🪑 Manage Tables</button>`;
+            } else {
+                tablesContainer.innerHTML = '';
             }
-        });
+        }
+        
+        // Update button onclick handlers
+        const editLocationBtn = document.querySelector('[onclick*="editLocation"]');
+        const editInfoBtn = document.querySelector('[onclick*="editInfo"]');
+        
+        if (editLocationBtn) {
+            editLocationBtn.onclick = () => BusinessManagementModule.editLocation(business.id);
+        }
+        if (editInfoBtn) {
+            editInfoBtn.onclick = () => BusinessManagementModule.editInfo(business.id);
+        }
     };
 
     const escapeHtml = (text) => {
@@ -361,6 +402,171 @@ const BusinessManagementModule = (() => {
         });
     };
 
+    const manageTables = (businessId) => {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10002; padding:30px; max-width:500px; width:90%; max-height:85vh; overflow-y:auto;';
+        
+        modal.innerHTML = `
+            <button onclick="this.closest('div').remove(); document.getElementById('tables-edit-overlay').remove();" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; color:#999; cursor:pointer;">&times;</button>
+            
+            <h2 style="margin:0 0 20px 0; color:#333; font-size:20px;">🪑 Manage Restaurant Tables</h2>
+            
+            <div style="background:#e8f5e9; border:1px solid #4caf50; border-radius:8px; padding:12px 14px; margin-bottom:20px; display:flex; gap:10px; align-items:flex-start;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#4caf50" style="flex-shrink:0; margin-top:2px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <div style="font-size:12px; color:#2e7d32; line-height:1.4;">
+                    <strong>Generate Tables:</strong> Create tables for your restaurant. Customers will see available tables when viewing your business.
+                </div>
+            </div>
+            
+            <div style="margin-bottom:20px;">
+                <label style="display:block; color:#333; font-weight:600; margin-bottom:8px;">Number of Tables</label>
+                <input type="number" id="num-tables" placeholder="e.g., 10" min="1" max="50" value="10" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; font-size:14px; box-sizing:border-box;">
+            </div>
+            
+            <div style="margin-bottom:20px;">
+                <label style="display:block; color:#333; font-weight:600; margin-bottom:8px;">Seats per Table</label>
+                <input type="number" id="seats-per-table" placeholder="e.g., 4" min="1" max="20" value="4" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; font-size:14px; box-sizing:border-box;">
+            </div>
+            
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button onclick="this.closest('div').remove(); document.getElementById('tables-edit-overlay').remove();" style="padding:12px 24px; background:#95a5a6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
+                <button onclick="BusinessManagementModule.generateTables(${businessId})" style="padding:12px 24px; background:#4caf50; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Generate Tables</button>
+            </div>
+        `;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'tables-edit-overlay';
+        overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10001;';
+        overlay.onclick = () => {
+            modal.remove();
+            overlay.remove();
+        };
+
+        document.body.appendChild(overlay);
+        document.body.appendChild(modal);
+    };
+
+    const generateTables = (businessId) => {
+        const numTables = parseInt(document.getElementById('num-tables')?.value) || 10;
+        const seatsPerTable = parseInt(document.getElementById('seats-per-table')?.value) || 4;
+
+        if (numTables < 1 || numTables > 50) {
+            showModal('Invalid Input', 'Number of tables must be between 1 and 50.');
+            return;
+        }
+
+        if (seatsPerTable < 1 || seatsPerTable > 20) {
+            showModal('Invalid Input', 'Seats per table must be between 1 and 20.');
+            return;
+        }
+
+        fetch(`/api/businesses/${businessId}/generate-tables`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                number_of_tables: numTables,
+                seats_per_table: seatsPerTable
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showModal('Success', `✅ ${numTables} tables with ${seatsPerTable} seats each have been created! Customers can now see your tables.`);
+                document.getElementById('tables-edit-overlay')?.click();
+                setTimeout(() => openManageBusinessModal(), 500);
+            } else {
+                showModal('Error', data.message || 'Failed to generate tables');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showModal('Error', 'Failed to generate tables. Please try again.');
+        });
+    };
+
+    const viewTableStatus = (businessId) => {
+        fetch(`/api/tables?business_id=${businessId}`, { credentials: 'include' })
+            .then(r => r.json())
+            .then(response => {
+                let tables = [];
+                if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    tables = response.data.data;
+                } else if (Array.isArray(response.data)) {
+                    tables = response.data;
+                }
+
+                const modal = document.createElement('div');
+                modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10002; padding:30px; max-width:700px; width:90%; max-height:85vh; overflow-y:auto;';
+                
+                let html = `
+                    <button onclick="document.getElementById('table-status-overlay').click();" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; color:#999; cursor:pointer;">&times;</button>
+                    <h2 style="margin:0 0 20px 0; color:#333; font-size:20px;">Table Status Management</h2>
+                    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:12px;">
+                `;
+
+                tables.forEach(table => {
+                    const statusColor = table.status === 'available' ? '#27ae60' : table.status === 'reserved' ? '#f39c12' : '#e74c3c';
+                    const statusEmoji = table.status === 'available' ? '🟢' : table.status === 'reserved' ? '🟡' : '🔴';
+                    
+                    html += `
+                        <div style="background:white; border:2px solid ${statusColor}; border-radius:8px; padding:12px; text-align:center;">
+                            <div style="font-size:28px; margin-bottom:8px;">🪑</div>
+                            <div style="font-weight:700; color:#333; margin-bottom:4px;">Table ${table.table_number}</div>
+                            <div style="font-size:11px; color:#666; margin-bottom:8px;">${table.capacity} seats</div>
+                            <select onchange="BusinessManagementModule.updateTableStatus(${table.id}, this.value)" style="width:100%; padding:6px; border:1px solid ${statusColor}; border-radius:4px; font-size:12px; cursor:pointer;">
+                                <option value="available" ${table.status === 'available' ? 'selected' : ''}>🟢 Available</option>
+                                <option value="reserved" ${table.status === 'reserved' ? 'selected' : ''}>🟡 Reserved</option>
+                                <option value="occupied" ${table.status === 'occupied' ? 'selected' : ''}>🔴 Occupied</option>
+                            </select>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                modal.innerHTML = html;
+
+                const overlay = document.createElement('div');
+                overlay.id = 'table-status-overlay';
+                overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10001;';
+                overlay.onclick = () => {
+                    modal.remove();
+                    overlay.remove();
+                };
+
+                document.body.appendChild(overlay);
+                document.body.appendChild(modal);
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showModal('Error', 'Failed to load table status');
+            });
+    };
+
+    const updateTableStatus = (tableId, newStatus) => {
+        fetch(`/api/tables/${tableId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                showModal('Error', data.message || 'Failed to update table status');
+            }
+        })
+        .catch(err => {
+            showModal('Error', 'Failed to update table status');
+        });
+    };
+
     return {
         init,
         openManageBusinessModal,
@@ -368,7 +574,11 @@ const BusinessManagementModule = (() => {
         editInfo,
         saveLocation,
         saveInfo,
-        updateSelectedBusiness
+        updateSelectedBusiness,
+        manageTables,
+        generateTables,
+        viewTableStatus,
+        updateTableStatus
     };
 })();
 

@@ -60,23 +60,10 @@
             <!-- My Profile -->
             <div class="sidebar-item" onclick="showSection('profile')">
                 <span class="sidebar-icon">
-                    @if(auth()->user()->profile_picture)
-                        <img src="{{ asset('storage/avatars/' . auth()->user()->profile_picture) }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: none; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
-                    @else
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
-                    @endif
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
                 </span>
                 <div>My Profile</div>
             </div>
-
-            <!-- Go Premium (if not premium) -->
-            @if(!auth()->user()->is_premium)
-            <div class="sidebar-item" onclick="showSection('premium')">
-                <span class="sidebar-icon"><i class="fas fa-crown"></i></span>
-                <div>Go Premium</div>
-            </div>
-            @endif
 
         <!-- REGULAR USER MENU -->
         @else
@@ -91,6 +78,7 @@
                 <div class="sidebar-item" onclick="showSection('people')">
                     <span class="sidebar-icon"><i class="fas fa-users"></i></span>
                     <div>People</div>
+                    <span class="notification-badge" id="people-badge" style="display: none;">0</span>
                 </div>
                 <div class="sidebar-dropdown">
                     <div class="sidebar-item" onclick="showSection('my-friends'); event.stopPropagation();">
@@ -100,6 +88,7 @@
                     <div class="sidebar-item" onclick="showSection('friend-requests'); event.stopPropagation();">
                         <span class="sidebar-icon"><i class="fas fa-user-plus"></i></span>
                         <div>Friend Requests</div>
+                        <span class="notification-badge" id="friend-req-badge" style="display: none;">0</span>
                     </div>
                 </div>
             </div>
@@ -159,12 +148,7 @@
             <!-- My Profile -->
             <div class="sidebar-item" onclick="showSection('profile')">
                 <span class="sidebar-icon">
-                    @if(auth()->user()->profile_picture)
-                        <img src="{{ asset('storage/avatars/' . auth()->user()->profile_picture) }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.3);" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: none; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
-                    @else
-                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
-                    @endif
+                    <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
                 </span>
                 <div>My Profile</div>
             </div>

@@ -161,6 +161,7 @@ Route::get('/me', [AuthController::class, 'me']);
     Route::post('/tables/{id}/reserve', [TableController::class, 'reserve']);
     Route::post('/tables/{id}/release', [TableController::class, 'release']);
     Route::get('/tables/available', [TableController::class, 'available']);
+    Route::get('/businesses/{businessId}/tables', [TableController::class, 'getByBusiness']);
     
     // Search
     Route::get('/search/users', [SearchController::class, 'users']);

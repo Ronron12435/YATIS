@@ -14,7 +14,6 @@
         @include('dashboard.my-business-section')
         @include('dashboard.jobs-section')
         @include('dashboard.profile-section')
-        @include('dashboard.premium-section')
         @include('dashboard.settings-section')
     @else
         <!-- REGULAR USER SECTIONS -->

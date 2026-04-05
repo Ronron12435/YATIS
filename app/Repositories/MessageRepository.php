@@ -11,15 +11,22 @@ class MessageRepository
     public function getConversation(int $authId, int $userId)
     {
         return PrivateMessage::where(function ($q) use ($authId, $userId) {
-            $q->where('sender_id', $authId)->where('receiver_id', $userId);
+            $q->where('sender_id', $authId)->where('recipient_id', $userId);
         })->orWhere(function ($q) use ($authId, $userId) {
-            $q->where('sender_id', $userId)->where('receiver_id', $authId);
-        })->oldest()->get();
+            $q->where('sender_id', $userId)->where('recipient_id', $authId);
+        })
+        ->with(['sender' => function ($query) {
+            $query->select('id', 'first_name', 'last_name', 'profile_picture', 'username');
+        }, 'recipient' => function ($query) {
+            $query->select('id', 'first_name', 'last_name', 'profile_picture', 'username');
+        }])
+        ->oldest()
+        ->get();
     }
 
-    public function markConversationRead(int $receiverId, int $senderId): void
+    public function markConversationRead(int $recipientId, int $senderId): void
     {
-        PrivateMessage::where('receiver_id', $receiverId)
+        PrivateMessage::where('recipient_id', $recipientId)
             ->where('sender_id', $senderId)
             ->update(['is_read' => true]);
     }
@@ -41,12 +48,17 @@ class MessageRepository
 
     public function unreadCount(int $userId): int
     {
-        try {
-            return PrivateMessage::where('receiver_id', $userId)->where('is_read', false)->count();
-        } catch (\Exception $e) {
-            // If receiver_id column doesn't exist, return 0
-            return 0;
-        }
+        $count = PrivateMessage::where('recipient_id', $userId)
+            ->where('is_read', false)
+            ->count();
+        
+        \Log::info('Unread count query', [
+            'user_id' => $userId,
+            'count' => $count,
+            'query' => PrivateMessage::where('recipient_id', $userId)->where('is_read', false)->toSql(),
+        ]);
+        
+        return $count;
     }
 
     public function markPrivateRead(PrivateMessage $message): PrivateMessage

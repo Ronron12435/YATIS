@@ -61,17 +61,23 @@ class ProfileController extends Controller
         $validated = $request->validate([
             'content' => 'required|string|max:1000',
             'privacy' => 'nullable|in:public,friends,private',
-            'image' => 'nullable|string',
+            'image' => 'nullable|image|max:2048',
         ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            $imagePath = $request->file('image')->store('posts', 'public');
+        }
 
         $dto = new CreatePostDTO(
             content: $validated['content'],
             privacy: $validated['privacy'] ?? 'public',
-            image: $validated['image'] ?? null,
+            image: $imagePath,
         );
 
         $response = $this->profileService->createPost(auth()->id(), $dto);
-        return response()->json($response, $response['success'] ? 201 : 400);
+        $statusCode = $response['success'] ? 201 : 400;
+        return response()->json($response, $statusCode);
     }
 
     public function deletePost(int $postId)

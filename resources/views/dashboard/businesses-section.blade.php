@@ -146,7 +146,8 @@ window.initBusinessesMap = function() {
                 let actionButton = '';
                 let viewType = '';
                 if (business.business_type === 'food') {
-                    actionButton = `<button onclick="showBusinessItems(${business.id}, 'menu')" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px;">View Menu</button>`;
+                    actionButton = `<button onclick="showBusinessItems(${business.id}, 'menu')" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px;">View Menu</button>
+                    <button onclick="showBusinessTables(${business.id})" style="width: 100%; padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 8px;">View Tables</button>`;
                     viewType = 'menu';
                 } else if (business.business_type === 'goods') {
                     actionButton = `<button onclick="showBusinessItems(${business.id}, 'products')" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; margin-top: 10px;">View Products</button>`;
@@ -356,7 +357,5 @@ window.showBusinessJobs = function(businessId) {
             document.getElementById('business-items-content').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">Error loading jobs</div>';
         });
 };
-
-// ── Service Management Functions ──────────────────────────────────────────
 
 </script>
