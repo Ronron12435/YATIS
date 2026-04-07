@@ -13,7 +13,6 @@ const JobsModule = (() => {
         // Only load applications for non-business users
         if (userRole !== 'business') {
             loadMyApplications().then(() => {
-                console.log('Applications loaded:', myApplications);
                 setTimeout(() => {
                     loadJobs();
                     loadMyJobs();
@@ -186,15 +185,9 @@ const JobsModule = (() => {
             return;
         }
         
-        console.log('Checking button for job:', jobId);
-        console.log('My applications:', myApplications);
-        
         const hasApplied = myApplications.some(app => {
-            console.log('Comparing app.job_id:', app.job_id, 'with jobId:', jobId);
             return app.job_id === jobId || app.job?.id === jobId;
         });
-        
-        console.log('Has applied:', hasApplied);
         
         if (hasApplied) {
             applyBtn.disabled = true;
@@ -223,15 +216,9 @@ const JobsModule = (() => {
     const openApplyModal = () => {
         if (!currentJobId) return;
         
-        console.log('openApplyModal - currentJobId:', currentJobId);
-        console.log('openApplyModal - myApplications:', myApplications);
-        
         const hasApplied = myApplications.some(app => {
-            console.log('Checking app:', app, 'against jobId:', currentJobId);
             return app.job_id === currentJobId || app.job_posting_id === currentJobId;
         });
-        
-        console.log('openApplyModal - hasApplied:', hasApplied);
         
         if (hasApplied) {
             showModal('Already Applied', 'You have already applied for this position');
@@ -250,11 +237,6 @@ const JobsModule = (() => {
         const resumeInput = document.getElementById('resume-input');
         const coverLetterInput = document.getElementById('cover-letter-input');
 
-        console.log('=== SUBMIT APPLICATION DEBUG ===');
-        console.log('Resume files:', resumeInput.files);
-        console.log('Resume file count:', resumeInput.files.length);
-        console.log('Current Job ID:', currentJobId);
-
         if (!resumeInput.files.length) {
             showModal('Missing Resume', 'Please upload a resume');
             return;
@@ -264,7 +246,6 @@ const JobsModule = (() => {
         formData.append('resume', resumeInput.files[0]);
         formData.append('cover_letter', coverLetterInput.value);
 
-        console.log('FormData entries:');
         for (let [key, value] of formData.entries()) {
             console.log(`  ${key}:`, value);
         }
@@ -272,8 +253,6 @@ const JobsModule = (() => {
         const submitBtn = document.querySelector('#application-form button[type="submit"]');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Submitting...';
-
-        console.log('Sending POST to:', `/api/jobs/${currentJobId}/apply`);
 
         fetch(`/api/jobs/${currentJobId}/apply`, {
             method: 'POST',
@@ -285,12 +264,9 @@ const JobsModule = (() => {
             body: formData
         })
         .then(r => {
-            console.log('Response status:', r.status);
-            console.log('Response headers:', r.headers);
             return r.json();
         })
         .then(response => {
-            console.log('API Response:', response);
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-check"></i> Submit Application';
 
@@ -318,7 +294,6 @@ const JobsModule = (() => {
         return fetch('/api/jobs/applications/my-applications', { credentials: 'include' })
             .then(r => r.json())
             .then(response => {
-                console.log('API Response:', response);
                 let applications = [];
                 if (response.success && Array.isArray(response.data)) {
                     applications = response.data;
@@ -329,7 +304,6 @@ const JobsModule = (() => {
                 }
                 // Store applications FIRST before rendering
                 myApplications = applications;
-                console.log('Loaded and stored myApplications:', myApplications);
                 renderMyApplications(applications);
                 return applications;
             })
@@ -350,8 +324,6 @@ const JobsModule = (() => {
             console.warn('my-applications element not found');
             return;
         }
-
-        console.log('Rendering applications:', applications);
 
         if (!Array.isArray(applications) || applications.length === 0) {
             appsList.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">You haven\'t applied to any jobs yet</p>';
@@ -1182,3 +1154,4 @@ document.addEventListener('DOMContentLoaded', function() {
         loadBusinessesForJobPosting();
     }
 });
+

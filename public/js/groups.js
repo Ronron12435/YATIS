@@ -81,11 +81,9 @@ window.createGroup = function (e) {
 function loadUserGroups() {
     const container = document.getElementById('groupsList');
     if (!container) {
-        console.error('❌ groupsList container not found');
         return;
     }
 
-    console.log('📋 loadUserGroups called');
     container.innerHTML = '<div style="text-align: center; padding: 20px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg></div>';
 
     Promise.all([
@@ -99,14 +97,8 @@ function loadUserGroups() {
         }).then(r => r.json())
     ])
         .then(([userRes, publicRes]) => {
-            console.log('📦 User Groups Response:', userRes);
-            console.log('📦 Public Groups Response:', publicRes);
-            
             const userGroups = Array.isArray(userRes.data) ? userRes.data : [];
             const publicGroups = Array.isArray(publicRes.data) ? publicRes.data : [];
-            
-            console.log('📊 User Groups count:', userGroups.length);
-            console.log('📊 Public Groups count:', publicGroups.length);
             
             const userGroupIds = new Set(userGroups.map(g => g.id));
             const allGroups = [
@@ -153,10 +145,8 @@ function loadUserGroups() {
                     </div>
                 </div>
             `).join('');
-            console.log('✅ Groups rendered successfully');
         })
         .catch(err => {
-            console.error('❌ Error loading groups:', err);
             container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Error loading groups</p>';
         });
 }
@@ -237,14 +227,12 @@ window.deleteGroup = function (groupId, groupName) {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                console.log('✅ Group deleted successfully');
                 loadUserGroups();
             } else {
                 alert(res.message || 'Failed to delete group');
             }
         })
         .catch(err => {
-            console.error('❌ Error deleting group:', err);
             alert('Error deleting group');
         });
 };
@@ -254,11 +242,9 @@ window.deleteGroup = function (groupId, groupName) {
 window.loadPublicGroups = function () {
     const container = document.getElementById('publicGroupsList');
     if (!container) {
-        console.error('❌ publicGroupsList container not found');
         return;
     }
 
-    console.log('📋 loadPublicGroups called');
     container.innerHTML = '<div style="text-align: center; padding: 20px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="animation: spin 1s linear infinite;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg></div>';
 
     fetch('/api/groups/public', {
@@ -266,17 +252,12 @@ window.loadPublicGroups = function () {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     })
         .then(r => {
-            console.log('📡 API Response Status:', r.status);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             return r.json();
         })
         .then(res => {
-            console.log('📦 API Response:', res);
             const groups = res.data?.data || res.data || [];
-            console.log('📊 Public groups count:', groups.length);
-            
             if (!groups.length) {
-                console.log('⚠️ No public groups found');
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-state-icon">🔍</div>
@@ -286,7 +267,6 @@ window.loadPublicGroups = function () {
                 return;
             }
             
-            console.log('✅ Rendering', groups.length, 'public groups');
             container.innerHTML = groups.map(group => `
                 <div class="group-card">
                     <div class="group-card-header">
@@ -313,10 +293,8 @@ window.loadPublicGroups = function () {
                     </div>
                 </div>
             `).join('');
-            console.log('✅ Public groups rendered successfully');
-        })
+            })
         .catch(err => {
-            console.error('❌ Error loading public groups:', err);
             container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">Error loading public groups</p>';
         });
 };
@@ -324,8 +302,6 @@ window.loadPublicGroups = function () {
 // ── Join Group ────────────────────────────────────────────────────────────────
 
 window.joinGroup = function (groupId, groupName) {
-    console.log('📝 Joining group:', groupId, groupName);
-    
     fetch(`/api/groups/${groupId}/members`, {
         method: 'POST',
         credentials: 'include',
@@ -342,7 +318,6 @@ window.joinGroup = function (groupId, groupName) {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                console.log('✅ Successfully joined group');
                 showJoinGroupModal(`✅ You've joined "${groupName}"!`, true);
                 loadPublicGroups();
                 loadUserGroups();
@@ -351,7 +326,6 @@ window.joinGroup = function (groupId, groupName) {
             }
         })
         .catch(err => {
-            console.error('❌ Error joining group:', err);
             showJoinGroupModal('Error joining group', false);
         });
 };
@@ -424,7 +398,6 @@ document.addEventListener('DOMContentLoaded', function () {
 window.openGroupDetail = function (groupId) {
     const modal = document.getElementById('groupDetailModal');
     if (!modal) {
-        console.error('Group detail modal not found');
         return;
     }
 
@@ -449,7 +422,6 @@ function loadGroupDetail(groupId) {
     const messagesContainer = document.getElementById('groupMessages');
 
     if (!header || !messagesContainer) {
-        console.error('Modal elements not found');
         return;
     }
 
@@ -463,7 +435,6 @@ function loadGroupDetail(groupId) {
             return r.json();
         })
         .then(res => {
-            console.log('Group data:', res);
             const group = res.data;
             const headerContent = header.querySelector('.group-detail-header-content');
             if (headerContent) {
@@ -474,7 +445,6 @@ function loadGroupDetail(groupId) {
             document.getElementById('groupDetailGroupId').value = groupId;
         })
         .catch(err => {
-            console.error('Error loading group:', err);
             const headerContent = header.querySelector('.group-detail-header-content');
             if (headerContent) {
                 headerContent.innerHTML = '<p style="color: #ffcccc;">Error loading group details</p>';
@@ -491,17 +461,13 @@ function loadGroupDetail(groupId) {
             return r.json();
         })
         .then(res => {
-            console.log('Messages data:', res);
             const messages = res.data || [];
-            console.log('First message:', messages[0]);
             if (!messages.length) {
                 messagesContainer.innerHTML = '<div class="group-messages-empty">No messages yet. Start the conversation!</div>';
                 return;
             }
             const currentUserId = parseInt(document.querySelector('meta[name="user-id"]').content);
             messagesContainer.innerHTML = messages.map((msg, idx) => {
-                console.log(`Message ${idx}:`, msg);
-                
                 // Get sender information - handle both cases where sender is loaded or not
                 const sender = msg.sender || {};
                 const senderId = sender.id || msg.user_id;
@@ -516,7 +482,7 @@ function loadGroupDetail(groupId) {
                 // Generate avatar - use profile picture if available, otherwise generate initials avatar
                 let senderAvatar;
                 if (sender.profile_picture) {
-                    senderAvatar = `/storage/avatars/${sender.profile_picture}`;
+                    senderAvatar = `/storage/${sender.profile_picture}`;
                 } else {
                     // Generate a color based on user ID for consistency
                     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
@@ -524,8 +490,6 @@ function loadGroupDetail(groupId) {
                     const bgColor = colors[colorIndex];
                     senderAvatar = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='${encodeURIComponent(bgColor)}'/%3E%3Ctext x='50' y='50' text-anchor='middle' dy='.3em' fill='white' font-size='40' font-weight='bold' font-family='Arial'%3E${initials}%3C/text%3E%3C/svg%3E`;
                 }
-                
-                console.log(`Message ${idx} - sender_id: ${senderId}, isOwn: ${isOwnMessage}, sender: ${senderName}`);
                 
                 return `
                     <div class="group-message ${isOwnMessage ? 'group-message-own' : 'group-message-other'}">
@@ -546,7 +510,6 @@ function loadGroupDetail(groupId) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         })
         .catch(err => {
-            console.error('Error loading messages:', err);
             messagesContainer.innerHTML = '<p style="color: #c62828; text-align: center;">Error loading messages</p>';
         });
 }
@@ -585,7 +548,6 @@ window.sendGroupMessage = function (e) {
         })
         .catch(err => {
             btn.disabled = false;
-            console.error('Error sending message:', err);
             alert('Error sending message');
         });
 };
@@ -595,4 +557,5 @@ function formatTime(dateStr) {
     const date = new Date(dateStr);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 }
+
 

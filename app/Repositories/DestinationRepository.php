@@ -56,13 +56,16 @@ class DestinationRepository
     {
         // Create a new review each time (allows multiple reviews per user per destination)
         // The unique constraint will be removed via migration
-        return DestinationReview::create([
+        $review = DestinationReview::create([
             'destination_id' => $data['destination_id'],
             'user_id'        => $data['user_id'],
             'rating'         => $data['rating'],
             'review'         => $data['review'],
             'image'          => $data['image'] ?? null,
         ]);
+
+        // Load the user relationship to include profile picture in response
+        return $review->load('user');
     }
 
     public function updateRating(int $destinationId): void

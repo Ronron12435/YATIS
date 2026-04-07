@@ -15,7 +15,7 @@ class BusinessService
         return new ApiResponse(true, $this->businessRepository->search($search, $type, $location), 'Success');
     }
 
-    public function getById(int $id): ApiResponse
+    public function getById(int $id, ?int $authId = null): ApiResponse
     {
         $business = $this->businessRepository->findById($id);
 
@@ -226,6 +226,57 @@ class BusinessService
         $this->businessRepository->deleteService($service);
 
         return new ApiResponse(true, null, 'Service deleted');
+    }
+
+    public function toggleMenuItemAvailability(int $itemId, int $authId, bool $isAvailable): ApiResponse
+    {
+        $item = $this->businessRepository->findMenuItemById($itemId);
+
+        if (!$item) {
+            return new ApiResponse(false, null, 'Menu item not found', 404);
+        }
+
+        if ($authId !== $item->business->user_id) {
+            return new ApiResponse(false, null, 'Unauthorized', 403);
+        }
+
+        $item->update(['is_available' => $isAvailable]);
+
+        return new ApiResponse(true, $item, 'Menu item availability updated');
+    }
+
+    public function toggleProductAvailability(int $productId, int $authId, bool $isAvailable): ApiResponse
+    {
+        $product = $this->businessRepository->findProductById($productId);
+
+        if (!$product) {
+            return new ApiResponse(false, null, 'Product not found', 404);
+        }
+
+        if ($authId !== $product->business->user_id) {
+            return new ApiResponse(false, null, 'Unauthorized', 403);
+        }
+
+        $product->update(['is_available' => $isAvailable]);
+
+        return new ApiResponse(true, $product, 'Product availability updated');
+    }
+
+    public function toggleServiceAvailability(int $serviceId, int $authId, bool $isAvailable): ApiResponse
+    {
+        $service = $this->businessRepository->findServiceById($serviceId);
+
+        if (!$service) {
+            return new ApiResponse(false, null, 'Service not found', 404);
+        }
+
+        if ($authId !== $service->business->user_id) {
+            return new ApiResponse(false, null, 'Unauthorized', 403);
+        }
+
+        $service->update(['is_available' => $isAvailable]);
+
+        return new ApiResponse(true, $service, 'Service availability updated');
     }
 
     public function generateTables(int $businessId, int $authId, int $numberOfTables, int $seatsPerTable): ApiResponse

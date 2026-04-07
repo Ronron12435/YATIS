@@ -24,7 +24,7 @@ window.initPeopleMap = function() {
         attribution: '© OpenStreetMap contributors', maxZoom: 19
     }).addTo(peopleMap);
 
-    // Update user location in background without showing marker
+    // Update user location in background (send to server only, no marker display)
     function updateMyLocation(lat, lng) {
         fetch('/api/profile/update-location', {
             method: 'POST',
@@ -36,7 +36,17 @@ window.initPeopleMap = function() {
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            pos => updateMyLocation(pos.coords.latitude, pos.coords.longitude),
+            pos => {
+                updateMyLocation(pos.coords.latitude, pos.coords.longitude);
+                // Watch position continuously - updates server in background
+                navigator.geolocation.watchPosition(
+                    pos => updateMyLocation(pos.coords.latitude, pos.coords.longitude),
+                    err => {
+                        // Silently ignore GPS errors
+                    },
+                    { enableHighAccuracy: false, maximumAge: 30000, timeout: 30000 }
+                );
+            },
             () => {
                 const userLat = document.querySelector('meta[name="user-latitude"]')?.content;
                 const userLng = document.querySelector('meta[name="user-longitude"]')?.content;
@@ -46,7 +56,7 @@ window.initPeopleMap = function() {
                     fetch('https://ipapi.co/json/').then(r => r.json()).then(d => { if(d.latitude) updateMyLocation(d.latitude, d.longitude); }).catch(()=>{});
                 }
             },
-            { enableHighAccuracy: true, timeout: 8000 }
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }
         );
     } else {
         const userLat = document.querySelector('meta[name="user-latitude"]')?.content;
@@ -254,7 +264,7 @@ function loadFriendsList() {
                     </div>
                     <div style="display:flex;gap:8px;">
                         <button onclick="openFriendChat(${f.id},'${f.first_name} ${f.last_name}','${ini}')" style="padding:8px 16px;background:#3498db;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;"><i class="fas fa-comment"></i> Message</button>
-                        <button style="padding:8px 16px;background:#7f8c8d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;"><i class="fas fa-eye"></i> View</button>
+                        <button onclick="viewUserProfile(${f.id})" style="padding:8px 16px;background:#9b59b6;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;"><i class="fas fa-eye"></i> View</button>
                         <button onclick="unfriend(${f.id})" style="padding:8px 16px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;"><i class="fas fa-times"></i> Unfriend</button>
                     </div>
                 </div>`;
@@ -742,3 +752,103 @@ document.addEventListener('DOMContentLoaded', function() {
     const target = document.getElementById('my-friends');
     if (target) observer.observe(target, { attributes: true, attributeFilter: ['class'] });
 });
+
+// User Profile Modal
+window.viewUserProfile = function(userId) {
+    const url = `/api/profile/${userId}/view`;
+    
+    // Record this visit
+    fetch(`/api/profile/${userId}/visit`, {
+        method: 'POST',
+        headers: { 
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+    }).catch(err => {
+        // Silently fail if visit recording fails
+    });
+    
+    fetch(url, { credentials: 'include' })
+        .then(r => {
+            if (!r.ok) {
+                return r.text().then(text => {
+                    throw new Error(`HTTP ${r.status}: ${text}`);
+                });
+            }
+            return r.json();
+        })
+        .then(response => {
+            if (!response.success) {
+                alert('Failed to load user profile: ' + (response.message || 'Unknown error'));
+                return;
+            }
+
+            const user = response.data;
+            const profilePicture = user.profile_picture ? `/storage/${user.profile_picture}` : null;
+            const coverPhoto = user.cover_photo ? `/storage/${user.cover_photo}` : null;
+
+            let achievementsHtml = '';
+            if (user.achievements && user.achievements.length > 0) {
+                achievementsHtml = user.achievements.map(achievement => `
+                    <div style="text-align:center;padding:10px;">
+                        <div style="font-size:32px;margin-bottom:5px;">${achievement.badge_icon || '🏆'}</div>
+                        <div style="font-weight:600;font-size:12px;color:#333;">${achievement.badge_name}</div>
+                        <div style="font-size:11px;color:#999;">${achievement.description || ''}</div>
+                    </div>
+                `).join('');
+            } else {
+                achievementsHtml = '<p style="color:#999;text-align:center;padding:20px;">No achievements yet.</p>';
+            }
+
+            const modalHtml = `
+                <div id="user-profile-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;">
+                    <div style="background:white;border-radius:12px;width:90%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                        <!-- Cover Photo -->
+                        <div style="height:150px;background:linear-gradient(135deg,#3498db,#2980b9);position:relative;overflow:hidden;">
+                            ${coverPhoto ? `<img src="${coverPhoto}" style="width:100%;height:100%;object-fit:cover;">` : ''}
+                        </div>
+
+                        <!-- Profile Picture -->
+                        <div style="padding:0 20px;margin-top:-50px;position:relative;z-index:1;">
+                            <div style="width:100px;height:100px;border-radius:50%;background:white;border:4px solid white;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.2);">
+                                ${profilePicture ? `<img src="${profilePicture}" style="width:100%;height:100%;object-fit:cover;">` : `<div style="width:100%;height:100%;background:#e0e0e0;display:flex;align-items:center;justify-content:center;font-size:40px;">👤</div>`}
+                            </div>
+                        </div>
+
+                        <!-- User Info -->
+                        <div style="padding:20px;">
+                            <h2 style="margin:0 0 5px 0;color:#1a3a52;font-size:20px;">${user.first_name} ${user.last_name}</h2>
+                            <p style="margin:0 0 15px 0;color:#999;font-size:14px;">@${user.username}</p>
+
+                            <!-- Bio -->
+                            ${user.bio ? `<div style="background:#f5f5f5;padding:12px;border-radius:8px;margin-bottom:20px;color:#555;font-size:14px;line-height:1.5;">${user.bio}</div>` : ''}
+
+                            <!-- Achievements Section -->
+                            <div style="margin-top:20px;">
+                                <h3 style="margin:0 0 15px 0;color:#1a3a52;font-size:16px;font-weight:600;">Achievements & Badges</h3>
+                                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f9f9f9;padding:15px;border-radius:8px;">
+                                    ${achievementsHtml}
+                                </div>
+                            </div>
+
+                            <!-- Close Button -->
+                            <button onclick="document.getElementById('user-profile-modal').remove()" style="width:100%;margin-top:20px;padding:12px;background:#e74c3c;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;font-size:14px;">Close</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        })
+        .catch(err => {
+            alert('Error loading user profile: ' + err.message);
+        });
+    
+    // Refresh visitors list after a short delay
+    setTimeout(() => {
+        if (typeof loadVisitors === 'function') {
+            loadVisitors();
+        }
+    }, 1000);
+};

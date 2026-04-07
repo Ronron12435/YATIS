@@ -8,7 +8,11 @@
     <meta name="user-role" content="{{ auth()->user()->role }}">
     <meta name="user-latitude" content="{{ auth()->user()->latitude ?? '' }}">
     <meta name="user-longitude" content="{{ auth()->user()->longitude ?? '' }}">
+    <meta name="user-profile-picture" content="{{ auth()->user()->profile_picture ?? '' }}">
+    <meta name="user-first-name" content="{{ auth()->user()->first_name ?? '' }}">
+    <meta name="user-last-name" content="{{ auth()->user()->last_name ?? '' }}">
     <title>@yield('title', 'Dashboard - YATIS')</title>
+    <meta name="cache-version" content="{{ time() }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -453,6 +457,7 @@
     </script>
 
     <!-- Load all module scripts globally -->
+    <script src="{{ asset('js/sidebar-location-icon.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/jobs.js') }}"></script>
     <script src="{{ asset('js/messages.js') }}"></script>
     <script src="{{ asset('js/events.js') }}?v={{ time() }}"></script>

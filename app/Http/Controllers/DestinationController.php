@@ -87,12 +87,6 @@ class DestinationController extends Controller
     public function addReview(Request $request, $id)
     {
         try {
-            \Log::info('Review submission started', [
-                'destination_id' => $id,
-                'user_id' => $request->user()?->id,
-                'request_data' => $request->all(),
-            ]);
-
             $validated = $request->validate([
                 'rating' => 'required|integer|min:1|max:5',
                 'review' => 'required|string|max:1000',
@@ -115,12 +109,6 @@ class DestinationController extends Controller
             $response = $this->destinationService->addReview($dto);
             return response()->json($response->toArray(), $response->statusCode);
         } catch (\Exception $e) {
-            \Log::error('Error adding review: ' . $e->getMessage(), [
-                'exception' => $e,
-                'destination_id' => $id,
-                'user_id' => $request->user()?->id,
-                'trace' => $e->getTraceAsString(),
-            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Error adding review: ' . $e->getMessage(),

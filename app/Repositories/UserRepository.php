@@ -101,12 +101,11 @@ class UserRepository
 
     public function getPeopleMap(int $authId)
     {
-        // Sagay City bounds
-        $sagayMinLat = 10.75;
-        $sagayMaxLat = 11.05;
-        $sagayMinLng = 123.30;
-        $sagayMaxLng = 123.55;
-        $sagayCenter = ['lat' => 10.8967, 'lng' => 123.4253];
+        // Sagay City bounds (accurate)
+        $sagayMinLat = 10.85;
+        $sagayMaxLat = 10.94;
+        $sagayMinLng = 123.38;
+        $sagayMaxLng = 123.47;
         
         // Get current user's location
         $authUser = User::find($authId);
@@ -128,7 +127,7 @@ class UserRepository
             return $f->user_id === $authId ? $f->friend_id : $f->user_id;
         });
         
-        return $users->map(function ($user, $index) use ($authId, $friendships, $sagayMinLat, $sagayMaxLat, $sagayMinLng, $sagayMaxLng, $sagayCenter) {
+        return $users->map(function ($user, $index) use ($authId, $friendships, $sagayMinLat, $sagayMaxLat, $sagayMinLng, $sagayMaxLng) {
             $friendship = $friendships->get($user->id);
             
             $status = 'none';
@@ -142,17 +141,9 @@ class UserRepository
                 }
             }
             
-            // Ensure coordinates are within Sagay City bounds
-            $latitude = $user->latitude ?? null;
-            $longitude = $user->longitude ?? null;
-            
-            // If no coordinates or outside Sagay City, generate random coordinates within Sagay City
-            if (!$latitude || !$longitude || $latitude < $sagayMinLat || $latitude > $sagayMaxLat || $longitude < $sagayMinLng || $longitude > $sagayMaxLng) {
-                // Use user ID as seed for consistent but distributed coordinates
-                mt_srand($user->id);
-                $latitude = $sagayCenter['lat'] + (mt_rand(-500, 500) / 10000);
-                $longitude = $sagayCenter['lng'] + (mt_rand(-500, 500) / 10000);
-            }
+            // Use actual coordinates from database - no random generation
+            $latitude = (float) ($user->latitude ?? 10.8967);
+            $longitude = (float) ($user->longitude ?? 123.4253);
             
             return [
                 'id' => $user->id,
@@ -160,8 +151,8 @@ class UserRepository
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'location_name' => $user->location_name ?? 'Nearby',
-                'latitude' => (float) $latitude,
-                'longitude' => (float) $longitude,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
                 'friendship_status' => $status,
             ];
         });

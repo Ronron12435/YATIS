@@ -35,7 +35,7 @@ class BusinessRepository
 
     public function findById(int $id): ?Business
     {
-        return Business::find($id);
+        return Business::with(['menuItems', 'products', 'services', 'tables'])->find($id);
     }
 
     public function create(array $data): Business
@@ -71,7 +71,7 @@ class BusinessRepository
 
     public function findMenuItemById(int $id): ?MenuItem
     {
-        return MenuItem::find($id);
+        return MenuItem::with('business')->find($id);
     }
 
     public function deleteMenuItem(MenuItem $item): void
@@ -91,7 +91,7 @@ class BusinessRepository
 
     public function findProductById(int $id): ?Product
     {
-        return Product::find($id);
+        return Product::with('business')->find($id);
     }
 
     public function deleteProduct(Product $product): void
@@ -111,7 +111,7 @@ class BusinessRepository
 
     public function findServiceById(int $id): ?Service
     {
-        return Service::find($id);
+        return Service::with('business')->find($id);
     }
 
     public function deleteService(Service $service): void

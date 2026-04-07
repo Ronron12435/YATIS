@@ -73,9 +73,6 @@ Route::get('/me', [AuthController::class, 'me']);
     Route::get('/profile/current/posts', [ProfileController::class, 'getPosts']);
     Route::get('/profile/current/visitors', [ProfileController::class, 'getVisitors']);
     Route::get('/profile/current/achievements', [ProfileController::class, 'getAchievements']);
-    Route::get('/profile/{id}', [ProfileController::class, 'show']);
-    Route::put('/profile', [ProfileController::class, 'update']);
-    Route::post('/profile/password', [ProfileController::class, 'changePassword']);
     
     // Post Routes
     Route::post('/profile/posts', [ProfileController::class, 'createPost']);
@@ -95,6 +92,12 @@ Route::get('/me', [AuthController::class, 'me']);
     // Achievements Routes
     Route::get('/profile/{id}/achievements', [ProfileController::class, 'getAchievements']);
     Route::get('/profile/{id}/businesses', [ProfileController::class, 'businesses']);
+    Route::get('/profile/{id}/view', [ProfileController::class, 'viewProfile']);
+    
+    // Generic Profile Route (must be last)
+    Route::get('/profile/{id}', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::post('/profile/password', [ProfileController::class, 'changePassword']);
     
     // Businesses
     Route::apiResource('businesses', BusinessController::class);
@@ -174,14 +177,17 @@ Route::get('/me', [AuthController::class, 'me']);
     Route::post('/businesses/{businessId}/menu-items', [BusinessController::class, 'addMenuItem']);
     Route::get('/businesses/{businessId}/menu-items', [BusinessController::class, 'getMenuItems']);
     Route::delete('/menu-items/{itemId}', [BusinessController::class, 'deleteMenuItem']);
+    Route::patch('/menu-items/{itemId}/toggle-availability', [BusinessController::class, 'toggleMenuItemAvailability']);
     
     Route::post('/businesses/{businessId}/products', [BusinessController::class, 'addProduct']);
     Route::get('/businesses/{businessId}/products', [BusinessController::class, 'getProducts']);
     Route::delete('/products/{productId}', [BusinessController::class, 'deleteProduct']);
+    Route::patch('/products/{productId}/toggle-availability', [BusinessController::class, 'toggleProductAvailability']);
     
     Route::post('/businesses/{businessId}/services', [BusinessController::class, 'addService']);
     Route::get('/businesses/{businessId}/services', [BusinessController::class, 'getServices']);
     Route::delete('/services/{serviceId}', [BusinessController::class, 'deleteService']);
+    Route::patch('/services/{serviceId}/toggle-availability', [BusinessController::class, 'toggleServiceAvailability']);
     
     Route::get('/my-businesses', [BusinessController::class, 'myBusinesses']);
     Route::post('/businesses/{businessId}/generate-tables', [BusinessController::class, 'generateTables']);

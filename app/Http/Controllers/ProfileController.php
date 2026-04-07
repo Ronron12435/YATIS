@@ -109,6 +109,14 @@ class ProfileController extends Controller
 
     public function recordVisit(int $userId)
     {
+        if (!auth()->check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated',
+                'data' => null,
+            ], 401);
+        }
+        
         $response = $this->profileService->recordVisit($userId, auth()->id());
         return response()->json($response, $response['success'] ? 200 : 400);
     }
@@ -182,5 +190,11 @@ class ProfileController extends Controller
                 'longitude' => (float) $user->longitude,
             ],
         ]);
+    }
+
+    public function viewProfile(int $id)
+    {
+        $response = $this->profileService->getUserProfileForView($id);
+        return response()->json($response, $response['success'] ? 200 : 404);
     }
 }

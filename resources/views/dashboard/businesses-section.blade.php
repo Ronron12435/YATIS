@@ -215,10 +215,12 @@ window.showBusinessItems = function(businessId, itemType) {
             let title = '';
             let subtitle = '';
             let itemsHtml = '';
+            let emoji = '🍽️';
             
             if (itemType === 'menu') {
-                title = `${business.business_name}`;
-                subtitle = 'Browse menu items and offerings';
+                title = `🍽️ ${business.name}`;
+                subtitle = 'Menu Items';
+                emoji = '🍽️';
                 
                 fetch(`/api/businesses/${businessId}/menu-items`)
                     .then(r => r.json())
@@ -236,7 +238,7 @@ window.showBusinessItems = function(businessId, itemType) {
                                         <div style="font-weight: 700; color: #333; margin-bottom: 4px; font-size: 14px;">${item.name}</div>
                                         <div style="font-size: 12px; color: #999; margin-bottom: 8px;">${item.category || 'Food'}</div>
                                         <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${parseFloat(item.price).toFixed(2)}</div>
-                                        <button style="width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">✓ Available</button>
+                                        <button style="width: 100%; padding: 8px; background: ${item.is_available ? '#27ae60' : '#6c757d'}; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">${item.is_available ? '✓ Available' : '✗ Unavailable'}</button>
                                     </div>
                                 </div>
                             `).join('');
@@ -244,8 +246,9 @@ window.showBusinessItems = function(businessId, itemType) {
                         displayModal(title, subtitle, itemsHtml);
                     });
             } else if (itemType === 'products') {
-                title = `${business.business_name}`;
-                subtitle = 'Browse products and offerings';
+                title = `🛍️ ${business.name}`;
+                subtitle = 'Products';
+                emoji = '📦';
                 
                 fetch(`/api/businesses/${businessId}/products`)
                     .then(r => r.json())
@@ -263,7 +266,7 @@ window.showBusinessItems = function(businessId, itemType) {
                                         <div style="font-weight: 700; color: #333; margin-bottom: 4px; font-size: 14px;">${item.name}</div>
                                         <div style="font-size: 12px; color: #999; margin-bottom: 8px;">${item.category || 'Product'}</div>
                                         <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${parseFloat(item.price).toFixed(2)}</div>
-                                        <button style="width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">✓ Available</button>
+                                        <button style="width: 100%; padding: 8px; background: ${item.is_available ? '#0ea5e9' : '#6c757d'}; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">${item.is_available ? '✓ Available' : '✗ Unavailable'}</button>
                                     </div>
                                 </div>
                             `).join('');
@@ -271,8 +274,9 @@ window.showBusinessItems = function(businessId, itemType) {
                         displayModal(title, subtitle, itemsHtml);
                     });
             } else if (itemType === 'services') {
-                title = `${business.business_name}`;
-                subtitle = 'Browse services and offerings';
+                title = `🔧 ${business.name}`;
+                subtitle = 'Services';
+                emoji = '🔧';
                 
                 fetch(`/api/businesses/${businessId}/services`)
                     .then(r => r.json())
@@ -290,7 +294,7 @@ window.showBusinessItems = function(businessId, itemType) {
                                         <div style="font-weight: 700; color: #333; margin-bottom: 4px; font-size: 14px;">${item.name}</div>
                                         <div style="font-size: 12px; color: #999; margin-bottom: 8px;">${item.duration || 'Service'}</div>
                                         <div style="color: #ffd700; font-weight: 700; font-size: 14px; margin-bottom: 8px;">₱${parseFloat(item.price).toFixed(2)}</div>
-                                        <button style="width: 100%; padding: 8px; background: #27ae60; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">✓ Available</button>
+                                        <button style="width: 100%; padding: 8px; background: ${item.is_available ? '#f59e0b' : '#6c757d'}; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">${item.is_available ? '✓ Available' : '✗ Unavailable'}</button>
                                     </div>
                                 </div>
                             `).join('');

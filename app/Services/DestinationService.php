@@ -88,8 +88,6 @@ class DestinationService
             if (strpos($e->getMessage(), 'Duplicate entry') !== false || 
                 strpos($e->getMessage(), 'unique_review') !== false) {
                 
-                \Log::info('Unique constraint - deleting old review and creating new one');
-                
                 try {
                     // Delete existing review
                     DB::table('destination_reviews')
@@ -108,12 +106,10 @@ class DestinationService
                     
                     return new ApiResponse(true, $review, 'Review updated', 201);
                 } catch (\Exception $innerE) {
-                    \Log::error('Error updating review: ' . $innerE->getMessage());
                     return new ApiResponse(false, null, 'Error updating review', 500);
                 }
             }
             
-            \Log::error('Error in addReview: ' . $e->getMessage());
             return new ApiResponse(false, null, 'Error adding review', 500);
         }
     }

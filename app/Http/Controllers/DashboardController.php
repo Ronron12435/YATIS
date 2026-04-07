@@ -60,6 +60,9 @@ class DashboardController extends Controller
             'pending_applications' => $pendingApplicationsCount,
         ];
 
-        return view('dashboard', ['user' => $user, 'stats' => $stats]);
+        return response(view('dashboard', ['user' => $user, 'stats' => $stats]))
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate, private')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 }

@@ -11,10 +11,6 @@
             <div style="font-size:32px; font-weight:700; margin-bottom:8px;" id="stat-total-business-users">0</div>
             <div style="font-size:14px; opacity:0.9;">Business Users</div>
         </div>
-        <div style="background:linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%); color:white; padding:25px; border-radius:12px; box-shadow:0 4px 12px rgba(123,31,162,0.3);">
-            <div style="font-size:32px; font-weight:700; margin-bottom:8px;" id="stat-total-posts">0</div>
-            <div style="font-size:14px; opacity:0.9;">Total Posts</div>
-        </div>
     </div>
 
     <!-- All Users Section -->

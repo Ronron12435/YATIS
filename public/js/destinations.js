@@ -536,23 +536,40 @@ window.viewReviews = function (destId, destName) {
         })
         .then(res => {
             const reviews = res.data?.data || res.data || [];
+            
             if (!reviews.length) {
                 body.innerHTML = '<p style="color:#999;padding:20px;text-align:center;">No reviews yet. Be the first!</p>';
                 return;
             }
-            body.innerHTML = reviews.map(rv => `
-                <div class="review-card">
-                    <div class="review-header">
-                        <div class="review-avatar">${(rv.first_name || rv.username || 'U')[0].toUpperCase()}</div>
-                        <div>
-                            <strong>${rv.first_name ? rv.first_name + ' ' + rv.last_name : rv.username}</strong>
-                            <div style="font-size:12px;color:#999;">${formatDate(rv.created_at)}</div>
+            body.innerHTML = reviews.map(rv => {
+                const firstName = rv.first_name || '';
+                const lastName = rv.last_name || '';
+                const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || '?';
+                let avatarHtml;
+                
+                if (rv.profile_picture) {
+                    avatarHtml = `<img src="/storage/${rv.profile_picture}" alt="${firstName} ${lastName}" class="review-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid #e0e0e0;">`;
+                } else {
+                    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+                    const colorIndex = (rv.user_id % colors.length);
+                    const bgColor = colors[colorIndex];
+                    avatarHtml = `<div class="review-avatar" style="width:40px;height:40px;border-radius:50%;background:${bgColor};color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;">${initials}</div>`;
+                }
+                
+                return `
+                    <div class="review-card">
+                        <div class="review-header">
+                            ${avatarHtml}
+                            <div>
+                                <strong>${rv.first_name ? rv.first_name + ' ' + rv.last_name : rv.username}</strong>
+                                <div style="font-size:12px;color:#999;">${formatDate(rv.created_at)}</div>
+                            </div>
+                            <div style="margin-left:auto;">${renderStars(rv.rating)}</div>
                         </div>
-                        <div style="margin-left:auto;">${renderStars(rv.rating)}</div>
+                        <p class="review-text">${rv.review}</p>
                     </div>
-                    <p class="review-text">${rv.review}</p>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         })
         .catch(() => { body.innerHTML = '<p style="color:#e74c3c;padding:20px;">Error loading reviews.</p>'; });
 };
@@ -725,8 +742,6 @@ function loadUserLocationFromDatabase() {
             }
         })
         .catch(err => {
-            console.error('✗ Error loading location:', err);
-            console.error('Error stack:', err.stack);
             updateGpsStatus('active', 'Using default location');
         });
 }
@@ -753,7 +768,9 @@ function saveLocationToDatabase(lat, lng) {
             if (response.success) {
             }
         })
-        .catch(err => console.log('Error saving location:', err));
+        .catch(err => {
+            // Error saving location - silently continue
+        });
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

@@ -6,11 +6,9 @@ const AdminModule = (() => {
 
     const init = () => {
         if (initialized) {
-            console.log('AdminModule already initialized, skipping...');
             return;
         }
         initialized = true;
-        console.log('AdminModule initializing...');
         loadStatistics();
         loadUsers();
         loadEvents();
@@ -98,7 +96,6 @@ const AdminModule = (() => {
                 const stats = response.data || {};
                 document.getElementById('stat-total-users').textContent = stats.total_users || 0;
                 document.getElementById('stat-total-business-users').textContent = stats.total_business_users || 0;
-                document.getElementById('stat-total-posts').textContent = stats.total_posts || 0;
             })
             .catch(err => {
                 console.error('Error loading statistics:', err);
@@ -657,37 +654,26 @@ const AdminModule = (() => {
     };
 
     const loadEvents = () => {
-        console.log('loadEvents called - fetching from /api/events');
         fetch('/api/events', { credentials: 'include' })
             .then(r => {
-                console.log('loadEvents - fetch response status:', r.status);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
             })
             .then(response => {
-                console.log('loadEvents - Full API response:', response);
-                
                 // The response structure is: { success, message, data: { data: [...], ... } }
                 let events = [];
                 if (response.data && response.data.data && Array.isArray(response.data.data)) {
                     events = response.data.data;
-                    console.log('loadEvents - Extracted from response.data.data');
                 } else if (response.data && Array.isArray(response.data)) {
                     events = response.data;
-                    console.log('loadEvents - Extracted from response.data');
                 } else if (Array.isArray(response)) {
                     events = response;
-                    console.log('loadEvents - Extracted from response directly');
                 }
-                
-                console.log('loadEvents - Extracted events array:', events);
-                console.log('loadEvents - Events count:', events.length);
                 
                 allEvents = events;
                 
                 // Force a small delay to ensure DOM is ready and then render
                 setTimeout(() => {
-                    console.log('loadEvents - Calling renderEvents with', events.length, 'events');
                     renderEvents(allEvents);
                 }, 100);
             })
@@ -703,31 +689,18 @@ const AdminModule = (() => {
     const renderEvents = (events) => {
         const eventsList = document.getElementById('admin-events-list');
 
-        console.log('renderEvents function called');
-
         if (!eventsList) {
             console.error('CRITICAL: admin-events-list element not found in DOM!');
             return;
         }
 
-        // Debug: Check current styles
+        // Check current styles
         const computedStyle = window.getComputedStyle(eventsList);
-        console.log('Current eventsList styles:', {
-            display: computedStyle.display,
-            visibility: computedStyle.visibility,
-            opacity: computedStyle.opacity,
-            height: computedStyle.height,
-            width: computedStyle.width,
-            overflow: computedStyle.overflow
-        });
 
         if (!events || events.length === 0) {
-            console.log('No events to display');
             eventsList.innerHTML = '<div style="color:#999; text-align:center; padding:20px;">No events created yet</div>';
             return;
         }
-
-        console.log('Building HTML for', events.length, 'events');
         
         // Build HTML string with test div at the beginning
         let html = '<div style="background:#e8f5e9; padding:10px; margin-bottom:15px; border-radius:6px; border-left:4px solid #27ae60; color:#2e7d32; font-weight:bold;">✓ Events loaded successfully (' + events.length + ' events)</div>';
@@ -758,37 +731,20 @@ const AdminModule = (() => {
                     ${escapeHtml(event.description)}
                 </p>
             </div>`;
-            console.log('Added event:', event.title);
         }
 
-        console.log('HTML length:', html.length);
-        console.log('Setting innerHTML...');
         eventsList.innerHTML = html;
-        console.log('innerHTML set');
-        console.log('eventsList children count:', eventsList.children.length);
-        console.log('eventsList innerHTML length:', eventsList.innerHTML.length);
         
         // Force browser repaint and check final styles
         void eventsList.offsetHeight;
         const finalStyle = window.getComputedStyle(eventsList);
-        console.log('Final eventsList styles after render:', {
-            display: finalStyle.display,
-            visibility: finalStyle.visibility,
-            opacity: finalStyle.opacity,
-            height: finalStyle.height,
-            width: finalStyle.width,
-            overflow: finalStyle.overflow
-        });
         
         // Scroll into view
         setTimeout(() => {
             eventsList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            console.log('Scrolled events into view');
             // Populate the task event dropdown after events are rendered
             populateEventDropdown();
         }, 100);
-        
-        console.log('Events rendered and repainted');
     };
 
     const deleteEvent = (eventId) => {

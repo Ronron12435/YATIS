@@ -40,17 +40,25 @@ class ProfileRepository
 
     public function getVisitors(int $userId): array
     {
-        return User::where('id', '!=', $userId)
-            ->where('updated_at', '>=', now()->subMinutes(10))
-            ->orderByDesc('updated_at')
-            ->limit(10)
-            ->get(['id', 'first_name', 'last_name', 'username', 'created_at', 'updated_at'])
+        return \Illuminate\Support\Facades\DB::table('profile_visits')
+            ->join('users', 'users.id', '=', 'profile_visits.visitor_id')
+            ->where('profile_visits.visited_user_id', $userId)
+            ->where('profile_visits.expires_at', '>', now())
+            ->orderByDesc('profile_visits.visit_time')
+            ->limit(5)
+            ->select('users.id', 'users.first_name', 'users.last_name', 'users.username', 'profile_visits.visit_time as visited_at')
+            ->get()
             ->toArray();
     }
 
     public function recordVisit(int $visitedUserId, int $visitorUserId): void
     {
-        User::where('id', $visitedUserId)->update(['updated_at' => now()]);
+        \Illuminate\Support\Facades\DB::table('profile_visits')->insert([
+            'visitor_id' => $visitorUserId,
+            'visited_user_id' => $visitedUserId,
+            'visit_time' => now(),
+            'expires_at' => now()->addHours(24),
+        ]);
     }
 
     public function getAchievements(int $userId): array

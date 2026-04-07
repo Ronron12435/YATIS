@@ -324,6 +324,8 @@
             color: white;
             font-size: 80px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            background-size: cover;
+            background-position: center;
         }
 
         /* CTA Section */
@@ -563,8 +565,7 @@
                     <li>Community reviews and ratings</li>
                 </ul>
             </div>
-            <div class="about-image">
-                <i class="fas fa-globe"></i>
+            <div class="about-image" style="background-image: url('{{ asset('images/about-image.jpg') }}');">
             </div>
         </div>
     </section>
@@ -583,11 +584,6 @@
         <div class="container">
             <p>&copy; 2026 YATIS - Your All-in-One Tourism Information System</p>
             <p>Connecting communities, one experience at a time</p>
-            <div class="social-links">
-                <a href="#" title="Facebook"><i class="fab fa-facebook"></i></a>
-                <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
-                <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-            </div>
         </div>
     </footer>
 </body>

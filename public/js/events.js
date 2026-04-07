@@ -92,16 +92,13 @@ const EventsModule = {
             .then(data => {
                 if (data.success) {
                     const pointsEarned = data.data?.points_earned || 0;
-                    console.log(`✓ Steps task auto-completed! Earned ${pointsEarned} points`);
                     this.loadUserAchievements();
                     this.loadLeaderboard();
                 } else if (data.message && data.message.includes('already completed')) {
                     // Task already completed, silently ignore
-                    console.log(`Task ${taskId} already completed`);
                 } else if (data.message && data.message.includes('need to walk')) {
                     // User hasn't reached target yet, remove from attempted so it tries again later
                     this.attemptedTasks.delete(taskId);
-                    console.log(`Task ${taskId} pending: ${data.message}`);
                 } else {
                     // Other errors - remove from attempted to retry
                     this.attemptedTasks.delete(taskId);
@@ -228,15 +225,12 @@ const EventsModule = {
      * Load active events
      */
     loadEvents() {
-        console.log('loadEvents called');
         fetch(`${this.apiBase}/events`, { credentials: 'include' })
             .then(response => {
-                console.log('loadEvents - fetch response status:', response.status);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
             })
             .then(data => {
-                console.log('loadEvents - API response:', data);
                 let events = [];
                 // Handle paginated response: { success, message, data: { data: [...], ...pagination... } }
                 if (data.success && data.data && data.data.data && Array.isArray(data.data.data)) {
@@ -248,7 +242,6 @@ const EventsModule = {
                 } else if (Array.isArray(data)) {
                     events = data;
                 }
-                console.log('loadEvents - extracted events:', events);
                 this.renderEvents(events);
             })
             .catch(error => {
@@ -269,11 +262,7 @@ const EventsModule = {
             return;
         }
 
-        console.log('renderEvents - events array:', events);
-        console.log('renderEvents - events count:', events.length);
-
         if (!Array.isArray(events) || events.length === 0) {
-            console.log('renderEvents - no events to display');
             eventsList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No active events at the moment.</p>';
             return;
         }
@@ -305,7 +294,6 @@ const EventsModule = {
                     </div>
                 `;
             }).join('');
-            console.log('renderEvents - HTML rendered successfully');
         } catch (error) {
             console.error('renderEvents - Error rendering HTML:', error);
             eventsList.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error rendering events.</p>';
@@ -537,8 +525,6 @@ const EventsModule = {
             event_id: eventId || 1,
             proof_data: proofData,
         };
-        
-        console.log('Submitting task completion:', payload);
         
         fetch(`${this.apiBase}/events/tasks/complete`, {
             method: 'POST',
@@ -779,7 +765,7 @@ const EventsModule = {
             const initials = ((firstName || '')[0] || '').toUpperCase() + ((lastName || '')[0] || '').toUpperCase();
             
             // Determine avatar display
-            const avatarUrl = profilePicture ? `/storage/avatars/${profilePicture}` : null;
+            const avatarUrl = profilePicture ? `/storage/${profilePicture}` : null;
             const avatarHtml = avatarUrl 
                 ? `<img src="${avatarUrl}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #667eea;">`
                 : `<div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border: 2px solid #667eea;">${initials}</div>`;

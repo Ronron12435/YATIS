@@ -60,7 +60,11 @@
             <!-- My Profile -->
             <div class="sidebar-item" onclick="showSection('profile')">
                 <span class="sidebar-icon">
-                    <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
+                    @if(auth()->user()->profile_picture)
+                        <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
+                    @else
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
+                    @endif
                 </span>
                 <div>My Profile</div>
             </div>
@@ -76,7 +80,7 @@
             <!-- People Dropdown -->
             <div class="sidebar-item-parent">
                 <div class="sidebar-item" onclick="showSection('people')">
-                    <span class="sidebar-icon"><i class="fas fa-users"></i></span>
+                    <span class="sidebar-icon" id="people-icon"><i class="fas fa-users"></i></span>
                     <div>People</div>
                     <span class="notification-badge" id="people-badge" style="display: none;">0</span>
                 </div>
@@ -148,7 +152,11 @@
             <!-- My Profile -->
             <div class="sidebar-item" onclick="showSection('profile')">
                 <span class="sidebar-icon">
-                    <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
+                    @if(auth()->user()->profile_picture)
+                        <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
+                    @else
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
+                    @endif
                 </span>
                 <div>My Profile</div>
             </div>

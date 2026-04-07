@@ -1290,10 +1290,8 @@ window.submitServiceForm = function (e) {
     formData.append('description', '');
     if (imageFile) {
         formData.append('image', imageFile);
-        console.log('Image file selected:', imageFile.name, imageFile.size);
-    } else {
-        console.log('No image file selected');
-    }
+        } else {
+        }
     
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
@@ -1378,3 +1376,4 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     observer.observe(section, { attributes: true, attributeFilter: ['class'] });
 });
+

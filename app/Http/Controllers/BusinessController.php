@@ -220,6 +220,36 @@ class BusinessController extends Controller
         return response()->json($response->toArray(), $response->statusCode);
     }
 
+    public function toggleMenuItemAvailability(Request $request, $itemId)
+    {
+        $validated = $request->validate([
+            'is_available' => 'required|boolean',
+        ]);
+
+        $response = $this->businessService->toggleMenuItemAvailability((int) $itemId, $request->user()->id, $validated['is_available']);
+        return response()->json($response->toArray(), $response->statusCode);
+    }
+
+    public function toggleProductAvailability(Request $request, $productId)
+    {
+        $validated = $request->validate([
+            'is_available' => 'required|boolean',
+        ]);
+
+        $response = $this->businessService->toggleProductAvailability((int) $productId, $request->user()->id, $validated['is_available']);
+        return response()->json($response->toArray(), $response->statusCode);
+    }
+
+    public function toggleServiceAvailability(Request $request, $serviceId)
+    {
+        $validated = $request->validate([
+            'is_available' => 'required|boolean',
+        ]);
+
+        $response = $this->businessService->toggleServiceAvailability((int) $serviceId, $request->user()->id, $validated['is_available']);
+        return response()->json($response->toArray(), $response->statusCode);
+    }
+
     public function generateTables(Request $request, $businessId)
     {
         $validated = $request->validate([

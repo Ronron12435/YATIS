@@ -36,9 +36,6 @@ Route::middleware('auth')->group(function () {
     })->name('logout');
 });
 
-// API Routes
-require __DIR__.'/api.php';
-
 // Temporary route to create test friendships - REMOVE AFTER TESTING
 Route::get('/setup/create-friendships', function () {
     if (!auth()->check()) {

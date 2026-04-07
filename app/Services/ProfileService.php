@@ -247,10 +247,9 @@ class ProfileService
     {
         try {
             $path = $file->store('avatars', 'public');
-            $filename = basename($path);
             
             $this->profileRepository->updateUser($userId, [
-                'profile_picture' => $filename,
+                'profile_picture' => $path,
             ]);
 
             $user = $this->profileRepository->getUserById($userId);
@@ -332,7 +331,7 @@ class ProfileService
         try {
             $path = $file->store('covers', 'public');
             $this->profileRepository->updateUser($userId, [
-                'cover_photo' => '/storage/' . $path,
+                'cover_photo' => $path,
             ]);
 
             $user = $this->profileRepository->getUserById($userId);
@@ -447,6 +446,58 @@ class ProfileService
             return [
                 'success' => false,
                 'message' => 'Failed to retrieve businesses',
+                'data' => null,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function getUserProfileForView(int $userId): array
+    {
+        try {
+            $user = $this->profileRepository->getUserById($userId);
+
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'User not found',
+                    'data' => null,
+                ];
+            }
+
+            // Get achievements with related event and task data
+            $achievements = $user->achievements()
+                ->with(['event', 'task'])
+                ->get()
+                ->map(function ($achievement) {
+                    return [
+                        'id' => $achievement->id,
+                        'badge_name' => $achievement->event?->name ?? 'Achievement',
+                        'badge_icon' => '🏆',
+                        'description' => $achievement->task?->name ?? 'Completed task',
+                        'points' => $achievement->points_earned,
+                    ];
+                })
+                ->toArray();
+
+            return [
+                'success' => true,
+                'message' => 'User profile retrieved successfully',
+                'data' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'username' => $user->username,
+                    'bio' => $user->bio,
+                    'profile_picture' => $user->profile_picture,
+                    'cover_photo' => $user->cover_photo,
+                    'achievements' => $achievements,
+                ],
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Failed to retrieve user profile',
                 'data' => null,
                 'error' => $e->getMessage(),
             ];
