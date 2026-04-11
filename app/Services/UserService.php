@@ -125,4 +125,39 @@ class UserService
             statusCode: 200
         );
     }
+
+    public function setOnlineStatus(int $userId, string $status): ApiResponse
+    {
+        try {
+            $user = $this->userRepository->setOnlineStatus($userId, $status);
+            return new ApiResponse(
+                success: true,
+                data: [
+                    'id' => $user->id,
+                    'online_status' => $user->online_status,
+                    'last_activity_at' => $user->last_activity_at,
+                ],
+                message: 'Online status updated',
+                statusCode: 200
+            );
+        } catch (\Exception $e) {
+            return new ApiResponse(
+                success: false,
+                data: null,
+                message: 'Failed to update online status',
+                statusCode: 400
+            );
+        }
+    }
+
+    public function getNearbyActiveUsers(int $userId): ApiResponse
+    {
+        $users = $this->userRepository->getNearbyActiveUsers($userId);
+        return new ApiResponse(
+            success: true,
+            data: $users->values()->all(),
+            message: 'Nearby active users retrieved',
+            statusCode: 200
+        );
+    }
 }

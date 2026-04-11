@@ -5,7 +5,7 @@ const MessagesModule = (() => {
     const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     const init = () => {
-        loadConversations();
+        if (document.getElementById('conversations-list')) loadConversations();
         setupEventListeners();
     };
 
@@ -28,10 +28,12 @@ const MessagesModule = (() => {
         if (!list) return;
 
         fetch('/api/friends-list', { credentials: 'include' })
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
             .then(friends => {
                 const list = document.getElementById('conversations-list');
-                if (!list) return;
                 if (!friends || !friends.length) {
                     list.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No conversations yet. Add friends to start chatting!</p>';
                     return;
@@ -101,7 +103,10 @@ const MessagesModule = (() => {
         if (!currentChatUserId) return;
 
         fetch(`/api/messages/${currentChatUserId}`, { credentials: 'include' })
-            .then(r => r.json())
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
             .then(response => {
                 const messagesBox = document.getElementById('chat-messages');
                 const messages = response.data || [];

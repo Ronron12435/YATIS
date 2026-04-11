@@ -32,4 +32,8 @@
             @include('dashboard.admin-section')
         @endif
     @endif
+
+    <!-- People Sidebar Component -->
+    @include('components.people-sidebar')
+
 @endsection

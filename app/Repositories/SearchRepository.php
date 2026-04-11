@@ -20,9 +20,9 @@ class SearchRepository
 
     public function searchBusinesses(string $q, int $limit = 5)
     {
-        return Business::where('business_name', 'like', "%$q%")
+        return Business::where('name', 'like', "%$q%")
             ->orWhere('description', 'like', "%$q%")
-            ->select('id', 'business_name', 'business_type', 'address')
+            ->select('id', 'name as business_name', 'category as business_type', 'address')
             ->limit($limit)->get();
     }
 
@@ -49,9 +49,9 @@ class SearchRepository
 
     public function paginateBusinesses(string $q)
     {
-        return Business::where('business_name', 'like', "%$q%")
+        return Business::where('name', 'like', "%$q%")
             ->orWhere('description', 'like', "%$q%")
-            ->select('id', 'business_name', 'business_type', 'address')
+            ->select('id', 'name as business_name', 'category as business_type', 'address')
             ->paginate(15);
     }
 

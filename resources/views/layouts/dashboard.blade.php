@@ -85,10 +85,10 @@
         .badge-job-open { background: #2ecc71; color: white; }
         .badge-job-closed { background: #95a5a6; color: white; }
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: linear-gradient(135deg, #1a3a52 0%, #2c5f8d 100%); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(26,58,82,0.2); text-align: center; color: white; transition: transform 0.3s; }
+        .stat-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; color: #333; transition: transform 0.3s; border-top: 3px solid #00bcd4; }
         .stat-card:hover { transform: translateY(-5px); box-shadow: 0 6px 20px rgba(26,58,82,0.3); }
-        .stat-card h3 { color: #00bcd4; font-size: 42px; margin-bottom: 10px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .stat-card p { color: #e0f7fa; font-weight: 500; }
+        .stat-card h3 { color: #1a3a52; font-size: 42px; margin-bottom: 10px; font-weight: 700; }
+        .stat-card p { color: #666; font-weight: 500; }
         .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s; text-decoration: none; display: inline-block; font-weight: 600; }
         .btn-primary { background: linear-gradient(135deg, #2c5f8d 0%, #00bcd4 100%); color: white; box-shadow: 0 3px 10px rgba(0,188,212,0.3); }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,188,212,0.4); }
@@ -467,6 +467,7 @@
     <script src="{{ asset('js/my-business.js') }}?v={{ microtime(true) }}"></script>
     <script src="{{ asset('js/businesses.js') }}?v={{ microtime(true) }}"></script>
     <script src="{{ asset('js/business-management.js') }}?v={{ microtime(true) }}"></script>
+    <script src="{{ asset('js/online-status.js') }}?v={{ time() }}"></script>
     @if(auth()->user()->role === 'admin')
     <script src="{{ asset('js/admin.js') }}?v={{ time() }}"></script>
     @endif

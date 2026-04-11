@@ -1,5 +1,6 @@
 /**
  * Tourist Destinations - Map, listings, and reviews
+ * Cache bust: v2
  */
 
 let destMap = null;
@@ -17,29 +18,44 @@ window.initDestinationsSection = function () {
 };
 
 function loadDestinationsDashboard() {
-    fetch('/api/destinations-dashboard', {
+    const timestamp = new Date().getTime();
+    fetch(`/api/destinations-dashboard?t=${timestamp}`, {
         credentials: 'include',
-        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: { 
+            'Accept': 'application/json', 
+            'X-Requested-With': 'XMLHttpRequest',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        },
     })
         .then(r => {
             if (!r.ok) {
-                console.error(`API Error: ${r.status} ${r.statusText}`);
                 throw new Error(`HTTP ${r.status}`);
             }
             return r.json();
         })
         .then(res => {
             if (!res.success) {
-                console.error('API returned success: false', res);
                 return;
             }
             const d = res.data;
+            
+            // Log each destination's review count
+            if (d.destinations && Array.isArray(d.destinations)) {
+                d.destinations.forEach(dest => {
+                });
+            }
 
             setEl('dest-total-count', d.total || 0);
             setEl('dest-my-reviews', d.my_reviews || 0);
             setEl('dest-my-avg', (d.my_avg_rating || 0).toFixed(1));
 
             allDestinations = d.destinations || [];
+            
+            // Get user's real-time GPS location
+            getRealTimeGPSLocation();
+            
             renderDestinationsList(allDestinations);
             
             // Load destinations on map if map is ready
@@ -48,7 +64,6 @@ function loadDestinationsDashboard() {
             }
         })
         .catch(err => {
-            console.error('Error loading destinations:', err);
             setEl('dest-total-count', '0');
             setEl('dest-my-reviews', '0');
             setEl('dest-my-avg', '0.0');
@@ -104,12 +119,10 @@ function createUserLocationMarker(lat, lng) {
     
     // Validate coordinates
     if (isNaN(lat) || isNaN(lng)) {
-        console.error('✗ Invalid coordinates - NaN detected');
         return;
     }
     
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-        console.error('✗ Coordinates out of valid range');
         return;
     }
     
@@ -392,6 +405,10 @@ function initDirectionsMap(fromLat, fromLng, toLat, toLng, destName) {
             L.latLng(fromLat, fromLng),
             L.latLng(toLat, toLng)
         ],
+        router: L.Routing.osrmv1({
+            serviceUrl: 'https://router.project-osrm.org/route/v1',
+            profile: 'driving'
+        }),
         routeWhileDragging: false,
         show: true,
         addWaypoints: false,
@@ -467,16 +484,21 @@ window.toggleDestMap = function () {
 
 function renderDestinationsList(destinations) {
     const container = document.getElementById('dest-list');
-    if (!container) return;
+    if (!container) {
+        return;
+    }
 
     if (!destinations.length) {
         container.innerHTML = '<p style="color:#999;padding:20px;text-align:center;">No destinations found.</p>';
         return;
     }
 
+    destinations.forEach(d => {
+    });
+
     container.innerHTML = destinations.map(dest => {
         const stars = renderStars(dest.rating || 0);
-        const reviewCount = dest.reviews_count || 0;
+        const reviewCount = parseInt(dest.reviews_count) || 0;
         return `
         <div class="dest-card" id="dest-card-${dest.id}">
             <div class="dest-card-header">
@@ -488,7 +510,7 @@ function renderDestinationsList(destinations) {
                 </div>
                 <div class="dest-card-rating">
                     ${stars}
-                    <span class="dest-rating-text">${(dest.rating || 0).toFixed(1)} (${reviewCount} review${reviewCount !== 1 ? 's' : ''})</span>
+                    <span class="dest-rating-text" id="dest-rating-${dest.id}">${(dest.rating || 0).toFixed(1)} (${reviewCount} review${reviewCount !== 1 ? 's' : ''})</span>
                 </div>
             </div>
             <div class="dest-card-actions">
@@ -500,6 +522,35 @@ function renderDestinationsList(destinations) {
             </div>
         </div>`;
     }).join('');
+    
+    // Fetch review counts for each destination
+    destinations.forEach(dest => {
+        updateDestinationReviewCount(dest.id);
+    });
+}
+
+function updateDestinationReviewCount(destId) {
+    fetch(`/api/destinations/${destId}/reviews?per_page=100`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => {
+            return r.ok ? r.json() : null;
+        })
+        .then(res => {
+            if (res && res.data) {
+                // res.data is the paginator object with 'total' and 'data' properties
+                const reviewCount = res.data.total || 0;
+                const ratingEl = document.getElementById(`dest-rating-${destId}`);
+                if (ratingEl) {
+                    const currentRating = parseFloat(ratingEl.textContent) || 0;
+                    ratingEl.textContent = `${currentRating.toFixed(1)} (${reviewCount} review${reviewCount !== 1 ? 's' : ''})`;
+                } else {
+                }
+            } else {
+            }
+        })
+        .catch(err => {});
 }
 
 window.showOnMap = function (lat, lng) {
@@ -536,12 +587,12 @@ window.viewReviews = function (destId, destName) {
         })
         .then(res => {
             const reviews = res.data?.data || res.data || [];
-            
             if (!reviews.length) {
                 body.innerHTML = '<p style="color:#999;padding:20px;text-align:center;">No reviews yet. Be the first!</p>';
                 return;
             }
             body.innerHTML = reviews.map(rv => {
+                // Generate avatar - use profile picture if available, otherwise generate initials avatar
                 const firstName = rv.first_name || '';
                 const lastName = rv.last_name || '';
                 const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || '?';
@@ -550,6 +601,7 @@ window.viewReviews = function (destId, destName) {
                 if (rv.profile_picture) {
                     avatarHtml = `<img src="/storage/${rv.profile_picture}" alt="${firstName} ${lastName}" class="review-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid #e0e0e0;">`;
                 } else {
+                    // Generate initials avatar with color
                     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
                     const colorIndex = (rv.user_id % colors.length);
                     const bgColor = colors[colorIndex];
@@ -585,6 +637,7 @@ window.openWriteReview = function (destId, destName) {
     if (!panel) return;
     title.textContent = 'Write a Review — ' + destName;
     document.getElementById('dest-write-dest-id').value = destId;
+    document.getElementById('dest-write-dest-id').setAttribute('data-dest-name', destName);
     document.getElementById('dest-write-rating').value = '';
     document.getElementById('dest-write-text').value = '';
     document.getElementById('dest-write-error').textContent = '';
@@ -630,7 +683,6 @@ window.submitReview = function () {
     })
         .then(r => {
             if (!r.ok) {
-                console.error('✗ HTTP Error:', r.status);
                 throw new Error(`HTTP ${r.status}`);
             }
             return r.json();
@@ -640,15 +692,22 @@ window.submitReview = function () {
             btn.textContent = 'Submit Review';
             if (res.success) {
                 closeWritePanel();
-                loadDestinationsDashboard();
+                // Wait for database to commit the review before fetching count
+                setTimeout(() => {
+                    loadDestinationsDashboard();
+                    const reviewsPanel = document.getElementById('dest-reviews-panel');
+                    if (reviewsPanel && reviewsPanel.style.display !== 'none') {
+                        // Refresh the reviews panel with the latest data
+                        const destId = document.getElementById('dest-write-dest-id').value;
+                        const destName = document.getElementById('dest-write-dest-id').getAttribute('data-dest-name') || 'Destination';
+                        window.viewReviews(destId, destName);
+                    }
+                }, 1000);
             } else {
                 errEl.textContent = res.message || 'Failed to submit review.';
             }
         })
         .catch(err => {
-            console.error('✗ Error submitting review:', err);
-            console.error('Error message:', err.message);
-            console.error('Error stack:', err.stack);
             btn.disabled = false;
             btn.textContent = 'Submit Review';
             errEl.textContent = 'Network error. Please try again.';
@@ -703,6 +762,45 @@ function escapeHtml(str) {
 function formatDate(dateStr) {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Get real-time GPS location from browser
+function getRealTimeGPSLocation() {
+    if (!navigator.geolocation) {
+        loadUserLocationFromDatabase();
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            userLat = lat;
+            userLng = lng;
+
+            // Update marker on map if map exists
+            if (destMap) {
+                createUserLocationMarker(lat, lng);
+            }
+
+            // Save to database for future use
+            saveLocationToDatabase(lat, lng);
+
+            // Update GPS status
+            updateGpsStatus('active', `GPS Active (${accuracy.toFixed(0)}m accuracy)`);
+        },
+        (error) => {
+            // Fallback to database location
+            loadUserLocationFromDatabase();
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
 }
 
 function loadUserLocationFromDatabase() {
@@ -768,9 +866,7 @@ function saveLocationToDatabase(lat, lng) {
             if (response.success) {
             }
         })
-        .catch(err => {
-            // Error saving location - silently continue
-        });
+        .catch(err => {});
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

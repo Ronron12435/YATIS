@@ -23,6 +23,23 @@ Route::get('/register', function () {
 
 Route::post('/register', [AuthController::class, 'register'])->middleware('guest');
 
+Route::get('/verify-email', function () {
+    return view('auth.verify-email');
+})->middleware('guest')->name('verify-email');
+
+// Password reset routes
+Route::get('/forgot-password', function () {
+    return view('auth.forgot-password');
+})->middleware('guest')->name('password.request');
+
+Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->middleware('guest')->name('password.email');
+
+Route::get('/reset-password/{token}', function ($token) {
+    return view('auth.reset-password', ['request' => request()]);
+})->middleware('guest')->name('password.reset');
+
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('guest')->name('password.update');
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/debug', function () {

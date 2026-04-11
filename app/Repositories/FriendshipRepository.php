@@ -35,11 +35,14 @@ class FriendshipRepository
 
     public function getPendingRequests(int $userId)
     {
+        // Use indexed columns (friend_id, status) for faster query
+        // Join with users table to get user details
         return DB::table('friendships as f')
             ->join('users as u', 'u.id', '=', 'f.user_id')
             ->where('f.friend_id', $userId)
             ->where('f.status', 'pending')
             ->select('u.id', 'u.username', 'u.first_name', 'u.last_name', 'u.profile_picture')
+            ->orderBy('f.created_at', 'desc')
             ->get();
     }
 

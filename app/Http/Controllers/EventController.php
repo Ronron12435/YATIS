@@ -107,9 +107,9 @@ class EventController extends Controller
         return response()->json($response->toArray(), $response->statusCode);
     }
 
-    public function eventTasks($eventId)
+    public function eventTasks(Request $request, $eventId)
     {
-        $response = $this->eventService->getTasksByEvent((int) $eventId);
+        $response = $this->eventService->getTasksByEvent((int) $eventId, $request->user()->id);
         return response()->json($response->toArray(), $response->statusCode);
     }
 
@@ -117,8 +117,8 @@ class EventController extends Controller
     {
         try {
             $validated = $request->validate([
-                'event_id'   => 'required|exists:events,id',
-                'task_id'    => 'required|exists:event_tasks,id',
+                'event_id'   => 'required|integer|exists:events,id',
+                'task_id'    => 'required|integer|exists:event_tasks,id',
                 'proof_data' => 'nullable|array',
             ]);
 
@@ -135,7 +135,20 @@ class EventController extends Controller
                 'errors' => $e->errors(),
                 'request_data' => $request->all(),
             ]);
-            throw $e;
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Task completion error', [
+                'message' => $e->getMessage(),
+                'request_data' => $request->all(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 

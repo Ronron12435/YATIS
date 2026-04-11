@@ -48,15 +48,10 @@ class MessageRepository
 
     public function unreadCount(int $userId): int
     {
+        // Uses indexed columns (recipient_id, is_read) for fast query
         $count = PrivateMessage::where('recipient_id', $userId)
             ->where('is_read', false)
             ->count();
-        
-        \Log::info('Unread count query', [
-            'user_id' => $userId,
-            'count' => $count,
-            'query' => PrivateMessage::where('recipient_id', $userId)->where('is_read', false)->toSql(),
-        ]);
         
         return $count;
     }

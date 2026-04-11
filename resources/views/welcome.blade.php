@@ -482,7 +482,7 @@
     <nav>
         <div class="container">
             <div class="logo">
-                <i class="fas fa-globe"></i>
+                <img src="{{ asset('images/yatis-logo.png') }}" alt="YATIS Logo" style="height: 83px; width: 95px;">
                 YATIS
             </div>
             <ul class="nav-links">
@@ -565,7 +565,8 @@
                     <li>Community reviews and ratings</li>
                 </ul>
             </div>
-            <div class="about-image" style="background-image: url('{{ asset('images/about-image.jpg') }}');">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <img src="{{ asset('images/about-image.png') }}" alt="YATIS Logo" style="width: 490px; height: auto; object-fit: contain;">
             </div>
         </div>
     </section>

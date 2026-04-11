@@ -681,7 +681,6 @@ function updateActionButtons(selectElement) {
     
     const addMenuBtn = document.getElementById('addMenuBtn');
     const addProductBtn = document.getElementById('addProductBtn');
-    const addServiceBtn = document.getElementById('addServiceBtn');
     
     // Show/hide buttons based on business type
     if (addMenuBtn) {
@@ -689,9 +688,6 @@ function updateActionButtons(selectElement) {
     }
     if (addProductBtn) {
         addProductBtn.style.display = businessType === 'goods' ? 'flex' : 'none';
-    }
-    if (addServiceBtn) {
-        addServiceBtn.style.display = businessType === 'services' ? 'flex' : 'none';
     }
 }
 
@@ -836,7 +832,17 @@ function displayMenuItems() {
     }
     
     container.innerHTML = currentMenuItems.map(item => {
-        const imageUrl = item.image_url || item.image;
+        let imageUrl = null;
+        if (item.image) {
+            // Ensure the image path has /storage/ prefix
+            if (item.image.startsWith('/storage/')) {
+                imageUrl = item.image;
+            } else if (item.image.startsWith('storage/')) {
+                imageUrl = '/' + item.image;
+            } else {
+                imageUrl = '/storage/' + item.image;
+            }
+        }
         
         return `
             <div style="background: #f9f9f9; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; transition: all 0.2s; display: flex; flex-direction: column;">
@@ -1053,6 +1059,7 @@ function loadProducts(businessId) {
     })
         .then(r => r.json())
         .then(res => {
+            // Handle paginated response
             if (res.data && res.data.data) {
                 currentProducts = res.data.data;
             } else if (Array.isArray(res.data)) {
@@ -1231,6 +1238,7 @@ function loadServices(businessId) {
     })
         .then(r => r.json())
         .then(res => {
+            // Handle paginated response
             if (res.data && res.data.data) {
                 currentServices = res.data.data;
             } else if (Array.isArray(res.data)) {
@@ -1256,7 +1264,16 @@ function displayServices() {
     }
     
     container.innerHTML = currentServices.map(item => {
-        const imageUrl = item.image_url || null;
+        let imageUrl = null;
+        if (item.image) {
+            if (item.image.startsWith('/storage/')) {
+                imageUrl = item.image;
+            } else if (item.image.startsWith('storage/')) {
+                imageUrl = '/' + item.image;
+            } else {
+                imageUrl = '/storage/' + item.image;
+            }
+        }
         
         return `
             <div style="background: #f9f9f9; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0; transition: all 0.2s; display: flex; flex-direction: column;">
@@ -1280,7 +1297,7 @@ window.submitServiceForm = function (e) {
     const imageFile = document.getElementById('serviceImage').files[0];
     
     if (!name || !price) {
-        showModal('Error', 'Please fill in all required fields', 'error');
+        alert('Please fill in all required fields');
         return;
     }
     
@@ -1290,8 +1307,7 @@ window.submitServiceForm = function (e) {
     formData.append('description', '');
     if (imageFile) {
         formData.append('image', imageFile);
-        } else {
-        }
+    }
     
     const btn = e.target.querySelector('button[type="submit"]');
     btn.disabled = true;
@@ -1321,7 +1337,6 @@ window.submitServiceForm = function (e) {
             btn.innerHTML = originalText;
             
             if (res.success) {
-                document.getElementById('addServiceForm').reset();
                 showModal('Success', 'Service added successfully!', 'success');
                 closeAddServiceModal();
                 loadServices(currentServiceBusinessId);
@@ -1376,4 +1391,3 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     observer.observe(section, { attributes: true, attributeFilter: ['class'] });
 });
-

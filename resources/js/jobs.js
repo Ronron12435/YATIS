@@ -39,7 +39,14 @@ const JobsModule = (() => {
                 return r.json();
             })
             .then(response => {
-                allJobs = response.data || [];
+                // Handle paginated response: { data: { data: [...], ... } } or { data: [...] }
+                let jobs = [];
+                if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                    jobs = response.data.data;
+                } else if (Array.isArray(response.data)) {
+                    jobs = response.data;
+                }
+                allJobs = jobs;
                 renderJobs(allJobs);
             })
             .catch(err => {

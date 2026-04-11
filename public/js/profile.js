@@ -11,6 +11,7 @@ window.initProfileSection = function () {
     loadPosts();
     setupCharCounters();
     storeOriginalFormValues();
+    loadCurrentLocation();
 };
 
 function storeOriginalFormValues() {
@@ -158,7 +159,6 @@ window.deletePost = function (postId) {
                         if (res.success) {
                             const card = document.getElementById(`post-${postId}`);
                             if (card) card.remove();
-                            loadProfileStats();
                             closeModal();
                         } else {
                             showModal('Error', res.message || 'Failed to delete post');
@@ -191,7 +191,6 @@ window.updateProfile = function (e) {
         return;
     }
 
-    // Check if anything actually changed
     const originalFirstName = document.getElementById('firstName').getAttribute('data-original') || document.getElementById('firstName').value;
     const originalLastName = document.getElementById('lastName').getAttribute('data-original') || document.getElementById('lastName').value;
     const originalBio = document.getElementById('bio').getAttribute('data-original') || document.getElementById('bio').value;
@@ -229,7 +228,6 @@ window.updateProfile = function (e) {
             btn.innerHTML = originalText;
             if (res.success) {
                 msgEl.innerHTML = '<div class="message success">Profile updated successfully!</div>';
-                document.querySelector('.modern-profile-name').textContent = firstName + ' ' + lastName;
                 setTimeout(() => msgEl.innerHTML = '', 3000);
             } else {
                 msgEl.innerHTML = `<div class="message error">${res.message || 'Failed to update profile'}</div>`;
@@ -345,14 +343,7 @@ window.createPost = function (e) {
         },
         body: formData,
     })
-        .then(r => {
-            if (!r.ok && r.status === 422) {
-                return r.json().then(data => {
-                    throw new Error(JSON.stringify(data.errors || data.message));
-                });
-            }
-            return r.json();
-        })
+        .then(r => r.json())
         .then(res => {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -363,9 +354,7 @@ window.createPost = function (e) {
                 loadPosts();
                 setTimeout(() => msgEl.innerHTML = '', 3000);
             } else {
-                const errorMsg = res.message || 'Failed to create post';
-                const errorDetails = res.errors ? ' - ' + JSON.stringify(res.errors) : '';
-                msgEl.innerHTML = `<div class="message error">${errorMsg}${errorDetails}</div>`;
+                msgEl.innerHTML = `<div class="message error">${res.message || 'Failed to create post'}</div>`;
             }
         })
         .catch(() => {
@@ -378,35 +367,50 @@ window.createPost = function (e) {
 // ── Photo Upload ──────────────────────────────────────────────────────────────
 
 window.uploadAvatar = function (input) {
-    if (!input.files.length) return;
+    console.log('uploadAvatar called with input:', input);
+    if (!input.files.length) {
+        console.log('No files selected');
+        return;
+    }
 
+    console.log('File selected:', input.files[0]);
     const formData = new FormData();
     formData.append('avatar', input.files[0]);
 
+    console.log('Sending avatar upload request...');
     fetch('/api/profile/avatar', {
         method: 'POST',
         credentials: 'include',
         headers: {
             'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
             'X-Requested-With': 'XMLHttpRequest',
         },
         body: formData,
     })
-        .then(r => r.json())
+        .then(r => {
+            console.log('Avatar upload response status:', r.status);
+            return r.json();
+        })
         .then(res => {
+            console.log('Avatar upload response:', res);
             if (res.success) {
                 const avatarEl = document.getElementById('profileAvatar');
-                if (res.data.profile_picture) {
-                    avatarEl.innerHTML = `<img src="${res.data.profile_picture}" alt="Avatar">`;
+                if (res.data && res.data.profile_picture) {
+                    console.log('Updating avatar with:', res.data.profile_picture);
+                    avatarEl.innerHTML = `<img src="/storage/${res.data.profile_picture}?t=${Date.now()}" alt="Avatar">`;
                 }
                 showModal('Success', 'Profile picture updated successfully!');
                 setTimeout(() => location.reload(), 1500);
             } else {
+                console.log('Upload failed:', res.message);
                 showModal('Error', res.message || 'Failed to upload avatar');
             }
         })
-        .catch(() => showModal('Error', 'Error uploading avatar'));
+        .catch(err => {
+            console.error('Avatar upload error:', err);
+            showModal('Error', 'Error uploading avatar: ' + err.message);
+        });
 
     input.value = '';
 };
@@ -432,7 +436,7 @@ window.uploadCover = function (input) {
             if (res.success) {
                 const coverEl = document.getElementById('profileCover');
                 if (res.data.cover_photo) {
-                    coverEl.style.backgroundImage = `url('${res.data.cover_photo}')`;
+                    coverEl.style.backgroundImage = `url('/storage/${res.data.cover_photo}')`;
                     showModal('Success', 'Cover photo updated successfully!');
                     setTimeout(() => location.reload(), 1500);
                 }
@@ -446,55 +450,44 @@ window.uploadCover = function (input) {
 };
 
 window.deleteCover = function () {
-    const deleteButton = {
-        text: 'Delete',
-        color: '#e74c3c',
-        onclick: function() {
-            fetch('/api/profile/cover', {
-                method: 'DELETE',
-                credentials: 'include',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.success) {
-                        showProfileModal('Success', 'Cover photo deleted successfully!', [
-                            { text: 'OK', onclick: () => { closeProfileModal(); location.reload(); } }
-                        ]);
-                    } else {
-                        let errorMsg = res.message || 'Failed to delete cover photo';
-                        showProfileModal('Error', errorMsg, [
-                            { text: 'OK', onclick: closeProfileModal }
-                        ]);
-                    }
+    showModal('Confirm Delete', 'Are you sure you want to delete your cover photo?', [
+        {
+            text: 'Delete',
+            onclick: () => {
+                fetch('/api/profile/cover', {
+                    method: 'DELETE',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
                 })
-                .catch(err => {
-                    showProfileModal('Error', 'Error deleting cover photo: ' + err.message, [
-                        { text: 'OK', onclick: closeProfileModal }
-                    ]);
-                });
+                    .then(r => r.json())
+                    .then(res => {
+                        if (res.success) {
+                            showModal('Success', 'Cover photo deleted successfully!');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showModal('Error', res.message || 'Failed to delete cover');
+                        }
+                    })
+                    .catch(() => showModal('Error', 'Error deleting cover'));
+            }
+        },
+        {
+            text: 'Cancel',
+            onclick: closeModal
         }
-    };
-    
-    const cancelButton = {
-        text: 'Cancel',
-        color: '#95a5a6',
-        onclick: closeProfileModal
-    };
-    
-    showProfileModal('Confirm Delete', 'Are you sure you want to delete your cover photo?', [deleteButton, cancelButton]);
+    ]);
 };
 
 window.removeProfilePicture = function () {
-    showProfileModal('Confirm Delete', 'Are you sure you want to remove your profile picture?', [
+    showModal('Confirm Delete', 'Are you sure you want to remove your profile picture?', [
         {
             text: 'Remove',
             color: '#e74c3c',
-            onclick: function() {
+            onclick: () => {
                 fetch('/api/profile/avatar', {
                     method: 'DELETE',
                     credentials: 'include',
@@ -507,26 +500,19 @@ window.removeProfilePicture = function () {
                     .then(r => r.json())
                     .then(res => {
                         if (res.success) {
-                            showProfileModal('Success', 'Profile picture removed successfully!', [
-                                { text: 'OK', onclick: () => { closeProfileModal(); location.reload(); } }
-                            ]);
+                            showModal('Success', 'Profile picture removed successfully!');
+                            setTimeout(() => location.reload(), 1500);
                         } else {
-                            showProfileModal('Error', res.message || 'Failed to delete profile picture', [
-                                { text: 'OK', onclick: closeProfileModal }
-                            ]);
+                            showModal('Error', res.message || 'Failed to remove profile picture');
                         }
                     })
-                    .catch(err => {
-                        showProfileModal('Error', 'Error deleting profile picture: ' + err.message, [
-                            { text: 'OK', onclick: closeProfileModal }
-                        ]);
-                    });
+                    .catch(() => showModal('Error', 'Error removing profile picture'));
             }
         },
         {
             text: 'Cancel',
             color: '#95a5a6',
-            onclick: closeProfileModal
+            onclick: closeModal
         }
     ]);
 };
@@ -568,11 +554,10 @@ window.toggleAvatarMenu = function (event) {
     
     if (menu) {
         if (menu.style.display === 'none' || menu.style.display === '') {
-            // Position menu below and to the right of button
             if (btn) {
                 const rect = btn.getBoundingClientRect();
                 menu.style.top = (rect.bottom + 8) + 'px';
-                menu.style.left = (rect.right - 160) + 'px'; // Align right edge with button
+                menu.style.left = (rect.right - 160) + 'px';
             }
             menu.style.display = 'block';
         } else {
@@ -588,7 +573,6 @@ window.closeAvatarMenu = function () {
     }
 };
 
-// Close menu when clicking outside
 document.addEventListener('click', function (e) {
     const menu = document.getElementById('avatarMenu');
     const btn = document.querySelector('[onclick*="toggleAvatarMenu"]');
@@ -599,24 +583,18 @@ document.addEventListener('click', function (e) {
 
 // ── Modal Functions ──────────────────────────────────────────────────────────
 
-window.showProfileModal = function (title, message, buttons = []) {
-    // Remove any existing modal
-    const existingModal = document.getElementById('profile-modal');
-    const existingOverlay = document.getElementById('profile-modal-overlay');
-    if (existingModal) existingModal.remove();
-    if (existingOverlay) existingOverlay.remove();
-    
+window.showModal = function (title, message, buttons = []) {
     const modal = document.createElement('div');
-    modal.id = 'profile-modal';
+    modal.id = 'custom-modal';
     modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10001; padding:30px; max-width:400px; text-align:center;';
     
     let buttonsHTML = '';
     if (buttons.length > 0) {
         buttonsHTML = `<div style="display:flex; gap:10px; margin-top:20px; justify-content:center;">
-            ${buttons.map((btn, idx) => `<button id="profile-modal-btn-${idx}" style="padding:10px 20px; background:${btn.color || '#3498db'}; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">${btn.text}</button>`).join('')}
+            ${buttons.map((btn, idx) => `<button id="modal-btn-${idx}" style="padding:10px 20px; background:${btn.color || '#3498db'}; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">${btn.text}</button>`).join('')}
         </div>`;
     } else {
-        buttonsHTML = `<button id="profile-modal-btn-default" style="padding:10px 20px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; margin-top:20px;">OK</button>`;
+        buttonsHTML = `<button onclick="closeModal();" style="padding:10px 20px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; margin-top:20px;">OK</button>`;
     }
     
     modal.innerHTML = `
@@ -626,45 +604,278 @@ window.showProfileModal = function (title, message, buttons = []) {
     `;
 
     const overlay = document.createElement('div');
-    overlay.id = 'profile-modal-overlay';
+    overlay.id = 'custom-modal-overlay';
     overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000;';
-    overlay.onclick = (e) => {
-        if (e.target === overlay) {
-            modal.remove();
-            overlay.remove();
-        }
+    overlay.onclick = () => {
+        modal.remove();
+        overlay.remove();
     };
 
     document.body.appendChild(overlay);
     document.body.appendChild(modal);
     
-    // Attach click handlers to buttons
     buttons.forEach((btn, idx) => {
-        const btnEl = document.getElementById(`profile-modal-btn-${idx}`);
-        
+        const btnEl = document.getElementById(`modal-btn-${idx}`);
         if (btnEl && btn.onclick) {
-            btnEl.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                btn.onclick();
-            });
+            btnEl.onclick = btn.onclick;
         }
     });
-    
-    // Handle default button
-    if (buttons.length === 0) {
-        const defaultBtn = document.getElementById('profile-modal-btn-default');
-        if (defaultBtn) {
-            defaultBtn.addEventListener('click', closeProfileModal);
-        }
-    }
 };
 
-window.closeProfileModal = function () {
-    const modal = document.getElementById('profile-modal');
-    const overlay = document.getElementById('profile-modal-overlay');
+window.closeModal = function () {
+    const modal = document.getElementById('custom-modal');
+    const overlay = document.getElementById('custom-modal-overlay');
     if (modal) modal.remove();
     if (overlay) overlay.remove();
+};
+
+// ── Location Update ──────────────────────────────────────────────────────────
+
+function loadCurrentLocation() {
+    console.log('📍 Loading current location...');
+    
+    fetch('/api/user/location', {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+    })
+        .then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            return r.json();
+        })
+        .then(res => {
+            console.log('✅ Location response:', res);
+            
+            const latInput = document.getElementById('locationLatitude');
+            const lngInput = document.getElementById('locationLongitude');
+            const displayEl = document.getElementById('currentLocationDisplay');
+            
+            if (res.data && res.data.latitude && res.data.longitude) {
+                const lat = parseFloat(res.data.latitude);
+                const lng = parseFloat(res.data.longitude);
+                
+                console.log('📌 Current location:', lat, lng);
+                
+                if (latInput) latInput.value = lat;
+                if (lngInput) lngInput.value = lng;
+                
+                if (displayEl) {
+                    displayEl.innerHTML = `
+                        <div style="font-weight: 600; color: #1a3a52; margin-bottom: 4px;">📍 Latitude: ${lat.toFixed(4)}</div>
+                        <div style="font-weight: 600; color: #1a3a52;">📍 Longitude: ${lng.toFixed(4)}</div>
+                        <div style="font-size: 11px; color: #999; margin-top: 6px;">Last updated: ${res.data.location_updated_at ? new Date(res.data.location_updated_at).toLocaleString() : 'Never'}</div>
+                    `;
+                }
+            } else {
+                console.log('⚠️ No location data found');
+                if (displayEl) {
+                    displayEl.innerHTML = '<div style="color: #999;">No location set yet. Enable GPS or enter coordinates manually.</div>';
+                }
+            }
+        })
+        .catch(err => {
+            console.error('❌ Error loading location:', err);
+            const displayEl = document.getElementById('currentLocationDisplay');
+            if (displayEl) {
+                displayEl.innerHTML = '<div style="color: #e74c3c;">Error loading location</div>';
+            }
+        });
+}
+
+window.enableLocationGPS = function () {
+    console.log('📍 Enabling GPS location...');
+    
+    const latInput = document.getElementById('locationLatitude');
+    const lngInput = document.getElementById('locationLongitude');
+    const msgEl = document.getElementById('locationMessage');
+    
+    msgEl.innerHTML = '<div class="message" style="background: #e3f2fd; color: #1976d2; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">⏳ Requesting GPS location...</div>';
+    
+    if (!navigator.geolocation) {
+        console.warn('⚠️ Geolocation not supported');
+        msgEl.innerHTML = '<div class="message error">Geolocation is not supported by your browser. Please enter coordinates manually.</div>';
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            console.log('✅ GPS location obtained:', lat, lng);
+            
+            if (latInput) latInput.value = lat.toFixed(4);
+            if (lngInput) lngInput.value = lng.toFixed(4);
+            
+            msgEl.innerHTML = '<div class="message success">✅ GPS location captured! Click "Save Location" to update.</div>';
+            setTimeout(() => msgEl.innerHTML = '', 3000);
+        },
+        (error) => {
+            console.warn('⚠️ Geolocation error:', error.code, error.message);
+            msgEl.innerHTML = '<div class="message error">⚠️ GPS access denied or timed out. Using IP-based location fallback...</div>';
+            
+            fetch('https://ipapi.co/json/')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.latitude && data.longitude) {
+                        const lat = parseFloat(data.latitude);
+                        const lng = parseFloat(data.longitude);
+                        
+                        console.log('✅ IP-based location:', lat, lng);
+                        
+                        if (latInput) latInput.value = lat.toFixed(4);
+                        if (lngInput) lngInput.value = lng.toFixed(4);
+                        
+                        msgEl.innerHTML = '<div class="message success">✅ IP-based location captured! Click "Save Location" to update.</div>';
+                        setTimeout(() => msgEl.innerHTML = '', 3000);
+                    }
+                })
+                .catch(() => {
+                    msgEl.innerHTML = '<div class="message error">❌ Could not determine location. Please enter coordinates manually.</div>';
+                });
+        }
+    );
+};
+
+window.searchAddress = function (query) {
+    console.log('🔍 Searching address in Sagay City:', query);
+    
+    const suggestionsEl = document.getElementById('addressSuggestions');
+    
+    if (!query || query.length < 2) {
+        suggestionsEl.style.display = 'none';
+        return;
+    }
+    
+    const searchQuery = `${query}, Sagay City, Negros Occidental, Philippines`;
+    
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=10&viewbox=123.38,10.94,123.47,10.85&bounded=1`)
+        .then(r => r.json())
+        .then(results => {
+            console.log('✅ Search results from Sagay City:', results);
+            
+            const sagayMinLat = 10.85;
+            const sagayMaxLat = 10.94;
+            const sagayMinLng = 123.38;
+            const sagayMaxLng = 123.47;
+            
+            const filteredResults = results.filter(result => {
+                const lat = parseFloat(result.lat);
+                const lng = parseFloat(result.lon);
+                const inBounds = lat >= sagayMinLat && lat <= sagayMaxLat && lng >= sagayMinLng && lng <= sagayMaxLng;
+                return inBounds;
+            });
+            
+            if (!filteredResults.length) {
+                suggestionsEl.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">No results found in Sagay City.</div>';
+                suggestionsEl.style.display = 'block';
+                return;
+            }
+            
+            suggestionsEl.innerHTML = filteredResults.map(result => `
+                <div onclick="selectAddress('${result.display_name}', ${result.lat}, ${result.lon})" style="padding: 12px 14px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s;">
+                    <div style="font-weight: 600; color: #1a3a52; font-size: 13px;">${result.display_name}</div>
+                    <div style="font-size: 11px; color: #999; margin-top: 2px;">Lat: ${parseFloat(result.lat).toFixed(4)}, Lng: ${parseFloat(result.lon).toFixed(4)}</div>
+                </div>
+            `).join('');
+            
+            suggestionsEl.style.display = 'block';
+            
+            suggestionsEl.querySelectorAll('div[onclick]').forEach(el => {
+                el.addEventListener('mouseover', () => el.style.background = '#f5f5f5');
+                el.addEventListener('mouseout', () => el.style.background = 'transparent');
+            });
+        })
+        .catch(err => {
+            console.error('❌ Search error:', err);
+            suggestionsEl.innerHTML = '<div style="padding: 12px; color: #e74c3c; text-align: center;">Search error. Please try again.</div>';
+            suggestionsEl.style.display = 'block';
+        });
+};
+
+window.selectAddress = function (address, lat, lng) {
+    console.log('✅ Selected address:', address, lat, lng);
+    
+    const addressInput = document.getElementById('locationAddress');
+    const latInput = document.getElementById('locationLatitude');
+    const lngInput = document.getElementById('locationLongitude');
+    const suggestionsEl = document.getElementById('addressSuggestions');
+    
+    if (addressInput) addressInput.value = address;
+    if (latInput) latInput.value = parseFloat(lat).toFixed(4);
+    if (lngInput) lngInput.value = parseFloat(lng).toFixed(4);
+    
+    suggestionsEl.style.display = 'none';
+    
+    const msgEl = document.getElementById('locationMessage');
+    msgEl.innerHTML = '<div class="message success">✅ Address selected! Click "Save Location" to update.</div>';
+    setTimeout(() => msgEl.innerHTML = '', 3000);
+};
+
+window.updateLocationSubmit = function (e) {
+    e.preventDefault();
+    
+    console.log('💾 Submitting location update...');
+    
+    const msgEl = document.getElementById('locationMessage');
+    msgEl.innerHTML = '';
+    
+    const latitude = parseFloat(document.getElementById('locationLatitude').value);
+    const longitude = parseFloat(document.getElementById('locationLongitude').value);
+    
+    if (isNaN(latitude) || isNaN(longitude)) {
+        console.error('❌ Invalid coordinates');
+        msgEl.innerHTML = '<div class="message error">Please search for an address or enable GPS to get coordinates.</div>';
+        return;
+    }
+    
+    if (latitude < -90 || latitude > 90) {
+        console.error('❌ Latitude out of range');
+        msgEl.innerHTML = '<div class="message error">Latitude must be between -90 and 90.</div>';
+        return;
+    }
+    
+    if (longitude < -180 || longitude > 180) {
+        console.error('❌ Longitude out of range');
+        msgEl.innerHTML = '<div class="message error">Longitude must be between -180 and 180.</div>';
+        return;
+    }
+    
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg> Saving...';
+
+    fetch('/api/user/location', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({
+            latitude: latitude,
+            longitude: longitude,
+        }),
+    })
+        .then(r => r.json())
+        .then(res => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            if (res.success) {
+                msgEl.innerHTML = '<div class="message success">✅ Location updated successfully!</div>';
+                loadCurrentLocation();
+                setTimeout(() => msgEl.innerHTML = '', 3000);
+            } else {
+                msgEl.innerHTML = `<div class="message error">${res.message || 'Failed to update location'}</div>`;
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            msgEl.innerHTML = '<div class="message error">❌ Network error. Please try again.</div>';
+        });
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -675,6 +886,7 @@ function setEl(id, val) {
 }
 
 function escapeHtml(str) {
+    if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;

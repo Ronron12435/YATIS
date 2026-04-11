@@ -2,76 +2,66 @@
 
 namespace App\Services;
 
-use App\Repositories\DailyStepsRepository;
+use App\Models\UserDailySteps;
 use App\Responses\ApiResponse;
 
 class DailyStepsService
 {
-    public function __construct(private DailyStepsRepository $stepsRepository) {}
-
     public function getTodaySteps(int $userId): ApiResponse
     {
         try {
-            $steps = $this->stepsRepository->getTodaySteps($userId);
-            
-            return new ApiResponse(
-                success: true,
-                data: ['steps' => $steps],
-                message: 'Daily steps retrieved',
-                statusCode: 200
-            );
+            $today = now()->toDateString();
+            $steps = UserDailySteps::where('user_id', $userId)
+                ->whereDate('date', $today)
+                ->sum('steps') ?? 0;
+
+            return new ApiResponse(true, ['steps' => $steps], 'Success');
         } catch (\Exception $e) {
-            return new ApiResponse(
-                success: false,
-                data: null,
-                message: 'Failed to retrieve daily steps',
-                statusCode: 500,
-                errors: ['error' => $e->getMessage()]
-            );
+            return new ApiResponse(false, null, 'Error fetching steps: ' . $e->getMessage(), 500);
         }
     }
 
     public function recordSteps(int $userId, int $steps): ApiResponse
     {
         try {
-            $record = $this->stepsRepository->updateTodaySteps($userId, $steps);
+            $today = now()->toDateString();
             
-            return new ApiResponse(
-                success: true,
-                data: ['steps' => $record->steps],
-                message: 'Steps recorded successfully',
-                statusCode: 200
+            $record = UserDailySteps::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'date' => $today,
+                ],
+                [
+                    'steps' => $steps,
+                ]
             );
+
+            return new ApiResponse(true, $record, 'Steps recorded successfully', 201);
         } catch (\Exception $e) {
-            return new ApiResponse(
-                success: false,
-                data: null,
-                message: 'Failed to record steps',
-                statusCode: 500,
-                errors: ['error' => $e->getMessage()]
-            );
+            return new ApiResponse(false, null, 'Error recording steps: ' . $e->getMessage(), 500);
         }
     }
 
     public function incrementSteps(int $userId, int $increment = 1): ApiResponse
     {
         try {
-            $record = $this->stepsRepository->incrementSteps($userId, $increment);
+            $today = now()->toDateString();
             
-            return new ApiResponse(
-                success: true,
-                data: ['steps' => $record->steps],
-                message: 'Steps incremented successfully',
-                statusCode: 200
+            $record = UserDailySteps::firstOrCreate(
+                [
+                    'user_id' => $userId,
+                    'date' => $today,
+                ],
+                [
+                    'steps' => 0,
+                ]
             );
+
+            $record->increment('steps', $increment);
+
+            return new ApiResponse(true, $record, 'Steps incremented successfully');
         } catch (\Exception $e) {
-            return new ApiResponse(
-                success: false,
-                data: null,
-                message: 'Failed to increment steps',
-                statusCode: 500,
-                errors: ['error' => $e->getMessage()]
-            );
+            return new ApiResponse(false, null, 'Error incrementing steps: ' . $e->getMessage(), 500);
         }
     }
 }

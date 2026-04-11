@@ -6,9 +6,11 @@ const AdminModule = (() => {
 
     const init = () => {
         if (initialized) {
+            console.log('AdminModule already initialized, skipping...');
             return;
         }
         initialized = true;
+        console.log('AdminModule initializing...');
         loadStatistics();
         loadUsers();
         loadEvents();
@@ -72,18 +74,10 @@ const AdminModule = (() => {
         const userSearch = document.getElementById('user-search');
         const createBusinessForm = document.getElementById('create-business-form');
         const createEventForm = document.getElementById('create-event-form');
-        const createTaskForm = document.getElementById('create-task-form');
-        const taskTypeSelect = document.getElementById('task-type');
-        const qrCodeInput = document.getElementById('task-qr-code');
 
         if (userSearch) userSearch.addEventListener('input', filterUsers);
         if (createBusinessForm) createBusinessForm.addEventListener('submit', handleCreateBusiness);
         if (createEventForm) createEventForm.addEventListener('submit', handleCreateEvent);
-        if (createTaskForm) createTaskForm.addEventListener('submit', handleCreateTask);
-        if (taskTypeSelect) taskTypeSelect.addEventListener('change', handleTaskTypeChange);
-        if (qrCodeInput) qrCodeInput.addEventListener('input', (e) => {
-            generateQRCode(e.target.value);
-        });
     };
 
     const loadStatistics = () => {
@@ -96,6 +90,7 @@ const AdminModule = (() => {
                 const stats = response.data || {};
                 document.getElementById('stat-total-users').textContent = stats.total_users || 0;
                 document.getElementById('stat-total-business-users').textContent = stats.total_business_users || 0;
+                document.getElementById('stat-total-posts').textContent = stats.total_posts || 0;
             })
             .catch(err => {
                 console.error('Error loading statistics:', err);
@@ -325,334 +320,6 @@ const AdminModule = (() => {
         });
     };
 
-    const handleTaskTypeChange = () => {
-        const taskType = document.getElementById('task-type').value;
-        const qrCodeField = document.getElementById('qr-code-field');
-        
-        if (taskType === 'qr_scan') {
-            qrCodeField.style.display = 'block';
-            // Generate QR code when field becomes visible
-            setTimeout(() => generateQRCode(''), 100);
-        } else {
-            qrCodeField.style.display = 'none';
-        }
-    };
-
-    const generateQRCode = (value) => {
-        const preview = document.getElementById('qr-preview');
-        if (!preview) return;
-
-        // Clear previous content
-        preview.innerHTML = '';
-
-        // Only generate if value is not empty
-        if (!value || value.trim() === '') {
-            preview.innerHTML = '<div style="width:200px; height:200px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:6px; color:#999; font-size:12px; text-align:center; padding:10px;">Enter QR code value</div>';
-            return;
-        }
-
-        // Generate QR code using QRCode library
-        try {
-            // Create a temporary div for QR code
-            const tempDiv = document.createElement('div');
-            tempDiv.style.display = 'none';
-            document.body.appendChild(tempDiv);
-            
-            // Generate QR code in temp div
-            new QRCode(tempDiv, {
-                text: value,
-                width: 200,
-                height: 200,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            // Wait for QR code to be generated
-            setTimeout(() => {
-                const img = tempDiv.querySelector('img');
-                if (img) {
-                    // Move the generated image to preview
-                    preview.innerHTML = '';
-                    preview.appendChild(img);
-                    img.style.borderRadius = '6px';
-                }
-                document.body.removeChild(tempDiv);
-            }, 100);
-        } catch (err) {
-            console.error('Error generating QR code:', err);
-            preview.innerHTML = '<div style="width:200px; height:200px; background:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:6px; color:#e74c3c; font-size:12px; text-align:center;">Error generating QR</div>';
-        }
-    };
-
-    const downloadQRCode = () => {
-        const qrValue = document.getElementById('task-qr-code').value.trim();
-
-        if (!qrValue) {
-            showModal('Error', 'Please enter a QR code value first', '✕', 'error');
-            return;
-        }
-
-        try {
-            // Get the QR code image from preview
-            const preview = document.getElementById('qr-preview');
-            const img = preview.querySelector('img');
-            
-            if (!img) {
-                showModal('Error', 'QR code not generated yet', '✕', 'error');
-                return;
-            }
-
-            // Create canvas and draw the image
-            const canvas = document.createElement('canvas');
-            canvas.width = 200;
-            canvas.height = 200;
-            const ctx = canvas.getContext('2d');
-            
-            // Draw image on canvas
-            ctx.drawImage(img, 0, 0);
-            
-            // Convert to blob and download
-            canvas.toBlob(blob => {
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `qr-code-${qrValue.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                
-                // Show success modal with download confirmation
-                showDownloadSuccessModal(qrValue);
-            });
-        } catch (err) {
-            console.error('Error downloading QR code:', err);
-            showModal('Error', 'Error downloading QR code', '✕', 'error');
-        }
-    };
-
-    const showDownloadSuccessModal = (qrValue) => {
-        const modalHTML = `
-            <div id="download-success-modal" style="display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; align-items:center; justify-content:center;">
-                <div style="background:white; border-radius:12px; padding:40px; max-width:450px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:center;">
-                    <div style="font-size:60px; margin-bottom:20px;">✓</div>
-                    <h2 style="margin:0 0 15px 0; color:#27ae60; font-size:22px; font-weight:700;">Download Successful!</h2>
-                    <p style="margin:0 0 20px 0; color:#666; font-size:14px; line-height:1.6;">
-                        Your QR code has been downloaded successfully.<br>
-                        <strong>File name:</strong> qr-code-${qrValue.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.png
-                    </p>
-                    <p style="margin:0 0 25px 0; color:#999; font-size:12px; padding:12px; background:#f5f5f5; border-radius:6px; border-left:4px solid #27ae60;">
-                        <i class="fas fa-info-circle"></i> You can now print or share this QR code with participants.
-                    </p>
-                    <button onclick="AdminModule.closeDownloadModal()" style="padding:12px 30px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s;">
-                        OK
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        // Remove existing modal if any
-        const existing = document.getElementById('download-success-modal');
-        if (existing) existing.remove();
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        // Auto-close after 3 seconds
-        setTimeout(() => {
-            closeDownloadModal();
-        }, 3000);
-    };
-
-    const closeDownloadModal = () => {
-        const modal = document.getElementById('download-success-modal');
-        if (modal) modal.remove();
-    };
-
-    const handleCreateTask = (e) => {
-        e.preventDefault();
-
-        const eventId = document.getElementById('task-event-id').value.trim();
-        const title = document.getElementById('task-title').value.trim();
-        const description = document.getElementById('task-description').value.trim();
-        const taskType = document.getElementById('task-type').value.trim();
-        const rewardPoints = document.getElementById('task-reward-points').value.trim();
-        const targetValue = document.getElementById('task-target-value').value.trim();
-        const badge = document.getElementById('task-badge').value.trim();
-        const qrCode = document.getElementById('task-qr-code').value.trim();
-
-        if (!eventId || !title || !taskType || !rewardPoints) {
-            showModal('Validation Error', 'Event, Title, Task Type, and Reward Points are required', '⚠', 'warning');
-            return;
-        }
-
-        if (parseInt(rewardPoints) < 1) {
-            showModal('Validation Error', 'Reward Points must be at least 1', '⚠', 'warning');
-            return;
-        }
-
-        // Validate QR code for QR Scan tasks
-        if (taskType === 'qr_scan' && !qrCode) {
-            showModal('Validation Error', 'QR Code Value is required for QR Scan tasks', '⚠', 'warning');
-            return;
-        }
-
-        fetch(`/api/events/${eventId}/tasks`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'X-CSRF-Token': CSRF_TOKEN,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                title: title,
-                description: description || null,
-                task_type: taskType,
-                reward_points: parseInt(rewardPoints),
-                target_value: targetValue ? parseInt(targetValue) : null,
-                qr_code: qrCode || null,
-                badge: badge || null
-            })
-        })
-        .then(r => r.json())
-        .then(response => {
-            if (response.success) {
-                showModal('Success', 'Task created successfully!', '✓', 'success');
-                document.getElementById('create-task-form').reset();
-                setTimeout(() => {
-                    closeTaskForm();
-                    loadEvents();
-                }, 1200);
-            } else {
-                showModal('Error', response.message || 'Failed to create task', '✕', 'error');
-            }
-        })
-        .catch(err => {
-            console.error('Error creating task:', err);
-            showModal('Error', 'Error creating task', '✕', 'error');
-        });
-    };
-
-    const populateEventDropdown = () => {
-        const dropdown = document.getElementById('task-event-id');
-        if (!dropdown || !allEvents || allEvents.length === 0) return;
-
-        dropdown.innerHTML = '<option value="">-- Choose an event --</option>';
-        allEvents.forEach(event => {
-            const option = document.createElement('option');
-            option.value = event.id;
-            option.textContent = event.title;
-            dropdown.appendChild(option);
-        });
-    };
-
-    const openTaskForm = (eventId) => {
-        const taskModal = document.getElementById('task-modal');
-        const dropdown = document.getElementById('task-event-id');
-        
-        if (taskModal) {
-            taskModal.style.display = 'flex';
-            if (dropdown) {
-                dropdown.value = eventId;
-            }
-        }
-    };
-
-    const closeTaskForm = () => {
-        const taskModal = document.getElementById('task-modal');
-        if (taskModal) {
-            taskModal.style.display = 'none';
-            document.getElementById('create-task-form').reset();
-        }
-    };
-
-    const closeTaskModal = () => {
-        closeTaskForm();
-    };
-
-    const viewEventDetails = (eventId) => {
-        const event = allEvents.find(e => e.id === eventId);
-        if (!event) return;
-
-        const modal = document.getElementById('event-details-modal');
-        const titleEl = document.getElementById('event-details-title');
-        const contentEl = document.getElementById('event-details-content');
-        const tasksListEl = document.getElementById('event-tasks-list');
-
-        // Set event title
-        titleEl.textContent = event.title;
-
-        // Set event details
-        const startDate = new Date(event.start_date).toLocaleDateString();
-        const endDate = new Date(event.end_date).toLocaleDateString();
-        contentEl.innerHTML = `
-            <div style="background:#f9f9f9; padding:15px; border-radius:8px; border-left:4px solid #667eea;">
-                <p style="margin:0 0 10px 0; color:#333;"><strong>Dates:</strong> ${startDate} to ${endDate}</p>
-                <p style="margin:0; color:#555; font-size:14px; line-height:1.5;">${escapeHtml(event.description)}</p>
-            </div>
-        `;
-
-        // Load and display tasks
-        tasksListEl.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">Loading tasks...</p>';
-        
-        fetch(`/api/events/${eventId}/tasks`, { credentials: 'include' })
-            .then(r => r.json())
-            .then(response => {
-                let tasks = [];
-                if (response.success && response.data && response.data.data) {
-                    tasks = response.data.data;
-                } else if (response.data && Array.isArray(response.data)) {
-                    tasks = response.data;
-                }
-
-                if (tasks.length === 0) {
-                    tasksListEl.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No tasks added yet</p>';
-                } else {
-                    tasksListEl.innerHTML = tasks.map(task => `
-                        <div style="background:#f9f9f9; padding:12px; border-radius:6px; margin-bottom:10px; border-left:3px solid #667eea;">
-                            <h5 style="margin:0 0 5px 0; color:#333;">${escapeHtml(task.title)}</h5>
-                            <p style="margin:0 0 8px 0; color:#666; font-size:13px;">${escapeHtml(task.description || '')}</p>
-                            <div style="display:flex; gap:10px; font-size:12px; color:#999;">
-                                <span><strong>Type:</strong> ${task.task_type}</span>
-                                <span><strong>Points:</strong> ${task.reward_points}</span>
-                            </div>
-                        </div>
-                    `).join('');
-                }
-            })
-            .catch(err => {
-                console.error('Error loading tasks:', err);
-                tasksListEl.innerHTML = '<p style="color:#e74c3c; text-align:center; padding:20px;">Error loading tasks</p>';
-            });
-
-        // Store current event ID for adding tasks
-        window.currentEventId = eventId;
-        
-        if (modal) {
-            modal.style.display = 'flex';
-        }
-    };
-
-    const closeEventModal = () => {
-        const modal = document.getElementById('event-details-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    };
-
-    const openTaskFormForEvent = () => {
-        closeEventModal();
-        const dropdown = document.getElementById('task-event-id');
-        if (dropdown && window.currentEventId) {
-            dropdown.value = window.currentEventId;
-        }
-        const taskModal = document.getElementById('task-modal');
-        if (taskModal) {
-            taskModal.style.display = 'flex';
-        }
-    };
-
     const loadEvents = () => {
         fetch('/api/events', { credentials: 'include' })
             .then(r => {
@@ -660,26 +327,23 @@ const AdminModule = (() => {
                 return r.json();
             })
             .then(response => {
+                console.log('Full events response:', response);
+                
                 // The response structure is: { success, message, data: { data: [...], ... } }
-                let events = [];
-                if (response.data && response.data.data && Array.isArray(response.data.data)) {
-                    events = response.data.data;
-                } else if (response.data && Array.isArray(response.data)) {
-                    events = response.data;
-                } else if (Array.isArray(response)) {
-                    events = response;
-                }
+                const events = response.data && response.data.data ? response.data.data : [];
+                console.log('Extracted events array:', events);
+                console.log('Events count:', events.length);
                 
                 allEvents = events;
                 
-                // Force a small delay to ensure DOM is ready and then render
+                // Force a small delay to ensure DOM is ready
                 setTimeout(() => {
                     renderEvents(allEvents);
-                }, 100);
+                }, 50);
             })
             .catch(err => {
-                console.error('loadEvents - Error loading events:', err);
-                const eventsList = document.getElementById('admin-events-list');
+                console.error('Error loading events:', err);
+                const eventsList = document.getElementById('events-list');
                 if (eventsList) {
                     eventsList.innerHTML = '<p style="color:#e74c3c;">Error loading events</p>';
                 }
@@ -687,63 +351,59 @@ const AdminModule = (() => {
     };
 
     const renderEvents = (events) => {
-        const eventsList = document.getElementById('admin-events-list');
+        const eventsList = document.getElementById('events-list');
+
+        console.log('renderEvents function called');
+        console.log('eventsList element found:', !!eventsList);
+        console.log('events array:', events);
 
         if (!eventsList) {
-            console.error('CRITICAL: admin-events-list element not found in DOM!');
+            console.error('CRITICAL: events-list element not found in DOM!');
             return;
         }
-
-        // Check current styles
-        const computedStyle = window.getComputedStyle(eventsList);
 
         if (!events || events.length === 0) {
-            eventsList.innerHTML = '<div style="color:#999; text-align:center; padding:20px;">No events created yet</div>';
+            console.log('No events to display');
+            eventsList.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No events created yet</p>';
             return;
         }
+
+        console.log('Building HTML for', events.length, 'events');
         
-        // Build HTML string with test div at the beginning
-        let html = '<div style="background:#e8f5e9; padding:10px; margin-bottom:15px; border-radius:6px; border-left:4px solid #27ae60; color:#2e7d32; font-weight:bold;">✓ Events loaded successfully (' + events.length + ' events)</div>';
-        
+        let html = '';
         for (let i = 0; i < events.length; i++) {
             const event = events[i];
             const startDate = new Date(event.start_date).toLocaleDateString();
             const endDate = new Date(event.end_date).toLocaleDateString();
             
-            html += `<div onclick="AdminModule.viewEventDetails(${event.id})" style="border:2px solid #27ae60; border-radius:8px; padding:15px; background:#f0f8f0; margin-bottom:12px; display:block !important; visibility:visible !important; opacity:1 !important; cursor:pointer; transition:all 0.2s;">
-                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
-                    <div style="flex:1;">
-                        <h4 style="margin:0 0 5px 0; color:#333;">${escapeHtml(event.title)}</h4>
-                        <p style="margin:0; color:#666; font-size:13px;">
-                            <i class="fas fa-calendar"></i> ${startDate} to ${endDate}
-                        </p>
-                    </div>
-                    <div style="display:flex; gap:8px; margin-left:10px;">
-                        <button onclick="event.stopPropagation(); AdminModule.openTaskForm(${event.id})" style="padding:6px 12px; background:#667eea; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; white-space:nowrap;">
-                            <i class="fas fa-plus"></i> Add Task
-                        </button>
-                        <button onclick="event.stopPropagation(); AdminModule.deleteEvent(${event.id})" style="padding:6px 12px; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; white-space:nowrap;">
+            html += `<div style="border:1px solid #ddd; border-radius:8px; padding:15px; background:white;">
+                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+                        <div style="flex:1;">
+                            <h4 style="margin:0 0 5px 0; color:#333;">${escapeHtml(event.title)}</h4>
+                            <p style="margin:0; color:#666; font-size:13px;">
+                                <i class="fas fa-calendar"></i> ${startDate} to ${endDate}
+                            </p>
+                        </div>
+                        <button onclick="AdminModule.deleteEvent(${event.id})" style="padding:6px 12px; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; white-space:nowrap; margin-left:10px;">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
-                </div>
-                <p style="margin:10px 0 0 0; color:#555; font-size:13px; line-height:1.5;">
-                    ${escapeHtml(event.description)}
-                </p>
-            </div>`;
+                    <p style="margin:10px 0 0 0; color:#555; font-size:13px; line-height:1.5;">
+                        ${escapeHtml(event.description)}
+                    </p>
+                </div>`;
         }
 
+        console.log('HTML to insert:', html.substring(0, 100) + '...');
         eventsList.innerHTML = html;
+        console.log('HTML inserted into events-list');
+        console.log('events-list innerHTML length:', eventsList.innerHTML.length);
+        console.log('eventsList children count:', eventsList.children.length);
         
-        // Force browser repaint and check final styles
-        void eventsList.offsetHeight;
-        const finalStyle = window.getComputedStyle(eventsList);
-        
-        // Scroll into view
+        // Scroll events into view
         setTimeout(() => {
             eventsList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            // Populate the task event dropdown after events are rendered
-            populateEventDropdown();
+            console.log('Scrolled events into view');
         }, 100);
     };
 
@@ -790,15 +450,7 @@ const AdminModule = (() => {
         init,
         deleteUser,
         deleteEvent,
-        closeModal,
-        openTaskForm,
-        closeTaskForm,
-        closeTaskModal,
-        viewEventDetails,
-        closeEventModal,
-        openTaskFormForEvent,
-        generateQRCode,
-        downloadQRCode
+        closeModal
     };
 })();
 

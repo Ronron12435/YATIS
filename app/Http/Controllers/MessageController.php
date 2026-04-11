@@ -75,10 +75,10 @@ class MessageController extends Controller
         }
         
         $userId = auth()->id();
-        \Log::info('Unread count endpoint called', ['user_id' => $userId]);
         
         $response = $this->messageService->unreadCount($userId);
-        return response()->json($response->toArray(), $response->statusCode);
+        return response()->json($response->toArray(), $response->statusCode)
+            ->header('Cache-Control', 'private, max-age=5');
     }
 
     public function markAsRead($id)

@@ -28,10 +28,32 @@
     width: 50px !important;
     height: 50px !important;
     transform: scale(1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 100 !important;
 }
 
 .leaflet-marker-icon.user-marker-fixed > div {
     transform: scale(1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Ensure marker pane is visible */
+.leaflet-marker-pane {
+    z-index: 600 !important;
+}
+
+/* Ensure shadow pane is visible */
+.leaflet-shadow-pane {
+    z-index: 500 !important;
+}
+
+/* Overlay pane for popups */
+.leaflet-overlay-pane {
+    z-index: 400 !important;
 }
 </style>
     <h1 class="page-title"><i class="fas fa-users"></i> People</h1>

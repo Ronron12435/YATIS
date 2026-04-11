@@ -31,14 +31,12 @@ function loadDestinationsDashboard() {
     })
         .then(r => {
             if (!r.ok) {
-                console.error(`API Error: ${r.status} ${r.statusText}`);
                 throw new Error(`HTTP ${r.status}`);
             }
             return r.json();
         })
         .then(res => {
             if (!res.success) {
-                console.error('API returned success: false', res);
                 return;
             }
             const d = res.data;
@@ -66,7 +64,6 @@ function loadDestinationsDashboard() {
             }
         })
         .catch(err => {
-            console.error('Error loading destinations:', err);
             setEl('dest-total-count', '0');
             setEl('dest-my-reviews', '0');
             setEl('dest-my-avg', '0.0');
@@ -122,12 +119,10 @@ function createUserLocationMarker(lat, lng) {
     
     // Validate coordinates
     if (isNaN(lat) || isNaN(lng)) {
-        console.error('✗ Invalid coordinates - NaN detected');
         return;
     }
     
     if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-        console.error('✗ Coordinates out of valid range');
         return;
     }
     
@@ -490,7 +485,6 @@ window.toggleDestMap = function () {
 function renderDestinationsList(destinations) {
     const container = document.getElementById('dest-list');
     if (!container) {
-        console.error('✗ Container #dest-list not found!');
         return;
     }
 
@@ -556,7 +550,7 @@ function updateDestinationReviewCount(destId) {
             } else {
             }
         })
-        .catch(err => console.log('Could not fetch review count for destination', destId, err));
+        .catch(err => {});
 }
 
 window.showOnMap = function (lat, lng) {
@@ -598,17 +592,14 @@ window.viewReviews = function (destId, destName) {
                 return;
             }
             body.innerHTML = reviews.map(rv => {
-                console.log('Review data:', rv);
                 // Generate avatar - use profile picture if available, otherwise generate initials avatar
                 const firstName = rv.first_name || '';
                 const lastName = rv.last_name || '';
                 const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase() || '?';
                 let avatarHtml;
                 
-                console.log('Profile picture value:', rv.profile_picture);
-                
                 if (rv.profile_picture) {
-                    avatarHtml = `<img src="/storage/avatars/${rv.profile_picture}" alt="${firstName} ${lastName}" class="review-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid #e0e0e0;">`;
+                    avatarHtml = `<img src="/storage/${rv.profile_picture}" alt="${firstName} ${lastName}" class="review-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid #e0e0e0;">`;
                 } else {
                     // Generate initials avatar with color
                     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
@@ -692,7 +683,6 @@ window.submitReview = function () {
     })
         .then(r => {
             if (!r.ok) {
-                console.error('✗ HTTP Error:', r.status);
                 throw new Error(`HTTP ${r.status}`);
             }
             return r.json();
@@ -718,9 +708,6 @@ window.submitReview = function () {
             }
         })
         .catch(err => {
-            console.error('✗ Error submitting review:', err);
-            console.error('Error message:', err.message);
-            console.error('Error stack:', err.stack);
             btn.disabled = false;
             btn.textContent = 'Submit Review';
             errEl.textContent = 'Network error. Please try again.';
@@ -780,7 +767,6 @@ function formatDate(dateStr) {
 // Get real-time GPS location from browser
 function getRealTimeGPSLocation() {
     if (!navigator.geolocation) {
-        console.warn('Geolocation not supported by browser');
         loadUserLocationFromDatabase();
         return;
     }
@@ -790,8 +776,6 @@ function getRealTimeGPSLocation() {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
             const accuracy = position.coords.accuracy;
-
-            console.log(`✓ GPS Location obtained: ${lat.toFixed(6)}, ${lng.toFixed(6)} (accuracy: ${accuracy.toFixed(0)}m)`);
 
             userLat = lat;
             userLng = lng;
@@ -808,7 +792,6 @@ function getRealTimeGPSLocation() {
             updateGpsStatus('active', `GPS Active (${accuracy.toFixed(0)}m accuracy)`);
         },
         (error) => {
-            console.warn('GPS Error:', error.message);
             // Fallback to database location
             loadUserLocationFromDatabase();
         },
@@ -857,8 +840,6 @@ function loadUserLocationFromDatabase() {
             }
         })
         .catch(err => {
-            console.error('✗ Error loading location:', err);
-            console.error('Error stack:', err.stack);
             updateGpsStatus('active', 'Using default location');
         });
 }
@@ -885,7 +866,7 @@ function saveLocationToDatabase(lat, lng) {
             if (response.success) {
             }
         })
-        .catch(err => console.log('Error saving location:', err));
+        .catch(err => {});
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

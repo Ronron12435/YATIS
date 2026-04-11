@@ -113,9 +113,9 @@ class EventService
         return new ApiResponse(true, $task, 'Task created', 201);
     }
 
-    public function getTasksByEvent(int $eventId): ApiResponse
+    public function getTasksByEvent(int $eventId, ?int $userId = null): ApiResponse
     {
-        return new ApiResponse(true, $this->eventRepository->getTasksByEvent($eventId), 'Success');
+        return new ApiResponse(true, $this->eventRepository->getTasksByEvent($eventId, $userId), 'Success');
     }
 
     public function completeTask(int $userId, int $eventId, int $taskId, ?array $proofData): ApiResponse

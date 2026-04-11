@@ -1,6 +1,7 @@
 <div class="sidebar">
     <div class="sidebar-header">
-        <div class="sidebar-logo-container">
+        <div class="sidebar-logo-container" style="display: flex; align-items: center; justify-content: center; gap: 3px; width: 100%;">
+            <img src="{{ asset('images/yatis-logo.png') }}" alt="YATIS Logo" style="height: 70px; width: 100px; object-fit: contain; flex-shrink: 0;">
             <div class="sidebar-logo-text">YATIS</div>
         </div>
     </div>

@@ -246,11 +246,36 @@ class ProfileService
     public function uploadAvatar(int $userId, $file)
     {
         try {
-            $path = $file->store('avatars', 'public');
+            if (!$file || !$file->isValid()) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid file uploaded',
+                    'data' => null,
+                ];
+            }
+
+            $filename = 'avatar_' . $userId . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('avatars', $filename, 'public');
             
-            $this->profileRepository->updateUser($userId, [
+            if (!$path) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to store file',
+                    'data' => null,
+                ];
+            }
+
+            $updated = $this->profileRepository->updateUser($userId, [
                 'profile_picture' => $path,
             ]);
+
+            if (!$updated) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to update user profile',
+                    'data' => null,
+                ];
+            }
 
             $user = $this->profileRepository->getUserById($userId);
 
@@ -262,7 +287,7 @@ class ProfileService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to upload avatar',
+                'message' => 'Failed to upload avatar: ' . $e->getMessage(),
                 'data' => null,
                 'error' => $e->getMessage(),
             ];
@@ -329,10 +354,36 @@ class ProfileService
     public function uploadCover(int $userId, $file)
     {
         try {
-            $path = $file->store('covers', 'public');
-            $this->profileRepository->updateUser($userId, [
+            if (!$file || !$file->isValid()) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid file uploaded',
+                    'data' => null,
+                ];
+            }
+
+            $filename = 'cover_' . $userId . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('covers', $filename, 'public');
+            
+            if (!$path) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to store file',
+                    'data' => null,
+                ];
+            }
+
+            $updated = $this->profileRepository->updateUser($userId, [
                 'cover_photo' => $path,
             ]);
+
+            if (!$updated) {
+                return [
+                    'success' => false,
+                    'message' => 'Failed to update user profile',
+                    'data' => null,
+                ];
+            }
 
             $user = $this->profileRepository->getUserById($userId);
 
@@ -344,7 +395,7 @@ class ProfileService
         } catch (\Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to upload cover photo',
+                'message' => 'Failed to upload cover photo: ' . $e->getMessage(),
                 'data' => null,
                 'error' => $e->getMessage(),
             ];

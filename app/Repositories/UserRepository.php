@@ -18,8 +18,11 @@ class UserRepository
         return User::create($data);
     }
 
-    public function update(User $user, array $data): User
+    public function update(User|int $user, array $data): User
     {
+        if (is_int($user)) {
+            $user = $this->findById($user);
+        }
         $user->update($data);
         return $user->fresh();
     }
@@ -99,6 +102,51 @@ class UserRepository
         ];
     }
 
+    public function setOnlineStatus(int $userId, string $status): User
+    {
+        $user = $this->findById($userId);
+        if (!$user) {
+            throw new \Exception('User not found');
+        }
+
+        return $this->update($user, [
+            'online_status' => $status,
+            'last_activity_at' => now(),
+        ]);
+    }
+
+    public function getNearbyActiveUsers(int $authId, float $radiusKm = 5): \Illuminate\Database\Eloquent\Collection
+    {
+        $authUser = $this->findById($authId);
+        if (!$authUser || !$authUser->latitude || !$authUser->longitude) {
+            \Log::warning("Auth user {$authId} has no location data");
+            return collect([]);
+        }
+
+        \Log::info("Getting nearby users for {$authUser->username} at ({$authUser->latitude}, {$authUser->longitude})");
+
+        // Use database-level distance calculation with Haversine formula
+        $radiusMeters = $radiusKm * 1000;
+        $earthRadiusMeters = 6371000;
+        $lat = $authUser->latitude;
+        $lng = $authUser->longitude;
+        
+        $users = User::where('id', '!=', $authId)
+            ->where('role', 'user')
+            ->where('online_status', 'online')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->selectRaw(
+                "*, ({$earthRadiusMeters} * acos(cos(radians({$lat})) * cos(radians(latitude)) * cos(radians(longitude) - radians({$lng})) + sin(radians({$lat})) * sin(radians(latitude)))) as distance_meters"
+            )
+            ->havingRaw("distance_meters <= {$radiusMeters}")
+            ->orderBy('distance_meters')
+            ->get();
+
+        \Log::info("Nearby users count: " . $users->count());
+        return $users;
+    }
+
     public function getPeopleMap(int $authId)
     {
         // Sagay City bounds (accurate)
@@ -111,14 +159,25 @@ class UserRepository
         $authUser = User::find($authId);
         
         if (!$authUser) {
+            \Log::error("Auth user not found: {$authId}");
             return collect([]);
         }
         
-        // Get only regular users (role = 'user'), exclude business accounts, employers, and admins
+        \Log::info("Getting people map for user: {$authUser->username} (ID: {$authId}, Role: {$authUser->role})");
+        
+        // Get only normal users (role='user'), exclude admin and business accounts
+        // Show all users with coordinates (not just online)
         $users = User::where('id', '!=', $authId)
-            ->where('role', 'user')
-            ->select('id', 'username', 'first_name', 'last_name', 'location_name', 'latitude', 'longitude')
+            ->where('role', 'user')  // Only normal users
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->select('id', 'username', 'first_name', 'last_name', 'location_name', 'latitude', 'longitude', 'online_status', 'last_activity_at')
             ->get();
+        
+        \Log::info("Found " . $users->count() . " normal users with coordinates (excluding admin and business)");
+        foreach ($users as $u) {
+            \Log::info("  - {$u->username} (Role: user, Status: {$u->online_status}): lat={$u->latitude}, lng={$u->longitude}");
+        }
         
         // Get all friendships for this user in one query
         $friendships = Friendship::where(function ($q) use ($authId) {
@@ -141,9 +200,11 @@ class UserRepository
                 }
             }
             
-            // Use actual coordinates from database - no random generation
+            // Use actual coordinates from database
             $latitude = (float) ($user->latitude ?? 10.8967);
             $longitude = (float) ($user->longitude ?? 123.4253);
+            
+            \Log::info("User {$user->username} (ID: {$user->id}): lat={$latitude}, lng={$longitude}, status={$status}");
             
             return [
                 'id' => $user->id,
@@ -151,10 +212,24 @@ class UserRepository
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'location_name' => $user->location_name ?? 'Nearby',
-                'latitude' => $latitude,
-                'longitude' => $longitude,
+                'latitude' => (float) $latitude,
+                'longitude' => (float) $longitude,
                 'friendship_status' => $status,
+                'online_status' => $user->online_status ?? 'offline',
+                'last_activity_at' => $user->last_activity_at,
             ];
         });
+    }
+
+    private function calculateDistance(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $earthRadiusKm = 6371;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+             cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+             sin($dLon / 2) * sin($dLon / 2);
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return $earthRadiusKm * $c;
     }
 }

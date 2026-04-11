@@ -61,7 +61,7 @@
     <div class="profile-wrapper">
         {{-- Modern Profile Header --}}
         <div class="modern-profile-header">
-            <div class="profile-cover" id="profileCover" style="background-image: url('{{ auth()->user()->cover_photo ? asset('storage/' . auth()->user()->cover_photo) : '' }}');">
+            <div class="profile-cover" id="profileCover" style="background-image: url('{{ auth()->user()->cover_photo ? asset('storage/' . auth()->user()->cover_photo) : '' }}?t={{ time() }}');">
                 <button class="btn-upload-cover" onclick="document.getElementById('coverPhotoInput').click();">📷 Change Cover</button>
                 <input type="file" id="coverPhotoInput" style="display:none;" accept="image/*" onchange="uploadCover(this)">
                 @if(auth()->user()->cover_photo)
@@ -72,7 +72,7 @@
                 <div class="profile-avatar-wrapper" style="position: relative; display: inline-block;">
                     <div class="modern-avatar" id="profileAvatar" style="cursor: pointer; position: relative;">
                         @if(auth()->user()->profile_picture)
-                            <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}" alt="Avatar">
+                            <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Avatar">
                         @else
                             <span class="avatar-text">{{ strtoupper(substr(auth()->user()->first_name ?? 'U', 0, 1)) }}</span>
                         @endif
@@ -197,6 +197,68 @@
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
                                 Change Password
                             </button>
+                        </form>
+                    </div>
+                </div>
+
+                {{-- Update Location Card --}}
+                <div class="modern-card">
+                    <div class="modern-card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon-modern">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5z"/></svg>
+                            </div>
+                            <h3>Update Location</h3>
+                        </div>
+                    </div>
+                    <div class="modern-card-body">
+                        <div id="locationMessage"></div>
+                        <form id="updateLocationForm" class="modern-form" onsubmit="updateLocationSubmit(event)">
+                            <div class="modern-form-group">
+                                <label class="modern-label">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-13c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z"/></svg>
+                                    Current Location
+                                </label>
+                                <div style="padding: 12px 14px; background: #f5f5f5; border-radius: 8px; border: 2px solid #e0e0e0; font-size: 13px; color: #666;">
+                                    <div id="currentLocationDisplay">Loading...</div>
+                                </div>
+                                <span class="input-hint">Your location is used to appear on the People map</span>
+                            </div>
+                            <div class="modern-form-group">
+                                <label class="modern-label">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-13c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z"/></svg>
+                                    Search Address
+                                </label>
+                                <div style="position: relative;">
+                                    <input type="text" class="modern-input" id="locationAddress" placeholder="e.g., Sagay Plaza, Sagay City" autocomplete="off" oninput="searchAddress(this.value)">
+                                    <div id="addressSuggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+                                </div>
+                                <span class="input-hint">Type an address to search and auto-fill coordinates</span>
+                            </div>
+                            <div class="modern-form-group">
+                                <label class="modern-label">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-13c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z"/></svg>
+                                    Latitude
+                                </label>
+                                <input type="number" class="modern-input" id="locationLatitude" step="0.0001" placeholder="Auto-filled from address" readonly style="background: #f5f5f5; cursor: not-allowed;">
+                            </div>
+                            <div class="modern-form-group">
+                                <label class="modern-label">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-13c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z"/></svg>
+                                    Longitude
+                                </label>
+                                <input type="number" class="modern-input" id="locationLongitude" step="0.0001" placeholder="Auto-filled from address" readonly style="background: #f5f5f5; cursor: not-allowed;">
+                            </div>
+                            <div style="display: flex; gap: 12px; flex-direction: column;">
+                                <button type="button" class="modern-btn modern-btn-primary" onclick="enableLocationGPS()" style="background: linear-gradient(135deg, #00bcd4 0%, #0097a7 100%);">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm0-12C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg>
+                                    📍 Enable GPS Location
+                                </button>
+                                <button type="submit" class="modern-btn modern-btn-primary">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                                    Save Location
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>

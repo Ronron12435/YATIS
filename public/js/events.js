@@ -7,8 +7,6 @@ const EventsModule = {
     apiBase: '/api',
     dailySteps: 0,
     stepTrackerInterval: null,
-    autoClaimInterval: null,
-    attemptedTasks: new Set(), // Track attempted tasks to avoid spam
 
     /**
      * Initialize the events module
@@ -18,98 +16,6 @@ const EventsModule = {
         this.loadEvents();
         this.loadLeaderboard();
         this.initStepTracking();
-        // Auto-claim disabled - using manual complete button with validation instead
-    },
-
-    /**
-     * Start auto-claiming steps tasks every 30 seconds
-     */
-    startAutoClaimStepTasks() {
-        // Wait 5 seconds before first check to ensure page is fully loaded
-        setTimeout(() => {
-            this.autoClaimStepTasks();
-        }, 5000);
-        
-        // Then check every 30 seconds
-        this.autoClaimInterval = setInterval(() => {
-            this.autoClaimStepTasks();
-        }, 30000);
-    },
-
-    /**
-     * Auto-claim steps tasks when user reaches target
-     */
-    autoClaimStepTasks() {
-        fetch(`${this.apiBase}/events`, { credentials: 'include' })
-            .then(response => response.json())
-            .then(data => {
-                let events = [];
-                if (data.success && data.data && data.data.data && Array.isArray(data.data.data)) {
-                    events = data.data.data;
-                } else if (data.data && Array.isArray(data.data)) {
-                    events = data.data;
-                }
-
-                // For each event, check its tasks
-                events.forEach(event => {
-                    fetch(`${this.apiBase}/events/${event.id}/tasks`, { credentials: 'include' })
-                        .then(r => r.json())
-                        .then(taskData => {
-                            let tasks = Array.isArray(taskData) ? taskData : (Array.isArray(taskData.data) ? taskData.data : []);
-                            
-                            // Filter for steps tasks that haven't been attempted yet
-                            tasks.filter(t => t.task_type === 'steps' && !this.attemptedTasks.has(t.id)).forEach(task => {
-                                this.tryAutoClaimTask(task.id, event.id);
-                            });
-                        })
-                        .catch(err => console.error('Error fetching tasks for auto-claim:', err));
-                });
-            })
-            .catch(err => console.error('Error fetching events for auto-claim:', err));
-    },
-
-    /**
-     * Try to auto-claim a steps task
-     */
-    tryAutoClaimTask(taskId, eventId) {
-        // Mark as attempted to avoid spam
-        this.attemptedTasks.add(taskId);
-
-        fetch(`${this.apiBase}/events/tasks/complete`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-            },
-            body: JSON.stringify({
-                task_id: taskId,
-                event_id: eventId,
-                proof_data: null,
-            }),
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const pointsEarned = data.data?.points_earned || 0;
-                    this.loadUserAchievements();
-                    this.loadLeaderboard();
-                } else if (data.message && data.message.includes('already completed')) {
-                    // Task already completed, silently ignore
-                } else if (data.message && data.message.includes('need to walk')) {
-                    // User hasn't reached target yet, remove from attempted so it tries again later
-                    this.attemptedTasks.delete(taskId);
-                } else {
-                    // Other errors - remove from attempted to retry
-                    this.attemptedTasks.delete(taskId);
-                    console.warn(`Task ${taskId} error: ${data.message}`);
-                }
-            })
-            .catch(err => {
-                // On error, remove from attempted to retry
-                this.attemptedTasks.delete(taskId);
-                console.error(`Error auto-claiming task ${taskId}:`, err.message);
-            });
     },
 
     /**
@@ -122,21 +28,15 @@ const EventsModule = {
                 return response.json();
             })
             .then(data => {
-                let achievementData = {};
-                if (data.success && data.data) {
-                    achievementData = data.data;
-                } else if (data.data) {
-                    achievementData = data.data;
-                } else {
-                    achievementData = data;
+                if (data.success) {
+                    this.renderAchievements(data.data);
+                    this.updateStats(data.data);
                 }
-                this.renderAchievements(achievementData);
-                this.updateStats(achievementData);
             })
             .catch(error => {
                 console.error('Error loading achievements:', error);
-                const el = document.getElementById('user-achievements-list');
-                if (el) el.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading achievements.</p>';
+                document.getElementById('user-achievements-list').innerHTML =
+                    '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading achievements.</p>';
             });
     },
 
@@ -145,32 +45,22 @@ const EventsModule = {
      */
     renderAchievements(data) {
         const achievementsList = document.getElementById('user-achievements-list');
-        
-        if (!achievementsList) return;
-
-        const achievements = Array.isArray(data.achievements) ? data.achievements : [];
+        const achievements = data.achievements || [];
 
         if (achievements.length > 0) {
-            achievementsList.innerHTML = achievements.map(achievement => {
-                const title = achievement.title || 'Achievement';
-                const description = achievement.description || '';
-                const points = achievement.points_earned || achievement.points || 0;
-                const badge = achievement.badge || '🏆';
-                
-                return `
-                    <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ffd700;">
-                        <div style="font-size: 32px;">${badge}</div>
-                        <div style="flex: 1;">
-                            <h4 style="margin: 0 0 5px 0; color: #1a3a52;">${title}</h4>
-                            <p style="margin: 0; color: #666; font-size: 13px;">${description}</p>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 18px; font-weight: bold; color: #ffd700;">+${points}</div>
-                            <div style="font-size: 12px; color: #999;">points</div>
-                        </div>
+            achievementsList.innerHTML = achievements.map(achievement => `
+                <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ffd700;">
+                    <div style="font-size: 32px;">🏆</div>
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0 0 5px 0; color: #1a3a52;">${achievement.title || 'Achievement'}</h4>
+                        <p style="margin: 0; color: #666; font-size: 13px;">${achievement.description || ''}</p>
                     </div>
-                `;
-            }).join('');
+                    <div style="text-align: right;">
+                        <div style="font-size: 18px; font-weight: bold; color: #ffd700;">+${achievement.points || 0}</div>
+                        <div style="font-size: 12px; color: #999;">points</div>
+                    </div>
+                </div>
+            `).join('');
         } else {
             achievementsList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No achievements yet. Complete some tasks to earn rewards!</p>';
         }
@@ -180,120 +70,88 @@ const EventsModule = {
      * Update stats display
      */
     updateStats(data) {
-        const userPoints = document.getElementById('user-points');
-        const completedTasks = document.getElementById('completed-tasks');
-        const userRank = document.getElementById('user-rank');
-        const eventsSection = document.getElementById('events');
-        const currentUserId = eventsSection ? eventsSection.getAttribute('data-user-id') : null;
-        
-        if (userPoints) userPoints.textContent = data.total_points || 0;
-        if (completedTasks) completedTasks.textContent = data.tasks_completed || 0;
-        
-        // Calculate user rank from leaderboard
-        if (userRank && currentUserId) {
-            fetch(`${this.apiBase}/leaderboard`, { credentials: 'include' })
-                .then(r => r.json())
-                .then(leaderboardData => {
-                    let leaderboard = [];
-                    if (leaderboardData.success && Array.isArray(leaderboardData.data)) {
-                        leaderboard = leaderboardData.data;
-                    } else if (Array.isArray(leaderboardData.data)) {
-                        leaderboard = leaderboardData.data;
-                    } else if (Array.isArray(leaderboardData)) {
-                        leaderboard = leaderboardData;
-                    }
-                    
-                    // Find current user's rank by ID
-                    let userRankPosition = 0;
-                    for (let i = 0; i < leaderboard.length; i++) {
-                        if (leaderboard[i].id == currentUserId) {
-                            userRankPosition = i + 1;
-                            break;
-                        }
-                    }
-                    
-                    userRank.textContent = userRankPosition > 0 ? `#${userRankPosition}` : '#0';
-                })
-                .catch(err => {
-                    console.error('Error fetching leaderboard for rank:', err);
-                    userRank.textContent = '#0';
-                });
-        }
+        document.getElementById('user-points').textContent = data.total_points || 0;
+        document.getElementById('completed-tasks').textContent = data.tasks_completed || 0;
+        // Rank will be updated from leaderboard
     },
 
     /**
      * Load active events
      */
     loadEvents() {
+        console.log('loadEvents called');
         fetch(`${this.apiBase}/events`, { credentials: 'include' })
             .then(response => {
+                console.log('loadEvents - fetch response status:', response.status);
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.json();
             })
             .then(data => {
-                let events = [];
-                // Handle paginated response: { success, message, data: { data: [...], ...pagination... } }
-                if (data.success && data.data && data.data.data && Array.isArray(data.data.data)) {
-                    events = data.data.data;
-                } else if (data.data && data.data.data && Array.isArray(data.data.data)) {
-                    events = data.data.data;
-                } else if (data.data && Array.isArray(data.data)) {
-                    events = data.data;
-                } else if (Array.isArray(data)) {
-                    events = data;
+                console.log('loadEvents - API response:', data);
+                if (data.success) {
+                    console.log('loadEvents - calling renderEvents with:', data.data);
+                    this.renderEvents(data.data);
+                } else {
+                    console.error('loadEvents - API returned success: false');
                 }
-                this.renderEvents(events);
             })
             .catch(error => {
                 console.error('Error loading events:', error);
-                const el = document.getElementById('events-list');
-                if (el) el.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading events.</p>';
+                const eventsList = document.getElementById('events-list');
+                if (eventsList) {
+                    eventsList.innerHTML =
+                        '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading events.</p>';
+                }
             });
     },
 
     /**
      * Render events list
      */
-    renderEvents(events) {
+    renderEvents(data) {
         const eventsList = document.getElementById('events-list');
-        
+
         if (!eventsList) {
             console.error('events-list element not found');
             return;
         }
 
-        if (!Array.isArray(events) || events.length === 0) {
+        // Handle paginated response structure: { data: [...], ...pagination... }
+        let events = [];
+        if (data && data.data && Array.isArray(data.data)) {
+            events = data.data;
+        } else if (Array.isArray(data)) {
+            events = data;
+        }
+
+        console.log('renderEvents - events array:', events);
+        console.log('renderEvents - events count:', events.length);
+
+        if (events.length === 0) {
             eventsList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No active events at the moment.</p>';
             return;
         }
 
         try {
-            eventsList.innerHTML = events.map(event => {
-                const title = event.title || 'Event';
-                const description = event.description || '';
-                const isActive = event.is_active ? 'Active' : 'Inactive';
-                const startDate = new Date(event.start_date).toLocaleDateString();
-                const tasksCount = event.tasks_count || 0;
-                
-                return `
-                    <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; border-left: 4px solid #667eea;">
-                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                            <div>
-                                <h4 style="margin: 0 0 5px 0; color: #667eea; font-size: 18px;">${title}</h4>
-                                <p style="margin: 0; color: #666; font-size: 14px;">${description}</p>
-                            </div>
-                            <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
-                                ${isActive}
-                            </span>
+            eventsList.innerHTML = events.map(event => `
+                <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px; border-left: 4px solid #667eea;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <div>
+                            <h4 style="margin: 0 0 5px 0; color: #667eea; font-size: 18px;">${event.title || 'Event'}</h4>
+                            <p style="margin: 0; color: #666; font-size: 14px;">${event.description || ''}</p>
                         </div>
-                        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin: 10px 0; font-size: 14px; color: #666;">
-                            <span><i class="fas fa-calendar"></i> ${startDate}</span>
-                            <span><i class="fas fa-tasks"></i> ${tasksCount} tasks</span>
-                        </div>
-                        <button class="btn btn-primary" onclick="EventsModule.viewEventTasks(${event.id})" style="margin-top: 10px;">View Tasks</button>
+                        <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                            ${event.is_active ? 'Active' : 'Inactive'}
+                        </span>
                     </div>
-                `;
-            }).join('');
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin: 10px 0; font-size: 14px; color: #666;">
+                        <span><i class="fas fa-calendar"></i> ${new Date(event.start_date).toLocaleDateString()}</span>
+                        <span><i class="fas fa-tasks"></i> ${event.tasks_count || 0} tasks</span>
+                    </div>
+                    <button class="btn btn-primary" onclick="EventsModule.viewEventTasks(${event.id})" style="margin-top: 10px;">View Tasks</button>
+                </div>
+            `).join('');
+            console.log('renderEvents - HTML rendered successfully');
         } catch (error) {
             console.error('renderEvents - Error rendering HTML:', error);
             eventsList.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error rendering events.</p>';
@@ -310,15 +168,9 @@ const EventsModule = {
                 return response.json();
             })
             .then(data => {
-                let tasks = [];
-                if (data.success && Array.isArray(data.data)) {
-                    tasks = data.data;
-                } else if (Array.isArray(data.data)) {
-                    tasks = data.data;
-                } else if (Array.isArray(data)) {
-                    tasks = data;
+                if (data.success) {
+                    this.showTasksModal(data.data, eventId);
                 }
-                this.showTasksModal(tasks, eventId);
             })
             .catch(error => console.error('Error loading tasks:', error));
     },
@@ -333,199 +185,109 @@ const EventsModule = {
         const content = document.createElement('div');
         content.style.cssText = 'background: white; padding: 30px; border-radius: 12px; max-width: 600px; max-height: 80vh; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.2);';
         
-        // Fetch user achievements to check which tasks are completed
-        fetch(`${this.apiBase}/achievements`, { credentials: 'include' })
-            .then(r => r.json())
-            .then(achievementData => {
-                const completedTaskIds = new Set();
-                if (achievementData.data && Array.isArray(achievementData.data.achievements)) {
-                    achievementData.data.achievements.forEach(achievement => {
-                        completedTaskIds.add(achievement.task_id);
-                    });
-                }
-                
-                const tasksHtml = Array.isArray(tasks) && tasks.length > 0 ? tasks.map(task => {
-                    const taskId = task.id || 0;
-                    const title = task.title || 'Task';
-                    const description = task.description || '';
-                    const rewardPoints = task.reward_points || 0;
-                    const taskType = task.task_type || 'custom';
-                    const targetValue = task.target_value || 0;
-                    const isCompleted = completedTaskIds.has(taskId);
-                    
-                    // For steps tasks, show button state based on current steps
-                    let actionHtml = '';
-                    if (taskType === 'steps') {
-                        // Get current steps from the daily steps display
-                        const currentSteps = parseInt(document.getElementById('daily-steps-count')?.textContent || '0');
-                        const isEligible = currentSteps >= targetValue && !isCompleted;
-                        const buttonStyle = isCompleted
-                            ? 'padding: 6px 16px; font-size: 13px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: 600;'
-                            : isEligible 
-                                ? 'padding: 6px 16px; font-size: 13px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;'
-                                : 'padding: 6px 16px; font-size: 13px; background: #bdc3c7; color: #7f8c8d; border: none; border-radius: 6px; cursor: not-allowed; font-weight: 600;';
-                        const buttonText = isCompleted ? '✓ Completed' : (isEligible ? 'Complete' : `Need ${targetValue - currentSteps} more steps`);
-                        
-                        actionHtml = `
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
-                                    +${rewardPoints} points
-                                </span>
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span style="font-size: 12px; color: #666;">
-                                        ${currentSteps} / ${targetValue} steps
-                                    </span>
-                                    <button class="btn btn-primary" onclick="${isEligible ? `EventsModule.completeTask(${taskId}, ${eventId})` : 'return false'}" style="${buttonStyle}" ${isEligible ? '' : 'disabled'}>
-                                        ${buttonText}
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        const buttonStyle = isCompleted
-                            ? 'padding: 6px 16px; font-size: 13px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: not-allowed; font-weight: 600;'
-                            : 'padding: 6px 16px; font-size: 13px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;';
-                        const buttonText = isCompleted ? '✓ Completed' : 'Complete';
-                        
-                        actionHtml = `
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
-                                    +${rewardPoints} points
-                                </span>
-                                <button class="btn btn-primary" onclick="${!isCompleted ? `EventsModule.completeTask(${taskId}, ${eventId})` : 'return false'}" style="${buttonStyle}" ${isCompleted ? 'disabled' : ''}>
-                                    ${buttonText}
-                                </button>
-                            </div>
-                        `;
-                    }
-                    
-                    return `
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
-                            <h4 style="margin: 0 0 5px 0; color: #1a3a52;">${title}</h4>
-                            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">${description}</p>
-                            ${actionHtml}
-                        </div>
-                    `;
-                }).join('') : '<p style="color: #999; text-align: center; padding: 20px;">No tasks available.</p>';
-                
-                content.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="margin: 0; color: #1a3a52;">Event Tasks</h2>
-                        <button onclick="this.closest('div').parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+        content.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #1a3a52;">Event Tasks</h2>
+                <button onclick="this.closest('div').parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+            </div>
+            ${tasks.length > 0 ? tasks.map(task => {
+                const isCompleted = Boolean(task.is_completed);
+                return `
+                <div data-task-type="${task.task_type}" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${isCompleted ? '#2ecc71' : '#667eea'};">
+                    <h4 style="margin: 0 0 5px 0; color: #1a3a52;">${task.title}</h4>
+                    <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">${task.description || ''}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                            +${task.reward_points} points
+                        </span>
+                        <button id="task-btn-${task.id}" class="btn btn-primary" onclick="EventsModule.completeTask(${task.id}, ${eventId}, this)" style="padding: 6px 16px; font-size: 13px; ${isCompleted ? 'background: #95a5a6; cursor: not-allowed;' : ''}" ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? '✓ Completed' : 'Complete'}
+                        </button>
                     </div>
-                    ${tasksHtml}
-                `;
-                
-                modal.appendChild(content);
-                document.body.appendChild(modal);
-            })
-            .catch(error => {
-                console.error('Error fetching achievements:', error);
-                // Fallback: show tasks without completion check
-                const tasksHtml = Array.isArray(tasks) && tasks.length > 0 ? tasks.map(task => {
-                    const taskId = task.id || 0;
-                    const title = task.title || 'Task';
-                    const description = task.description || '';
-                    const rewardPoints = task.reward_points || 0;
-                    
-                    return `
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
-                            <h4 style="margin: 0 0 5px 0; color: #1a3a52;">${title}</h4>
-                            <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">${description}</p>
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
-                                    +${rewardPoints} points
-                                </span>
-                                <button class="btn btn-primary" onclick="EventsModule.completeTask(${taskId}, ${eventId})" style="padding: 6px 16px; font-size: 13px;">Complete</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('') : '<p style="color: #999; text-align: center; padding: 20px;">No tasks available.</p>';
-                
-                content.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="margin: 0; color: #1a3a52;">Event Tasks</h2>
-                        <button onclick="this.closest('div').parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
-                    </div>
-                    ${tasksHtml}
-                `;
-                
-                modal.appendChild(content);
-                document.body.appendChild(modal);
-            });
+                </div>
+            `}).join('') : '<p style="color: #999; text-align: center; padding: 20px;">No tasks available.</p>'}
+        `;
+        
+        modal.appendChild(content);
+        document.body.appendChild(modal);
     },
 
     /**
      * Complete a task
      */
-    completeTask(taskId, eventId) {
-        // Get the task to check its type
-        fetch(`${this.apiBase}/events/${eventId}/tasks`, { credentials: 'include' })
-            .then(response => response.json())
-            .then(data => {
-                let tasks = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
-                const task = tasks.find(t => t.id === taskId);
-                
-                if (!task) {
-                    alert('Task not found');
-                    return;
-                }
+    completeTask(taskId, eventId, buttonElement) {
+        // Disable button immediately to prevent double-click
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.style.background = '#95a5a6';
+            buttonElement.style.cursor = 'not-allowed';
+        }
 
-                // Prepare proof data based on task type
-                let proofData = null;
-                
-                if (task.task_type === 'steps') {
-                    // Steps task - no additional proof needed, server will check daily steps
-                    proofData = null;
-                } else if (task.task_type === 'location') {
-                    // Location task - get user's current location
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            position => {
-                                proofData = {
-                                    latitude: position.coords.latitude,
-                                    longitude: position.coords.longitude,
-                                    accuracy: position.coords.accuracy
-                                };
-                                this.submitTaskCompletion(taskId, eventId, proofData);
-                            },
-                            error => {
-                                this.showErrorModal('Location Error', 'Unable to get your location. Please enable location services.');
-                            }
-                        );
-                        return;
-                    } else {
-                        this.showErrorModal('Geolocation Not Supported', 'Geolocation is not supported by your browser');
-                        return;
+        // Get the task element to determine task type
+        const taskElement = buttonElement?.closest('[data-task-type]');
+        const taskType = taskElement?.getAttribute('data-task-type');
+
+        if (taskType === 'qr_scan') {
+            // For QR code tasks, prompt user to enter QR code
+            const qrCode = prompt('Please enter or scan the QR code:');
+            if (qrCode) {
+                this.sendTaskCompletion(taskId, eventId, buttonElement, { qr_code: qrCode });
+            } else {
+                // Re-enable button if user cancelled
+                if (buttonElement) {
+                    buttonElement.disabled = false;
+                    buttonElement.style.background = '';
+                    buttonElement.style.cursor = 'pointer';
+                }
+            }
+        } else if (taskType === 'location') {
+            // For location tasks, get user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        this.sendTaskCompletion(taskId, eventId, buttonElement, {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                        });
+                    },
+                    (error) => {
+                        console.warn('Geolocation error:', error);
+                        // Re-enable button if geolocation fails
+                        if (buttonElement) {
+                            buttonElement.disabled = false;
+                            buttonElement.style.background = '';
+                            buttonElement.style.cursor = 'pointer';
+                        }
+                        this.showModal('Error', 'Unable to get your location. Please enable location services.', 'error');
                     }
-                } else if (task.task_type === 'qr_scan') {
-                    // QR scan task - show QR scanner modal
-                    this.showQRScannerModal(taskId, eventId);
-                    return;
-                } else if (task.task_type === 'custom') {
-                    // Custom task - require proof image (photo/screenshot)
-                    this.showProofUploadModal(taskId, eventId);
-                    return;
+                );
+            } else {
+                // Re-enable button if geolocation not available
+                if (buttonElement) {
+                    buttonElement.disabled = false;
+                    buttonElement.style.background = '';
+                    buttonElement.style.cursor = 'pointer';
                 }
-
-                this.submitTaskCompletion(taskId, eventId, proofData);
-            })
-            .catch(error => {
-                console.error('Error fetching task:', error);
-                alert('Error loading task details');
-            });
+                this.showModal('Error', 'Geolocation is not supported by your browser.', 'error');
+            }
+        } else {
+            // For other task types, send without proof data
+            this.sendTaskCompletion(taskId, eventId, buttonElement, null);
+        }
     },
 
     /**
-     * Submit task completion to server
+     * Send task completion to backend
      */
-    submitTaskCompletion(taskId, eventId, proofData) {
+    sendTaskCompletion(taskId, eventId, buttonElement, proofData) {
         const payload = {
-            task_id: taskId,
-            event_id: eventId || 1,
+            task_id: parseInt(taskId),
+            event_id: parseInt(eventId),
             proof_data: proofData,
         };
-        
+
+        console.log('Sending task completion payload:', payload);
+
         fetch(`${this.apiBase}/events/tasks/complete`, {
             method: 'POST',
             credentials: 'include',
@@ -538,177 +300,65 @@ const EventsModule = {
             .then(response => {
                 if (!response.ok) {
                     return response.json().then(data => {
-                        console.error('Server error response:', data);
-                        throw new Error(data.message || `HTTP ${response.status}`);
-                    }).catch(err => {
-                        console.error('Failed to parse error response:', err);
-                        throw new Error(`HTTP ${response.status}`);
+                        throw new Error(JSON.stringify(data));
                     });
                 }
                 return response.json();
             })
             .then(data => {
                 if (data.success) {
-                    const pointsEarned = data.data?.points_earned || 0;
-                    this.showSuccessModal('Task Completed!', 'You earned ' + pointsEarned + ' points!');
+                    // Update button text to show completion
+                    if (buttonElement) {
+                        buttonElement.textContent = '✓ Completed';
+                    }
+                    this.showModal('Success', 'Task completed! You earned ' + data.data.points_earned + ' points!', 'success');
                     this.loadUserAchievements();
                     this.loadLeaderboard();
                 } else {
-                    this.showErrorModal('Invalid QR Code', data.message || 'Error completing task');
+                    // Re-enable button if there was an error
+                    if (buttonElement) {
+                        buttonElement.disabled = false;
+                        buttonElement.style.background = '';
+                        buttonElement.style.cursor = 'pointer';
+                    }
+                    const errorMsg = data.errors ? JSON.stringify(data.errors) : (data.message || 'Error completing task');
+                    this.showModal('Error', errorMsg, 'error');
                 }
             })
             .catch(error => {
+                // Re-enable button if there was an error
+                if (buttonElement) {
+                    buttonElement.disabled = false;
+                    buttonElement.style.background = '';
+                    buttonElement.style.cursor = 'pointer';
+                }
                 console.error('Error completing task:', error);
-                this.showErrorModal('Error', error.message || 'Error completing task');
+                this.showModal('Error', error.message || 'Error completing task', 'error');
             });
     },
 
     /**
-     * Show proof upload modal for custom tasks
+     * Show modal dialog
      */
-    showProofUploadModal(taskId, eventId) {
-        const modalHTML = `
-            <div id="proof-modal" style="display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:10000; align-items:center; justify-content:center;">
-                <div style="background:white; border-radius:12px; padding:30px; max-width:400px; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-                    <h2 style="margin:0 0 15px 0; color:#333; font-size:18px;">Proof of Completion Required</h2>
-                    <p style="margin:0 0 20px 0; color:#666; font-size:14px;">Please upload a photo or screenshot as proof that you completed this task.</p>
-                    
-                    <div style="margin-bottom:20px;">
-                        <input type="file" id="proof-image-input" accept="image/*" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:14px;">
-                    </div>
-                    
-                    <div style="display:flex; gap:10px;">
-                        <button onclick="EventsModule.closeProofModal()" style="flex:1; padding:10px; background:#95a5a6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
-                        <button onclick="EventsModule.submitProofAndCompleteTask(${taskId}, ${eventId})" style="flex:1; padding:10px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Submit Proof</button>
-                    </div>
-                </div>
-            </div>
+    showModal(title, message, type = 'info') {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 3000;';
+        
+        const content = document.createElement('div');
+        content.style.cssText = 'background: white; padding: 30px; border-radius: 12px; max-width: 400px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center;';
+        
+        const iconColor = type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : '#3498db';
+        const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+        
+        content.innerHTML = `
+            <div style="font-size: 48px; color: ${iconColor}; margin-bottom: 15px;">${icon}</div>
+            <h2 style="margin: 0 0 10px 0; color: #1a3a52; font-size: 20px;">${title}</h2>
+            <p style="margin: 0 0 20px 0; color: #666; font-size: 14px; line-height: 1.6;">${message}</p>
+            <button onclick="this.closest('div').parentElement.remove()" style="padding: 10px 30px; background: ${iconColor}; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">OK</button>
         `;
         
-        // Remove existing modal if any
-        const existing = document.getElementById('proof-modal');
-        if (existing) existing.remove();
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    },
-
-    /**
-     * Close proof upload modal
-     */
-    closeProofModal() {
-        const modal = document.getElementById('proof-modal');
-        if (modal) modal.remove();
-    },
-
-    /**
-     * Show QR code scanner modal
-     */
-    showQRScannerModal(taskId, eventId) {
-        const modalHTML = `
-            <div id="qr-scanner-modal" style="display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; align-items:center; justify-content:center;" data-task-id="${taskId}" data-event-id="${eventId}">
-                <div style="background:white; border-radius:12px; padding:30px; max-width:500px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-                    <h2 style="margin:0 0 10px 0; color:#333; font-size:20px;"><i class="fas fa-qrcode"></i> Scan QR Code</h2>
-                    <p style="margin:0 0 20px 0; color:#666; font-size:14px;">Scan the QR code or manually enter the code value below.</p>
-                    
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block; margin-bottom:8px; font-weight:600; color:#333; font-size:14px;">QR Code Value:</label>
-                        <input type="text" id="qr-code-input" placeholder="e.g., EVENT-2026-SUMMER-001" style="width:100%; padding:12px; border:2px solid #ddd; border-radius:6px; font-size:14px; box-sizing:border-box;">
-                        <p style="margin:8px 0 0 0; color:#999; font-size:12px;">Enter the code you see on the QR code or scan it with your device camera.</p>
-                    </div>
-
-                    <div style="background:#f0f0f0; padding:15px; border-radius:6px; margin-bottom:20px; text-align:center;">
-                        <p style="margin:0 0 10px 0; color:#666; font-size:13px;"><i class="fas fa-info-circle"></i> <strong>How to use:</strong></p>
-                        <p style="margin:0; color:#666; font-size:12px; line-height:1.6;">
-                            1. Use your phone camera to scan the QR code<br>
-                            2. Or manually type the code value<br>
-                            3. Click "Submit" to complete the task
-                        </p>
-                    </div>
-                    
-                    <div style="display:flex; gap:10px;">
-                        <button onclick="EventsModule.closeQRScannerModal()" style="flex:1; padding:12px; background:#95a5a6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px;">Cancel</button>
-                        <button onclick="EventsModule.submitQRCodeFromModal()" style="flex:1; padding:12px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px;"><i class="fas fa-check"></i> Submit</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Remove existing modal if any
-        const existing = document.getElementById('qr-scanner-modal');
-        if (existing) existing.remove();
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        // Focus on input field
-        setTimeout(() => {
-            const input = document.getElementById('qr-code-input');
-            if (input) input.focus();
-        }, 100);
-    },
-
-    /**
-     * Close QR scanner modal
-     */
-    closeQRScannerModal() {
-        const modal = document.getElementById('qr-scanner-modal');
-        if (modal) modal.remove();
-    },
-
-    /**
-     * Submit QR code from modal (retrieves IDs from data attributes)
-     */
-    submitQRCodeFromModal() {
-        const modal = document.getElementById('qr-scanner-modal');
-        const taskId = parseInt(modal.getAttribute('data-task-id'));
-        const eventId = parseInt(modal.getAttribute('data-event-id'));
-        this.submitQRCode(taskId, eventId);
-    },
-
-    /**
-     * Submit QR code and complete task
-     */
-    submitQRCode(taskId, eventId) {
-        const qrCodeInput = document.getElementById('qr-code-input');
-        const qrCode = qrCodeInput ? qrCodeInput.value.trim() : '';
-        
-        if (!qrCode) {
-            this.showErrorModal('Empty QR Code', 'Please enter or scan the QR code');
-            return;
-        }
-
-        const proofData = { qr_code: qrCode };
-        this.closeQRScannerModal();
-        this.submitTaskCompletion(taskId, eventId, proofData);
-    },
-
-    /**
-     * Submit proof and complete task
-     */
-    submitProofAndCompleteTask(taskId, eventId) {
-        const fileInput = document.getElementById('proof-image-input');
-        
-        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-            this.showErrorModal('No File Selected', 'Please select an image file');
-            return;
-        }
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-            const proofData = {
-                proof_image: e.target.result // Base64 encoded image
-            };
-            
-            this.closeProofModal();
-            this.submitTaskCompletion(taskId, eventId, proofData);
-        };
-
-        reader.onerror = () => {
-            this.showErrorModal('File Error', 'Error reading file');
-        };
-
-        reader.readAsDataURL(file);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
     },
 
     /**
@@ -721,20 +371,14 @@ const EventsModule = {
                 return response.json();
             })
             .then(data => {
-                let leaderboard = [];
-                if (data.success && Array.isArray(data.data)) {
-                    leaderboard = data.data;
-                } else if (Array.isArray(data.data)) {
-                    leaderboard = data.data;
-                } else if (Array.isArray(data)) {
-                    leaderboard = data;
+                if (data.success) {
+                    this.renderLeaderboard(data.data);
                 }
-                this.renderLeaderboard(leaderboard);
             })
             .catch(error => {
                 console.error('Error loading leaderboard:', error);
-                const el = document.getElementById('leaderboard-list');
-                if (el) el.innerHTML = '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading leaderboard.</p>';
+                document.getElementById('leaderboard-list').innerHTML =
+                    '<p style="color: #e74c3c; text-align: center; padding: 20px;">Error loading leaderboard.</p>';
             });
     },
 
@@ -743,8 +387,6 @@ const EventsModule = {
      */
     renderLeaderboard(leaderboard) {
         const leaderboardList = document.getElementById('leaderboard-list');
-        
-        if (!leaderboardList) return;
 
         if (!Array.isArray(leaderboard) || leaderboard.length === 0) {
             leaderboardList.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No rankings yet. Be the first to complete tasks!</p>';
@@ -753,33 +395,17 @@ const EventsModule = {
 
         leaderboardList.innerHTML = leaderboard.map((entry, index) => {
             const rankIcon = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`;
-            
-            // Handle both nested user object and flat structure
-            const firstName = entry.first_name || (entry.user && entry.user.first_name) || 'User';
-            const lastName = entry.last_name || (entry.user && entry.user.last_name) || '';
-            const profilePicture = entry.profile_picture || (entry.user && entry.user.profile_picture) || null;
-            const tasksCompleted = entry.tasks_completed || 0;
-            const totalPoints = entry.total_points || 0;
-            
-            // Create initials for avatar
-            const initials = ((firstName || '')[0] || '').toUpperCase() + ((lastName || '')[0] || '').toUpperCase();
-            
-            // Determine avatar display
-            const avatarUrl = profilePicture ? `/storage/${profilePicture}` : null;
-            const avatarHtml = avatarUrl 
-                ? `<img src="${avatarUrl}" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #667eea;">`
-                : `<div style="width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border: 2px solid #667eea;">${initials}</div>`;
+            const user = entry.user || {};
 
             return `
                 <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${index === 0 ? '#ffd700' : index === 1 ? '#c0c0c0' : index === 2 ? '#cd7f32' : '#667eea'};">
                     <div style="font-size: 24px; min-width: 40px; text-align: center;">${rankIcon}</div>
-                    ${avatarHtml}
                     <div style="flex: 1;">
-                        <h4 style="margin: 0 0 5px 0; color: #1a3a52;">${firstName} ${lastName}</h4>
-                        <p style="margin: 0; color: #666; font-size: 13px;">${tasksCompleted} tasks completed</p>
+                        <h4 style="margin: 0 0 5px 0; color: #1a3a52;">${user.first_name || 'User'} ${user.last_name || ''}</h4>
+                        <p style="margin: 0; color: #666; font-size: 13px;">${entry.tasks_completed || 0} tasks completed</p>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 18px; font-weight: bold; color: #667eea;">${totalPoints}</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #667eea;">${entry.total_points || 0}</div>
                         <div style="font-size: 12px; color: #999;">points</div>
                     </div>
                 </div>
@@ -906,80 +532,17 @@ const EventsModule = {
             });
         }
     },
-
-    /**
-     * Show error modal
-     */
-    showErrorModal(title, message) {
-        const modalHTML = `
-            <div id="event-error-modal" style="display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; align-items:center; justify-content:center;">
-                <div style="background:white; border-radius:12px; padding:40px; max-width:450px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:center;">
-                    <div style="font-size:60px; margin-bottom:20px;">✕</div>
-                    <h2 style="margin:0 0 15px 0; color:#e74c3c; font-size:22px; font-weight:700;">${title}</h2>
-                    <p style="margin:0 0 25px 0; color:#666; font-size:14px; line-height:1.6;">${message}</p>
-                    <button onclick="EventsModule.closeErrorModal()" style="padding:12px 30px; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s;">
-                        OK
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        const existing = document.getElementById('event-error-modal');
-        if (existing) existing.remove();
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    },
-
-    /**
-     * Close error modal
-     */
-    closeErrorModal() {
-        const modal = document.getElementById('event-error-modal');
-        if (modal) modal.remove();
-    },
-
-    /**
-     * Show success modal
-     */
-    showSuccessModal(title, message) {
-        const modalHTML = `
-            <div id="event-success-modal" style="display:flex; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:10001; align-items:center; justify-content:center;">
-                <div style="background:white; border-radius:12px; padding:40px; max-width:450px; width:90%; box-shadow:0 10px 40px rgba(0,0,0,0.3); text-align:center;">
-                    <div style="font-size:60px; margin-bottom:20px;">✓</div>
-                    <h2 style="margin:0 0 15px 0; color:#27ae60; font-size:22px; font-weight:700;">${title}</h2>
-                    <p style="margin:0 0 25px 0; color:#666; font-size:14px; line-height:1.6;">${message}</p>
-                    <button onclick="EventsModule.closeSuccessModal()" style="padding:12px 30px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; transition:all 0.2s;">
-                        OK
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        const existing = document.getElementById('event-success-modal');
-        if (existing) existing.remove();
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        // Auto-close after 2 seconds
-        setTimeout(() => {
-            this.closeSuccessModal();
-        }, 2000);
-    },
-
-    /**
-     * Close success modal
-     */
-    closeSuccessModal() {
-        const modal = document.getElementById('event-success-modal');
-        if (modal) modal.remove();
-    }
 };
 
 /**
  * Reset daily steps
  */
 function resetDailySteps() {
-    showModal('Steps reset automatically at midnight PH time', 'info');
+    if (confirm('Are you sure you want to reset today\'s step count?')) {
+        EventsModule.dailySteps = 0;
+        document.getElementById('daily-steps-display').textContent = '0';
+        document.getElementById('daily-steps-count').textContent = '0';
+    }
 }
 
 /**

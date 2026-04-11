@@ -25,7 +25,8 @@ class FriendshipController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
         $response = $this->friendshipService->getRequests(auth()->id());
-        return response()->json($response->toArray(), $response->statusCode);
+        return response()->json($response->toArray(), $response->statusCode)
+            ->header('Cache-Control', 'private, max-age=5');
     }
 
     public function add(Request $request, $userId)

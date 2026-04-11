@@ -352,7 +352,7 @@ function populateFormWithCurrentData() {
 
 // ── Modal Helper ──────────────────────────────────────────────────────────────
 
-function showModal(title, message, type = 'success') {
+function showBusinessModal(title, message, type = 'success') {
     // Create modal if it doesn't exist
     let modal = document.getElementById('businessModal');
     if (!modal) {
@@ -581,7 +581,7 @@ window.registerBusiness = function (e) {
             if (res.success) {
                 const successMsg = 'Business ' + (currentBusinessId ? 'updated' : 'registered') + ' successfully!';
                 msgEl.innerHTML = '<div class="message success">✓ ' + successMsg + '</div>';
-                showModal('Success', successMsg, 'success');
+                showBusinessModal('Success', successMsg, 'success');
                 currentBusinessId = res.data.id;
                 setTimeout(() => {
                     loadBusinessData();
@@ -595,7 +595,7 @@ window.registerBusiness = function (e) {
             } else {
                 const errorMsg = res.message || 'Failed to save business';
                 msgEl.innerHTML = `<div class="message error">✗ ${errorMsg}</div>`;
-                showModal('Error', errorMsg, 'error');
+                showBusinessModal('Error', errorMsg, 'error');
             }
         })
         .catch(err => {
@@ -603,7 +603,7 @@ window.registerBusiness = function (e) {
             btn.innerHTML = originalText;
             const errorMsg = 'Network error. Please try again.';
             msgEl.innerHTML = '<div class="message error">✗ ' + errorMsg + '</div>';
-            showModal('Error', errorMsg, 'error');
+            showBusinessModal('Error', errorMsg, 'error');
         });
 };
 
@@ -908,18 +908,18 @@ window.submitMenuItemForm = function (e) {
             btn.innerHTML = originalText;
             
             if (res.success) {
-                showModal('Success', 'Menu item added successfully!', 'success');
+                showBusinessModal('Success', 'Menu item added successfully!', 'success');
                 closeAddMenuItemModal();
                 loadMenuItems(currentMenuBusinessId);
             } else {
-                showModal('Error', res.message || 'Failed to add menu item', 'error');
+                showBusinessModal('Error', res.message || 'Failed to add menu item', 'error');
             }
         })
         .catch(err => {
             btn.disabled = false;
             btn.innerHTML = originalText;
             console.error('Error:', err);
-            showModal('Error', err.message || 'Network error. Please try again.', 'error');
+            showBusinessModal('Error', err.message || 'Network error. Please try again.', 'error');
         });
 };
 
@@ -938,14 +938,14 @@ function deleteMenuItem(itemId) {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                showModal('Success', 'Menu item deleted successfully!', 'success');
+                showBusinessModal('Success', 'Menu item deleted successfully!', 'success');
                 loadMenuItems(currentMenuBusinessId);
             } else {
-                showModal('Error', res.message || 'Failed to delete menu item', 'error');
+                showBusinessModal('Error', res.message || 'Failed to delete menu item', 'error');
             }
         })
         .catch(err => {
-            showModal('Error', 'Network error. Please try again.', 'error');
+            showBusinessModal('Error', 'Network error. Please try again.', 'error');
         });
 }
 
@@ -959,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file) {
                 const maxSize = 2048 * 1024; // 2MB in bytes
                 if (file.size > maxSize) {
-                    showModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
+                    showBusinessModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
                     menuImageInput.value = '';
                     document.getElementById('imagePreview').style.display = 'none';
                     return;
@@ -983,7 +983,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file) {
                 const maxSize = 2048 * 1024;
                 if (file.size > maxSize) {
-                    showModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
+                    showBusinessModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
                     productImageInput.value = '';
                     document.getElementById('productImagePreview').style.display = 'none';
                     return;
@@ -1007,7 +1007,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (file) {
                 const maxSize = 2048 * 1024;
                 if (file.size > maxSize) {
-                    showModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
+                    showBusinessModal('File Too Large', `Image must be smaller than 2MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB.`, 'error');
                     serviceImageInput.value = '';
                     document.getElementById('serviceImagePreview').style.display = 'none';
                     return;
@@ -1160,18 +1160,18 @@ window.submitProductForm = function (e) {
             btn.innerHTML = originalText;
             
             if (res.success) {
-                showModal('Success', 'Product added successfully!', 'success');
+                showBusinessModal('Success', 'Product added successfully!', 'success');
                 closeAddProductModal();
                 loadProducts(currentProductBusinessId);
             } else {
-                showModal('Error', res.message || 'Failed to add product', 'error');
+                showBusinessModal('Error', res.message || 'Failed to add product', 'error');
             }
         })
         .catch(err => {
             btn.disabled = false;
             btn.innerHTML = originalText;
             console.error('Error:', err);
-            showModal('Error', err.message || 'Network error. Please try again.', 'error');
+            showBusinessModal('Error', err.message || 'Network error. Please try again.', 'error');
         });
 };
 
@@ -1190,14 +1190,14 @@ function deleteProduct(itemId) {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                showModal('Success', 'Product deleted successfully!', 'success');
+                showBusinessModal('Success', 'Product deleted successfully!', 'success');
                 loadProducts(currentProductBusinessId);
             } else {
-                showModal('Error', res.message || 'Failed to delete product', 'error');
+                showBusinessModal('Error', res.message || 'Failed to delete product', 'error');
             }
         })
         .catch(err => {
-            showModal('Error', 'Network error. Please try again.', 'error');
+            showBusinessModal('Error', 'Network error. Please try again.', 'error');
         });
 }
 
@@ -1337,18 +1337,18 @@ window.submitServiceForm = function (e) {
             btn.innerHTML = originalText;
             
             if (res.success) {
-                showModal('Success', 'Service added successfully!', 'success');
+                showBusinessModal('Success', 'Service added successfully!', 'success');
                 closeAddServiceModal();
                 loadServices(currentServiceBusinessId);
             } else {
-                showModal('Error', res.message || 'Failed to add service', 'error');
+                showBusinessModal('Error', res.message || 'Failed to add service', 'error');
             }
         })
         .catch(err => {
             btn.disabled = false;
             btn.innerHTML = originalText;
             console.error('Error:', err);
-            showModal('Error', err.message || 'Network error. Please try again.', 'error');
+            showBusinessModal('Error', err.message || 'Network error. Please try again.', 'error');
         });
 };
 
@@ -1367,14 +1367,14 @@ function deleteService(itemId) {
         .then(r => r.json())
         .then(res => {
             if (res.success) {
-                showModal('Success', 'Service deleted successfully!', 'success');
+                showBusinessModal('Success', 'Service deleted successfully!', 'success');
                 loadServices(currentServiceBusinessId);
             } else {
-                showModal('Error', res.message || 'Failed to delete service', 'error');
+                showBusinessModal('Error', res.message || 'Failed to delete service', 'error');
             }
         })
         .catch(err => {
-            showModal('Error', 'Network error. Please try again.', 'error');
+            showBusinessModal('Error', 'Network error. Please try again.', 'error');
         });
 }
 

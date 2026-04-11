@@ -20,11 +20,15 @@
       0 => 'Laravel\\Sanctum\\SanctumServiceProvider',
     ),
   ),
-  'laravel/tinker' => 
+  'laravel/socialite' => 
   array (
+    'aliases' => 
+    array (
+      'Socialite' => 'Laravel\\Socialite\\Facades\\Socialite',
+    ),
     'providers' => 
     array (
-      0 => 'Laravel\\Tinker\\TinkerServiceProvider',
+      0 => 'Laravel\\Socialite\\SocialiteServiceProvider',
     ),
   ),
   'nesbot/carbon' => 

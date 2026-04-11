@@ -169,7 +169,7 @@ const EventsModule = {
             })
             .then(data => {
                 if (data.success) {
-                    this.showTasksModal(data.data);
+                    this.showTasksModal(data.data, eventId);
                 }
             })
             .catch(error => console.error('Error loading tasks:', error));
@@ -178,7 +178,7 @@ const EventsModule = {
     /**
      * Show tasks modal
      */
-    showTasksModal(tasks) {
+    showTasksModal(tasks, eventId) {
         const modal = document.createElement('div');
         modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000;';
         
@@ -190,18 +190,22 @@ const EventsModule = {
                 <h2 style="margin: 0; color: #1a3a52;">Event Tasks</h2>
                 <button onclick="this.closest('div').parentElement.parentElement.remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
             </div>
-            ${tasks.length > 0 ? tasks.map(task => `
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;">
+            ${tasks.length > 0 ? tasks.map(task => {
+                const isCompleted = Boolean(task.is_completed);
+                return `
+                <div data-task-type="${task.task_type}" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid ${isCompleted ? '#2ecc71' : '#667eea'};">
                     <h4 style="margin: 0 0 5px 0; color: #1a3a52;">${task.title}</h4>
                     <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;">${task.description || ''}</p>
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: bold;">
                             +${task.reward_points} points
                         </span>
-                        <button class="btn btn-primary" onclick="EventsModule.completeTask(${task.id})" style="padding: 6px 16px; font-size: 13px;">Complete</button>
+                        <button id="task-btn-${task.id}" class="btn btn-primary" onclick="EventsModule.completeTask(${task.id}, ${eventId}, this)" style="padding: 6px 16px; font-size: 13px; ${isCompleted ? 'background: #95a5a6; cursor: not-allowed;' : ''}" ${isCompleted ? 'disabled' : ''}>
+                            ${isCompleted ? '✓ Completed' : 'Complete'}
+                        </button>
                     </div>
                 </div>
-            `).join('') : '<p style="color: #999; text-align: center; padding: 20px;">No tasks available.</p>'}
+            `}).join('') : '<p style="color: #999; text-align: center; padding: 20px;">No tasks available.</p>'}
         `;
         
         modal.appendChild(content);
@@ -211,7 +215,79 @@ const EventsModule = {
     /**
      * Complete a task
      */
-    completeTask(taskId) {
+    completeTask(taskId, eventId, buttonElement) {
+        // Disable button immediately to prevent double-click
+        if (buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.style.background = '#95a5a6';
+            buttonElement.style.cursor = 'not-allowed';
+        }
+
+        // Get the task element to determine task type
+        const taskElement = buttonElement?.closest('[data-task-type]');
+        const taskType = taskElement?.getAttribute('data-task-type');
+
+        if (taskType === 'qr_scan') {
+            // For QR code tasks, prompt user to enter QR code
+            const qrCode = prompt('Please enter or scan the QR code:');
+            if (qrCode) {
+                this.sendTaskCompletion(taskId, eventId, buttonElement, { qr_code: qrCode });
+            } else {
+                // Re-enable button if user cancelled
+                if (buttonElement) {
+                    buttonElement.disabled = false;
+                    buttonElement.style.background = '';
+                    buttonElement.style.cursor = 'pointer';
+                }
+            }
+        } else if (taskType === 'location') {
+            // For location tasks, get user's location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        this.sendTaskCompletion(taskId, eventId, buttonElement, {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude,
+                        });
+                    },
+                    (error) => {
+                        console.warn('Geolocation error:', error);
+                        // Re-enable button if geolocation fails
+                        if (buttonElement) {
+                            buttonElement.disabled = false;
+                            buttonElement.style.background = '';
+                            buttonElement.style.cursor = 'pointer';
+                        }
+                        this.showModal('Error', 'Unable to get your location. Please enable location services.', 'error');
+                    }
+                );
+            } else {
+                // Re-enable button if geolocation not available
+                if (buttonElement) {
+                    buttonElement.disabled = false;
+                    buttonElement.style.background = '';
+                    buttonElement.style.cursor = 'pointer';
+                }
+                this.showModal('Error', 'Geolocation is not supported by your browser.', 'error');
+            }
+        } else {
+            // For other task types, send without proof data
+            this.sendTaskCompletion(taskId, eventId, buttonElement, null);
+        }
+    },
+
+    /**
+     * Send task completion to backend
+     */
+    sendTaskCompletion(taskId, eventId, buttonElement, proofData) {
+        const payload = {
+            task_id: parseInt(taskId),
+            event_id: parseInt(eventId),
+            proof_data: proofData,
+        };
+
+        console.log('Sending task completion payload:', payload);
+
         fetch(`${this.apiBase}/events/tasks/complete`, {
             method: 'POST',
             credentials: 'include',
@@ -219,26 +295,70 @@ const EventsModule = {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
             },
-            body: JSON.stringify({
-                task_id: taskId,
-                event_id: 1,
-                proof_data: null,
-            }),
+            body: JSON.stringify(payload),
         })
             .then(response => {
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(JSON.stringify(data));
+                    });
+                }
                 return response.json();
             })
             .then(data => {
                 if (data.success) {
-                    alert('Task completed! You earned ' + data.data.points_earned + ' points!');
+                    // Update button text to show completion
+                    if (buttonElement) {
+                        buttonElement.textContent = '✓ Completed';
+                    }
+                    this.showModal('Success', 'Task completed! You earned ' + data.data.points_earned + ' points!', 'success');
                     this.loadUserAchievements();
                     this.loadLeaderboard();
                 } else {
-                    alert(data.message || 'Error completing task');
+                    // Re-enable button if there was an error
+                    if (buttonElement) {
+                        buttonElement.disabled = false;
+                        buttonElement.style.background = '';
+                        buttonElement.style.cursor = 'pointer';
+                    }
+                    const errorMsg = data.errors ? JSON.stringify(data.errors) : (data.message || 'Error completing task');
+                    this.showModal('Error', errorMsg, 'error');
                 }
             })
-            .catch(error => console.error('Error completing task:', error));
+            .catch(error => {
+                // Re-enable button if there was an error
+                if (buttonElement) {
+                    buttonElement.disabled = false;
+                    buttonElement.style.background = '';
+                    buttonElement.style.cursor = 'pointer';
+                }
+                console.error('Error completing task:', error);
+                this.showModal('Error', error.message || 'Error completing task', 'error');
+            });
+    },
+
+    /**
+     * Show modal dialog
+     */
+    showModal(title, message, type = 'info') {
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 3000;';
+        
+        const content = document.createElement('div');
+        content.style.cssText = 'background: white; padding: 30px; border-radius: 12px; max-width: 400px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center;';
+        
+        const iconColor = type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : '#3498db';
+        const icon = type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ';
+        
+        content.innerHTML = `
+            <div style="font-size: 48px; color: ${iconColor}; margin-bottom: 15px;">${icon}</div>
+            <h2 style="margin: 0 0 10px 0; color: #1a3a52; font-size: 20px;">${title}</h2>
+            <p style="margin: 0 0 20px 0; color: #666; font-size: 14px; line-height: 1.6;">${message}</p>
+            <button onclick="this.closest('div').parentElement.remove()" style="padding: 10px 30px; background: ${iconColor}; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">OK</button>
+        `;
+        
+        modal.appendChild(content);
+        document.body.appendChild(modal);
     },
 
     /**

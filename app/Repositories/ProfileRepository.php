@@ -63,16 +63,22 @@ class ProfileRepository
 
     public function getAchievements(int $userId): array
     {
-        $achievement = User::with('achievements')
-            ->find($userId)
+        $achievements = User::find($userId)
             ->achievements()
-            ->first();
+            ->with(['task', 'event'])
+            ->orderByDesc('created_at')
+            ->get();
 
-        if (!$achievement || !$achievement->badges) {
-            return [];
-        }
-
-        return $achievement->badges;
+        return $achievements->map(function ($achievement) {
+            return [
+                'id' => $achievement->id,
+                'name' => $achievement->task?->title ?? 'Achievement',
+                'description' => $achievement->task?->description ?? 'Completed task',
+                'points' => $achievement->points_earned ?? 0,
+                'icon' => $achievement->task?->badge ?? '🏆',
+                'earned_at' => $achievement->created_at,
+            ];
+        })->toArray();
     }
 
     public function getUserBusinesses(int $userId): array
@@ -80,7 +86,7 @@ class ProfileRepository
         return User::with('businesses')
             ->find($userId)
             ->businesses()
-            ->get(['id', 'name', 'business_type', 'description'])
+            ->get(['id', 'name', 'category', 'description'])
             ->toArray();
     }
 }

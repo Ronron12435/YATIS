@@ -20,9 +20,16 @@ window.initPeopleMap = function() {
         minZoom: 13,
         maxZoom: 19
     }).setView([10.8967, 123.4253], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    
+    // Add tile layer and wait for it to load before placing markers
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors', maxZoom: 19
     }).addTo(peopleMap);
+    
+    // Ensure map size is correct after tiles load
+    tileLayer.on('load', () => {
+        peopleMap.invalidateSize(true);
+    });
 
     // Update user location in background without showing marker
     function updateMyLocation(lat, lng) {
@@ -58,49 +65,39 @@ window.initPeopleMap = function() {
 
     // Delay loading markers to ensure map is ready
     setTimeout(() => {
-        console.log('⏱️ Delayed loadPeopleMarkers() call after 500ms');
         loadPeopleMarkers();
-    }, 500);
+    }, 1000);
     
     loadFriendsList();
     loadFriendRequests();
 };
 
 function loadPeopleMarkers() {
-    console.log('🔄 loadPeopleMarkers() called');
-    console.log('peopleMap exists:', !!peopleMap);
-    
     if (!peopleMap) {
-        console.error('❌ Map not initialized yet');
         return;
     }
     
-    console.log('📡 Fetching /api/people-map...');
+    peopleMap.invalidateSize(true);
+    
     fetch('/api/people-map', { credentials: 'include' })
         .then(r => {
-            console.log('📊 Response status:', r.status);
             if (!r.ok) throw new Error(`HTTP ${r.status}`);
             return r.json();
         })
         .then(response => {
-            console.log('✅ People map response:', response);
             const users = response.data || [];
-            console.log('👥 Users to display:', users);
-            console.log('📍 Number of users:', users.length);
             
-            if (!users.length) {
-                console.warn('⚠️ No users returned from API');
+            if (users.length === 0) {
                 return;
             }
             
             // Clear existing markers (except your own)
             if (window._existingMarkers) {
-                console.log('🗑️ Clearing', window._existingMarkers.length, 'existing markers');
                 window._existingMarkers.forEach(marker => {
                     try {
                         peopleMap.removeLayer(marker);
                     } catch (e) {
-                        console.warn('Error removing marker:', e);
+                        // Silently ignore errors
                     }
                 });
             }
@@ -108,30 +105,50 @@ function loadPeopleMarkers() {
             
             let bounds = L.latLngBounds();
             
-            users.forEach(user => {
+            const placedMarkers = []; // Track placed marker positions
+            users.forEach((user, index) => {
                 try {
-                    console.log('📌 Adding marker for:', user.username, 'at', user.latitude, user.longitude);
-                    const lat = parseFloat(user.latitude);
-                    const lng = parseFloat(user.longitude);
+                    let lat = parseFloat(user.latitude);
+                    let lng = parseFloat(user.longitude);
                     
-                    // Validate coordinates are within Philippines bounds (5-20 lat, 120-130 lng)
-                    if (isNaN(lat) || isNaN(lng) || lat < 5 || lat > 20 || lng < 120 || lng > 130) {
-                        console.warn('⚠️ Invalid coordinates for', user.username, '- skipping marker');
+                    // If coordinates are invalid, skip
+                    if (isNaN(lat) || isNaN(lng)) {
                         return;
                     }
                     
-                    const initials = ((user.first_name||'')[0]||'').toUpperCase() + ((user.last_name||'')[0]||'').toUpperCase();
+                    // Check for overlapping markers and offset if needed
+                    const minDistance = 0.0015; // ~150 meters at equator
+                    let offsetLat = lat;
+                    let offsetLng = lng;
+                    let offsetIndex = 0;
                     
-                    console.log('  Initials:', initials, 'Coords:', lat, lng);
+                    for (let placed of placedMarkers) {
+                        const distance = Math.sqrt(Math.pow(lat - placed.lat, 2) + Math.pow(lng - placed.lng, 2));
+                        if (distance < minDistance) {
+                            // Offset in a circular pattern around the original location
+                            const angle = (offsetIndex * 45) * (Math.PI / 180); // 45 degree increments
+                            const offset = 0.0015; // ~150 meters - increased from 0.0008
+                            offsetLat = lat + offset * Math.cos(angle);
+                            offsetLng = lng + offset * Math.sin(angle);
+                            offsetIndex++;
+                        }
+                    }
+                    
+                    placedMarkers.push({ lat: offsetLat, lng: offsetLng, username: user.username });
+                    
+                    const initials = ((user.first_name||'')[0]||'').toUpperCase() + ((user.last_name||'')[0]||'').toUpperCase();
                     
                     // Create colored circle with initials
                     const colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#34495e'];
                     const colorIndex = user.id % colors.length;
                     const bgColor = colors[colorIndex];
                     
+                    // Create marker HTML as a simple string (more reliable than DOM manipulation)
+                    const markerHtml = `<div style="width:50px;height:50px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:700;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.4);text-align:center;line-height:1;position:relative;z-index:100;">${initials}</div>`;
+                    
                     // Create a custom marker with circle and initials combined
                     const markerIcon = L.divIcon({
-                        html: `<div style="width:50px;height:50px;border-radius:50%;background:${bgColor};display:flex;align-items:center;justify-content:center;color:white;font-size:18px;font-weight:700;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.4);text-align:center;line-height:1;transform:scale(1);">${initials}</div>`,
+                        html: markerHtml,
                         iconSize: [50, 50],
                         iconAnchor: [25, 25],
                         popupAnchor: [0, -70],
@@ -151,10 +168,10 @@ function loadPeopleMarkers() {
                     
                     const location = user.location_name || 'Nearby';
                     const popupHtml = `<div style="width:240px;border-radius:12px;font-family:sans-serif;">
-                        <div style="background:linear-gradient(135deg,${bgColor},${bgColor}dd);padding:20px;text-align:center;">
-                            <div style="width:70px;height:70px;border-radius:50%;background:white;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:${bgColor};">${initials}</div>
-                            <div style="color:white;font-weight:700;font-size:16px;">${user.username}</div>
-                            <div style="color:rgba(255,255,255,0.85);font-size:13px;">${user.first_name} ${user.last_name}</div>
+                        <div style="background:white;padding:20px;text-align:center;border-bottom:1px solid #e0e0e0;">
+                            <div style="width:70px;height:70px;border-radius:50%;background:${bgColor};margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:white;">${initials}</div>
+                            <div style="color:#333;font-weight:700;font-size:16px;">${user.username}</div>
+                            <div style="color:#666;font-size:13px;">${user.first_name} ${user.last_name}</div>
                         </div>
                         <div style="background:white;padding:15px;text-align:center;">
                             <div style="color:#555;font-size:13px;margin-bottom:8px;">📍 ${location}</div>
@@ -163,24 +180,20 @@ function loadPeopleMarkers() {
                         </div>
                     </div>`;
                     
-                    const marker = L.marker([lat, lng], { icon: markerIcon }).addTo(peopleMap);
+                    const marker = L.marker([offsetLat, offsetLng], { icon: markerIcon, zIndexOffset: 1000 + index }).addTo(peopleMap);
                     marker.bindPopup(popupHtml, { maxWidth: 260, className: 'people-popup', autoPan: false });
                     window._existingMarkers.push(marker);
-                    bounds.extend([lat, lng]);
-                    console.log('✅ Marker added for:', user.username);
+                    bounds.extend([offsetLat, offsetLng]);
                 } catch (e) {
-                    console.error('❌ Error adding marker for user:', user.username, e);
+                    // Silently handle errors
                 }
             });
-            
-            // Don't fit bounds - keep map centered on Sagay City
-            console.log('✅ All markers loaded successfully!');
             
             // Display nearby users list
             displayNearbyUsersList(users);
         })
         .catch(err => {
-            console.error('❌ Error fetching people map:', err);
+            // Silently handle errors
         });
 }
 
@@ -261,24 +274,26 @@ function loadFriendsList() {
             
             list.innerHTML = friends.map(f => {
                 const ini = ((f.first_name||'')[0]||'').toUpperCase() + ((f.last_name||'')[0]||'').toUpperCase();
+                const avatarHtml = f.profile_picture 
+                    ? `<img src="/storage/${f.profile_picture}?t=${Date.now()}" alt="Avatar" style="width:70px;height:70px;border-radius:50%;object-fit:cover;border:3px solid #e0e0e0;flex-shrink:0;">`
+                    : `<div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#3498db,#2980b9);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:24px;flex-shrink:0;">${ini}</div>`;
                 
-                return `<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-bottom:1px solid #f0f0f0;">
-                    <div style="display:flex;align-items:center;gap:12px;flex:1;">
-                        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#3498db,#2980b9);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">${ini}</div>
-                        <div>
-                            <strong style="display:block;color:#1a3a52;font-size:15px;">${f.first_name} ${f.last_name}</strong>
-                            <small style="color:#999;font-size:13px;">@${f.username}</small>
+                return `<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 0;border-bottom:1px solid #f0f0f0;gap:12px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+                        ${avatarHtml}
+                        <div style="min-width:0;flex:1;">
+                            <strong style="display:block;color:#1a3a52;font-size:15px;word-break:break-word;">${f.first_name} ${f.last_name}</strong>
                         </div>
                     </div>
-                    <div style="display:flex;gap:8px;">
-                        <button onclick="openFriendChat(${f.id},'${f.first_name} ${f.last_name}','${ini}')" style="padding:8px 16px;background:#3498db;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;"><i class="fas fa-comment"></i> Message</button>
-                        <button style="padding:8px 16px;background:#7f8c8d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;"><i class="fas fa-eye"></i> View</button>
-                        <button onclick="unfriend(${f.id})" style="padding:8px 16px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px;"><i class="fas fa-times"></i> Unfriend</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;width:100%;">
+                        <button onclick="openFriendChat(${f.id},'${f.first_name} ${f.last_name}','${ini}')" style="padding:8px 12px;background:#3498db;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;"><i class="fas fa-comment"></i> Message</button>
+                        <button onclick="viewFriendProfile(${f.id})" style="padding:8px 12px;background:#7f8c8d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;"><i class="fas fa-eye"></i> View</button>
+                        <button onclick="unfriend(${f.id})" style="padding:8px 12px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;"><i class="fas fa-times"></i> Unfriend</button>
                     </div>
                 </div>`;
             }).join('');
+
         }).catch(err => { 
-            console.error('Error loading friends:', err);
             document.getElementById('friends-count').textContent = 0; 
         });
 }
@@ -343,21 +358,151 @@ window.sendFriendMessage = function() {
 // Keep openChat as alias so map popups still work
 window.openChat = window.openFriendChat;
 
+window.viewFriendProfile = function(userId) {
+    fetch(`/api/users/${userId}`, {
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(response => {
+        if (!response.success || !response.data) {
+            alert('Error loading profile');
+            return;
+        }
+        
+        const user = response.data;
+        const ini = ((user.first_name||'')[0]||'').toUpperCase() + ((user.last_name||'')[0]||'').toUpperCase();
+        
+        // Fetch achievements
+        fetch(`/api/profile/${userId}/achievements`, {
+            credentials: 'include',
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(achievRes => {
+            const achievements = achievRes.data || [];
+            
+            const achievementsHTML = achievements.length > 0 
+                ? achievements.map(a => {
+                    return `
+                    <div style="padding:15px;border-left:4px solid #f39c12;background:#fafafa;border-radius:6px;margin-bottom:10px;">
+                        <div style="display:flex;align-items:flex-start;gap:12px;">
+                            <div style="font-size:28px;flex-shrink:0;">🏆</div>
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-weight:600;color:#333;font-size:14px;margin-bottom:2px;">${a.name || 'Achievement'}</div>
+                                <div style="color:#666;font-size:12px;margin-bottom:6px;line-height:1.4;">${a.description || 'Completed task'}</div>
+                                <div style="color:#f39c12;font-weight:600;font-size:13px;">+${a.points || 0} points</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                }).join('')
+                : '<div style="text-align:center;padding:30px;color:#999;">No achievements yet</div>';
+            
+            const modal = document.createElement('div');
+            modal.id = 'friend-profile-modal';
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+            
+            modal.innerHTML = `
+                <div style="background:white;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="background:linear-gradient(135deg,#1a3a52,#2c5f8d);padding:30px;text-align:center;color:white;position:sticky;top:0;z-index:10;background-image:url('${user.cover_photo ? '/storage/' + user.cover_photo : ''}');background-size:cover;background-position:center;position:relative;min-height:200px;display:flex;flex-direction:column;justify-content:flex-end;">
+                        <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);"></div>
+                        <div style="position:relative;z-index:1;display:flex;align-items:flex-end;gap:15px;">
+                            <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;border:3px solid white;overflow:hidden;flex-shrink:0;">
+                                ${user.profile_picture ? `<img src="/storage/${user.profile_picture}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">` : ini}
+                            </div>
+                            <div style="text-align:left;margin-bottom:5px;">
+                                <h2 style="margin:0 0 5px 0;font-size:22px;">${user.first_name} ${user.last_name}</h2>
+                                <p style="margin:0;opacity:0.9;font-size:14px;">@${user.username}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="padding:20px;border-bottom:1px solid #eee;">
+                        <p style="margin:0;color:#666;font-size:14px;line-height:1.6;">${user.bio || 'No bio added'}</p>
+                    </div>
+                    
+                    <div style="padding:20px;">
+                        <h3 style="margin:0 0 15px 0;color:#333;font-size:16px;font-weight:600;">🏆 Achievements & Badges</h3>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            ${achievementsHTML}
+                        </div>
+                    </div>
+                    
+                    <div style="padding:15px;border-top:1px solid #eee;text-align:center;position:sticky;bottom:0;background:white;z-index:10;">
+                        <button onclick="document.getElementById('friend-profile-modal').remove();" style="padding:10px 30px;background:#e74c3c;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Close</button>
+                    </div>
+                </div>
+            `;
+            
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+            
+            document.body.appendChild(modal);
+        })
+        .catch(err => {
+            alert('Error loading achievements');
+        });
+    })
+    .catch(err => {
+        alert('Error loading profile');
+    });
+};
+
 window.unfriend = function(userId) {
-    if (!confirm('Remove this friend?')) return;
-    fetch(`/api/friends/${userId}`, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-        credentials: 'include'
-    }).then(() => location.reload());
+    const modal = document.createElement('div');
+    modal.id = 'unfriend-modal';
+    modal.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.3); z-index:10001; padding:30px; max-width:400px; text-align:center;';
+    
+    modal.innerHTML = `
+        <h2 style="margin:0 0 15px 0; color:#333; font-size:18px;">Remove Friend</h2>
+        <p style="margin:0; color:#666; font-size:14px; line-height:1.6;">Are you sure you want to remove this friend?</p>
+        <div style="display:flex; gap:10px; margin-top:20px; justify-content:center;">
+            <button id="unfriend-remove-btn" style="padding:10px 20px; background:#e74c3c; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Remove</button>
+            <button id="unfriend-cancel-btn" style="padding:10px 20px; background:#95a5a6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">Cancel</button>
+        </div>
+    `;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'unfriend-modal-overlay';
+    overlay.style.cssText = 'position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:10000;';
+    
+    const closeUnfriendModal = () => {
+        modal.remove();
+        overlay.remove();
+    };
+    
+    overlay.onclick = closeUnfriendModal;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    
+    document.getElementById('unfriend-remove-btn').onclick = () => {
+        closeUnfriendModal();
+        fetch(`/api/friends/${userId}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+            credentials: 'include'
+        })
+        .then(r => r.json())
+        .then(data => {
+            location.reload();
+        })
+        .catch(err => {
+            console.error('Delete error:', err);
+        });
+    };
+    
+    document.getElementById('unfriend-cancel-btn').onclick = closeUnfriendModal;
 };
 
 window.addFriend = function(userId, userName) {
     if (!confirm(`Send friend request to ${userName}?`)) return;
     
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    console.log('CSRF Token:', csrfToken);
-    console.log('Sending request to:', `/api/friends/${userId}/add`);
     
     fetch(`/api/friends/${userId}/add`, {
         method: 'POST',
@@ -368,26 +513,21 @@ window.addFriend = function(userId, userName) {
         },
         credentials: 'include'
     }).then(r => {
-        console.log('Response status:', r.status);
-        console.log('Response headers:', r.headers);
         if (!r.ok) {
             return r.text().then(text => {
-                console.error('Error response:', text);
                 throw new Error(`HTTP ${r.status}: ${text.substring(0, 100)}`);
             });
         }
         return r.json();
     }).then(response => {
-        console.log('Success response:', response);
         if (response.success) {
-            alert(`Friend request sent to ${userName}!`);
+            alert(`✅ Friend request sent to ${userName}!`);
             location.reload();
         } else {
-            alert('Error: ' + (response.message || 'Failed to send friend request'));
+            alert('❌ Error: ' + (response.message || 'Failed to send friend request'));
         }
     }).catch(err => {
-        console.error('Full error:', err);
-        alert('Error sending friend request: ' + err.message);
+        alert('❌ Error sending friend request: ' + err.message);
     });
 };
 
@@ -405,7 +545,6 @@ window.acceptFriend = function(userId) {
             alert('Error: ' + (response.message || 'Failed to accept request'));
         }
     }).catch(err => {
-        console.error('Error:', err);
         alert('Error accepting friend request');
     });
 };
@@ -424,7 +563,6 @@ window.rejectFriend = function(userId) {
             alert('Error: ' + (response.message || 'Failed to reject request'));
         }
     }).catch(err => {
-        console.error('Error:', err);
         alert('Error rejecting friend request');
     });
 };

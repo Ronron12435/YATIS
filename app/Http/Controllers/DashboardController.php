@@ -31,10 +31,10 @@ class DashboardController extends Controller
         $goodsCount = 0;
         $servicesCount = 0;
         
-        if (in_array('business_type', $businessColumns)) {
-            $foodCount = DB::table('businesses')->where('business_type', 'food')->count();
-            $goodsCount = DB::table('businesses')->where('business_type', 'goods')->count();
-            $servicesCount = DB::table('businesses')->where('business_type', 'services')->count();
+        if (in_array('category', $businessColumns)) {
+            $foodCount = DB::table('businesses')->where('category', 'food')->count();
+            $goodsCount = DB::table('businesses')->where('category', 'goods')->count();
+            $servicesCount = DB::table('businesses')->where('category', 'services')->count();
         }
 
         // Get pending applications count for business users

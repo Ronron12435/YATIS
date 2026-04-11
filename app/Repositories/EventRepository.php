@@ -56,9 +56,21 @@ class EventRepository
         return EventTask::find($id);
     }
 
-    public function getTasksByEvent(int $eventId)
+    public function getTasksByEvent(int $eventId, ?int $userId = null)
     {
-        return EventTask::where('event_id', $eventId)->get();
+        $tasks = EventTask::where('event_id', $eventId)->get();
+
+        if ($userId) {
+            $completedTaskIds = UserTaskCompletion::where('user_id', $userId)
+                ->pluck('task_id')
+                ->toArray();
+
+            $tasks->each(function ($task) use ($completedTaskIds) {
+                $task->is_completed = in_array($task->id, $completedTaskIds) ? 1 : 0;
+            });
+        }
+
+        return $tasks;
     }
 
     public function deleteTask(EventTask $task): void
@@ -130,7 +142,7 @@ class EventRepository
                 DB::raw('SUM(user_task_completions.points_earned) as total_points'),
                 DB::raw('COUNT(user_task_completions.id) as tasks_completed')
             )
-            ->groupBy('user_task_completions.user_id', 'users.id', 'users.username', 'users.first_name', 'users.last_name', 'users.profile_picture')
+            ->groupBy('users.id', 'users.username', 'users.first_name', 'users.last_name', 'users.profile_picture')
             ->orderByDesc('total_points')
             ->limit($limit)
             ->get();

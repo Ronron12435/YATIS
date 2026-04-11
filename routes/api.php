@@ -21,6 +21,8 @@ use App\Http\Controllers\{
 // Public API routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
+Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 
 // Serve uploaded files
 Route::get('/uploads/{type}/{filename}', function ($type, $filename) {
@@ -48,6 +50,31 @@ Route::get('/search', [SearchController::class, 'index']);
 Route::get('/debug/user-roles', [UserController::class, 'checkRoles']);
 Route::post('/debug/fix-user-roles', [UserController::class, 'fixUserRoles']);
 
+// Debug OTP logs
+Route::get('/debug/otp-logs', function () {
+    $logFile = storage_path('logs/laravel.log');
+    if (!file_exists($logFile)) {
+        return response()->json(['error' => 'Log file not found'], 404);
+    }
+    
+    $logs = file_get_contents($logFile);
+    $lines = explode("\n", $logs);
+    
+    // Get last 100 lines and filter for OTP related entries
+    $otpLogs = [];
+    foreach (array_reverse($lines) as $line) {
+        if (strpos($line, 'OTP') !== false || strpos($line, 'REGISTRATION') !== false || strpos($line, 'Email') !== false) {
+            $otpLogs[] = $line;
+        }
+        if (count($otpLogs) >= 50) break;
+    }
+    
+    return response()->json([
+        'otp_logs' => array_reverse($otpLogs),
+        'total_lines' => count($lines)
+    ]);
+});
+
 // Protected API routes - use minimal middleware for session support
 Route::middleware([
     \Illuminate\Cookie\Middleware\EncryptCookies::class,
@@ -65,6 +92,7 @@ Route::get('/me', [AuthController::class, 'me']);
     
     // User Location Routes
     Route::post('/user/location', [UserController::class, 'updateLocation']);
+    Route::post('/update-location', [UserController::class, 'updateLocation']);
     Route::get('/user/location', [UserController::class, 'getLocation']);
     Route::get('/user/businesses', [UserController::class, 'businesses']);
     
@@ -127,7 +155,12 @@ Route::get('/me', [AuthController::class, 'me']);
     
     // Users
     Route::get('/people-map', [UserController::class, 'peopleMap']);
+    Route::get('/debug/users', [UserController::class, 'checkRoles']);
+    Route::get('/debug/people-map', [UserController::class, 'debugPeopleMap']);
+    Route::post('/debug/set-coordinates', [UserController::class, 'setUserCoordinates']);
     Route::post('/profile/update-location', [ProfileController::class, 'updateLocation']);
+    Route::post('/user/online-status', [UserController::class, 'setOnlineStatus']);
+    Route::get('/user/nearby-active', [UserController::class, 'getNearbyActiveUsers']);
     
     // Groups
     Route::get('/groups/user/my-groups', [GroupController::class, 'userGroups']);

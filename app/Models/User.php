@@ -6,11 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
+use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Model implements Authenticatable
+class User extends Model implements Authenticatable, CanResetPassword
 {
-    use HasFactory, AuthenticatableTrait, HasApiTokens;
+    use HasFactory, AuthenticatableTrait, CanResetPasswordTrait, Notifiable, HasApiTokens;
 
     // Use the existing users table from your database
     protected $table = 'users';
@@ -18,7 +21,9 @@ class User extends Model implements Authenticatable
 
     protected $fillable = [
         'username', 'email', 'password', 'first_name', 'last_name', 'role', 'bio',
-        'profile_picture', 'cover_photo', 'location_name', 'latitude', 'longitude', 'is_private', 'is_premium'
+        'profile_picture', 'cover_photo', 'location_name', 'latitude', 'longitude', 'is_private', 'is_premium',
+        'google_id', 'oauth_provider', 'online_status', 'last_activity_at', 'location_updated_at',
+        'otp_code', 'otp_expires_at', 'email_verified'
     ];
 
     protected $hidden = ['password'];
@@ -27,8 +32,12 @@ class User extends Model implements Authenticatable
         'email_verified_at' => 'datetime',
         'is_premium' => 'boolean',
         'is_private' => 'boolean',
+        'email_verified' => 'boolean',
         'latitude' => 'float',
         'longitude' => 'float',
+        'last_activity_at' => 'datetime',
+        'location_updated_at' => 'datetime',
+        'otp_expires_at' => 'datetime',
     ];
 
     // Get full name
