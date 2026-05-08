@@ -1,17 +1,25 @@
 <div id="profile" class="content-section">
     <style>
         #profile { background: #f5f5f5; padding: 20px; }
+        body.dark-mode #profile { background: #1a1a1a; }
         .profile-wrapper { max-width: 1200px; margin: 0 auto; }
         .modern-profile-header { background: white; border-radius: 12px; overflow: hidden; margin-bottom: 30px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+        body.dark-mode .modern-profile-header { background: #2a2a2a; box-shadow: 0 2px 12px rgba(0,0,0,.3); }
         .profile-cover { height: 200px; background: linear-gradient(135deg, #1a3a52 0%, #2c5f8d 50%, #00bcd4 100%); background-size: cover; background-position: center; position: relative; }
         .profile-cover::before { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 50px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 50"><path fill="white" d="M0,25 Q150,5 300,25 T600,25 T900,25 T1200,25 L1200,50 L0,50 Z"/></svg>') repeat-x; background-size: 300px 50px; }
+        body.dark-mode .profile-cover::before { background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 50"><path fill="%232a2a2a" d="M0,25 Q150,5 300,25 T600,25 T900,25 T1200,25 L1200,50 L0,50 Z"/></svg>') repeat-x; background-size: 300px 50px; }
         .btn-upload-cover { position: absolute; top: 12px; right: 12px; background: white; color: #333; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.15); transition: all .2s; z-index: 10; }
+        body.dark-mode .btn-upload-cover { background: #3a3a3a; color: #e0e0e0; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
         .btn-upload-cover:hover { box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+        body.dark-mode .btn-upload-cover:hover { box-shadow: 0 4px 12px rgba(0,0,0,.4); }
         .btn-remove-cover { position: absolute; top: 12px; right: 120px; background: white; color: #e74c3c; border: none; padding: 8px 12px; border-radius: 6px; font-size: 16px; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.15); transition: all .2s; z-index: 10; }
+        body.dark-mode .btn-remove-cover { background: #3a3a3a; color: #ff6b6b; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
         .btn-remove-cover:hover { box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+        body.dark-mode .btn-remove-cover:hover { box-shadow: 0 4px 12px rgba(0,0,0,.4); }
         .profile-main { padding: 0 24px 24px; position: relative; display: flex; gap: 24px; align-items: flex-start; }
         .profile-avatar-wrapper { position: relative; }
         .modern-avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; background: linear-gradient(135deg, #00bcd4 0%, #00acc1 100%); display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 700; color: white; margin-top: -50px; box-shadow: 0 4px 16px rgba(0, 188, 212, 0.4); cursor: pointer; overflow: hidden; position: relative; }
+        body.dark-mode .modern-avatar { border-color: #2a2a2a; }
         .modern-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .avatar-text { font-size: 40px; font-weight: 700; }
         .avatar-menu-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; border-radius: 50%; opacity: 0; transition: opacity .2s; }
@@ -19,39 +27,54 @@
         .avatar-menu-icon { font-size: 28px; }
         .profile-details { flex: 1; }
         .modern-profile-name { font-size: 32px; font-weight: 700; color: #1a3a52; margin: 0 0 8px; }
+        body.dark-mode .modern-profile-name { color: #e0e0e0; }
         .profile-role-text { font-size: 14px; color: #666; margin: 0 0 12px; }
+        body.dark-mode .profile-role-text { color: #aaa; }
         .modern-badges { display: flex; gap: 10px; flex-wrap: wrap; }
         .modern-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; }
         .premium-badge { background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); color: #1a3a52; }
         .role-badge { background: #e3f2fd; color: #1976d2; }
+        body.dark-mode .role-badge { background: #1e3a5f; color: #64b5f6; }
         .profile-grid { display: grid; grid-template-columns: 280px 1fr; gap: 20px; }
         .profile-column-left { display: flex; flex-direction: column; gap: 20px; }
         .profile-column-right { display: flex; flex-direction: column; gap: 20px; }
         .modern-card { background: white; border-radius: 12px; padding: 0; box-shadow: 0 2px 12px rgba(0,0,0,.08); overflow: hidden; }
+        body.dark-mode .modern-card { background: #2a2a2a; box-shadow: 0 2px 12px rgba(0,0,0,.3); }
         .modern-card-header { padding: 20px; border-bottom: 1px solid #f0f0f0; background: #fafafa; }
+        body.dark-mode .modern-card-header { background: #333; border-bottom-color: #444; }
         .card-title-group { display: flex; align-items: center; gap: 12px; }
         .card-icon-modern { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: #e3f2fd; border-radius: 8px; color: #1976d2; }
+        body.dark-mode .card-icon-modern { background: #1e3a5f; color: #64b5f6; }
         .modern-card-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: #1a3a52; }
+        body.dark-mode .modern-card-header h3 { color: #e0e0e0; }
         .modern-card-body { padding: 20px; }
         .about-item { margin-bottom: 16px; }
         .about-item:last-child { margin-bottom: 0; }
         .about-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        body.dark-mode .about-label { color: #888; }
         .about-value { font-size: 13px; color: #333; line-height: 1.6; }
+        body.dark-mode .about-value { color: #ccc; }
         .modern-form { display: flex; flex-direction: column; gap: 0; }
         .modern-form-group { margin-bottom: 20px; }
         .modern-form-group:last-child { margin-bottom: 0; }
         .modern-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #1a3a52; margin-bottom: 8px; }
+        body.dark-mode .modern-label { color: #e0e0e0; }
         .modern-label svg { width: 16px; height: 16px; color: #00bcd4; }
         .modern-input, .modern-textarea, .modern-select { width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-family: inherit; background: white; transition: all .2s; }
+        body.dark-mode .modern-input, body.dark-mode .modern-textarea, body.dark-mode .modern-select { background: #3a3a3a; border-color: #444; color: #e0e0e0; }
         .modern-input:focus, .modern-textarea:focus, .modern-select:focus { outline: none; border-color: #00bcd4; box-shadow: 0 0 0 3px rgba(0, 188, 212, .1); }
+        body.dark-mode .modern-input:focus, body.dark-mode .modern-textarea:focus, body.dark-mode .modern-select:focus { box-shadow: 0 0 0 3px rgba(0, 188, 212, .2); }
         .modern-textarea { resize: vertical; min-height: 100px; }
         .input-hint { font-size: 11px; color: #999; margin-top: 6px; display: block; }
+        body.dark-mode .input-hint { color: #888; }
         .modern-btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 8px; }
         .modern-btn-primary { background: linear-gradient(135deg, #1a3a52 0%, #2c5f8d 100%); color: white; box-shadow: 0 4px 12px rgba(26, 58, 82, 0.2); }
         .modern-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(26, 58, 82, 0.3); }
         .message { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
         .message.success { background: #c8e6c9; color: #2e7d32; }
+        body.dark-mode .message.success { background: #1b5e20; color: #81c784; }
         .message.error { background: #ffcdd2; color: #c62828; }
+        body.dark-mode .message.error { background: #b71c1c; color: #ef5350; }
         @media (max-width: 768px) {
             .profile-grid { grid-template-columns: 1fr; }
             .profile-main { flex-direction: column; align-items: center; text-align: center; }
@@ -61,7 +84,7 @@
     <div class="profile-wrapper">
         {{-- Modern Profile Header --}}
         <div class="modern-profile-header">
-            <div class="profile-cover" id="profileCover" style="background-image: url('{{ auth()->user()->cover_photo ? asset('storage/' . auth()->user()->cover_photo) : '' }}?t={{ time() }}');">
+            <div class="profile-cover" id="profileCover" style="background-image: url('{{ auth()->user()->cover_photo ? asset('uploads/' . auth()->user()->cover_photo) : '' }}?t={{ time() }}');">
                 <button class="btn-upload-cover" onclick="document.getElementById('coverPhotoInput').click();">📷 Change Cover</button>
                 <input type="file" id="coverPhotoInput" style="display:none;" accept="image/*" onchange="uploadCover(this)">
                 @if(auth()->user()->cover_photo)
@@ -72,7 +95,8 @@
                 <div class="profile-avatar-wrapper" style="position: relative; display: inline-block;">
                     <div class="modern-avatar" id="profileAvatar" style="cursor: pointer; position: relative;">
                         @if(auth()->user()->profile_picture)
-                            <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Avatar">
+                            <img src="{{ asset('uploads/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <span class="avatar-text" style="display: none;">{{ strtoupper(substr(auth()->user()->first_name ?? 'U', 0, 1)) }}</span>
                         @else
                             <span class="avatar-text">{{ strtoupper(substr(auth()->user()->first_name ?? 'U', 0, 1)) }}</span>
                         @endif

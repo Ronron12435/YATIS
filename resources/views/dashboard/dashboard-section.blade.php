@@ -1,6 +1,10 @@
 <div id="dashboard" class="content-section active">
-    <h1 class="page-title"><i class="fas fa-home"></i> Dashboard</h1>
-    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+        <h1 style="font-size: 42px; color: #1f2937; margin: 0; font-weight: 700; letter-spacing: -0.5px;">Hi, {{ auth()->user()->first_name }}! 👋</h1>
+        <button id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode" style="background: #00bcd4; color: white; border: none; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; width: 44px; height: 44px; flex-shrink: 0;">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
 
     
     <!-- Discover Businesses Map Section -->

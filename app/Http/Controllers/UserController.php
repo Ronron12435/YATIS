@@ -101,6 +101,7 @@ class UserController extends Controller
 
         $users = User::where('role', 'user')->get();
         $updated = [];
+        $spreadIndex = 0;
 
         foreach ($users as $user) {
             $lat = $defaultLat;
@@ -111,10 +112,13 @@ class UserController extends Controller
                 $lat = $userCoordinates[$user->username]['lat'];
                 $lng = $userCoordinates[$user->username]['lng'];
             } else {
-                // Spread other users around the default location
-                $offset = count($updated) * 0.0015;
-                $lat = $defaultLat + $offset;
-                $lng = $defaultLng + $offset;
+                // Spread other users around Sagay City in a grid pattern
+                // Each user gets a unique offset within Sagay bounds
+                $latOffset = ($spreadIndex % 3) * 0.003;  // 3 rows
+                $lngOffset = floor($spreadIndex / 3) * 0.003;  // 3 columns
+                $lat = $defaultLat + $latOffset;
+                $lng = $defaultLng + $lngOffset;
+                $spreadIndex++;
             }
             
             $user->update([

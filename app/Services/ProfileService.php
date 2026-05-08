@@ -254,6 +254,17 @@ class ProfileService
                 ];
             }
 
+            // Get the current user to find old avatar
+            $user = $this->profileRepository->getUserById($userId);
+            
+            // Delete old avatar if it exists
+            if ($user && $user->profile_picture) {
+                $oldFilePath = public_path('uploads/' . $user->profile_picture);
+                if (file_exists($oldFilePath)) {
+                    unlink($oldFilePath);
+                }
+            }
+
             $filename = 'avatar_' . $userId . '_' . time() . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('avatars', $filename, 'public');
             
@@ -309,7 +320,7 @@ class ProfileService
             if ($user && $user->profile_picture) {
                 $debug['step_2'] = 'Deleting file';
                 $filename = $user->profile_picture;
-                $filePath = storage_path('app/public/avatars/' . $filename);
+                $filePath = public_path('uploads/avatars/' . $filename);
                 $debug['file_path'] = $filePath;
                 $debug['file_exists'] = file_exists($filePath);
                 
@@ -360,6 +371,17 @@ class ProfileService
                     'message' => 'Invalid file uploaded',
                     'data' => null,
                 ];
+            }
+
+            // Get the current user to find old cover photo
+            $user = $this->profileRepository->getUserById($userId);
+            
+            // Delete old cover photo if it exists
+            if ($user && $user->cover_photo) {
+                $oldFilePath = public_path('uploads/' . $user->cover_photo);
+                if (file_exists($oldFilePath)) {
+                    unlink($oldFilePath);
+                }
             }
 
             $filename = 'cover_' . $userId . '_' . time() . '.' . $file->getClientOriginalExtension();
@@ -416,12 +438,8 @@ class ProfileService
             
             if ($user && $user->cover_photo) {
                 $debug['step_2'] = 'Deleting file';
-                // Extract filename from stored path (e.g., "/storage/covers/filename.jpg" -> "covers/filename.jpg")
-                $coverPath = $user->cover_photo;
-                if (strpos($coverPath, '/storage/') === 0) {
-                    $coverPath = substr($coverPath, 9); // Remove "/storage/" prefix
-                }
-                $filePath = storage_path('app/public/' . $coverPath);
+                $filename = $user->cover_photo;
+                $filePath = public_path('uploads/covers/' . $filename);
                 $debug['file_path'] = $filePath;
                 $debug['file_exists'] = file_exists($filePath);
                 

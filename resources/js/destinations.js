@@ -599,7 +599,7 @@ window.viewReviews = function (destId, destName) {
                 let avatarHtml;
                 
                 if (rv.profile_picture) {
-                    avatarHtml = `<img src="/storage/${rv.profile_picture}" alt="${firstName} ${lastName}" class="review-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid #e0e0e0;">`;
+                    avatarHtml = `<img src="/uploads/${rv.profile_picture}" alt="${firstName} ${lastName}" class="review-avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:1px solid #e0e0e0;">`;
                 } else {
                     // Generate initials avatar with color
                     const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];

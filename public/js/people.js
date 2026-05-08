@@ -292,6 +292,7 @@ function loadFriendsList() {
                     </div>
                 </div>`;
             }).join('');
+
         }).catch(err => { 
             document.getElementById('friends-count').textContent = 0; 
         });

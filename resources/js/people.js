@@ -405,11 +405,11 @@ window.viewFriendProfile = function(userId) {
             
             modal.innerHTML = `
                 <div style="background:white;border-radius:12px;max-width:500px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="background:linear-gradient(135deg,#1a3a52,#2c5f8d);padding:30px;text-align:center;color:white;position:sticky;top:0;z-index:10;background-image:url('${user.cover_photo ? '/storage/' + user.cover_photo : ''}');background-size:cover;background-position:center;position:relative;min-height:200px;display:flex;flex-direction:column;justify-content:flex-end;">
+                    <div style="background:linear-gradient(135deg,#1a3a52,#2c5f8d);padding:30px;text-align:center;color:white;position:sticky;top:0;z-index:10;background-image:url('${user.cover_photo ? '/uploads/' + user.cover_photo : ''}');background-size:cover;background-position:center;position:relative;min-height:200px;display:flex;flex-direction:column;justify-content:flex-end;">
                         <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);"></div>
                         <div style="position:relative;z-index:1;display:flex;align-items:flex-end;gap:15px;">
                             <div style="width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;border:3px solid white;overflow:hidden;flex-shrink:0;">
-                                ${user.profile_picture ? `<img src="/storage/${user.profile_picture}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">` : ini}
+                                ${user.profile_picture ? `<img src="/uploads/${user.profile_picture}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;">` : ini}
                             </div>
                             <div style="text-align:left;margin-bottom:5px;">
                                 <h2 style="margin:0 0 5px 0;font-size:22px;">${user.first_name} ${user.last_name}</h2>

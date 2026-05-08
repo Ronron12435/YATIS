@@ -1,5 +1,8 @@
 <div class="sidebar">
     <div class="sidebar-header">
+        <button class="sidebar-toggle" title="Toggle Sidebar">
+            <i class="fas fa-chevron-left"></i>
+        </button>
         <div class="sidebar-logo-container" style="display: flex; align-items: center; justify-content: center; gap: 3px; width: 100%;">
             <img src="{{ asset('images/yatis-logo.png') }}" alt="YATIS Logo" style="height: 70px; width: 100px; object-fit: contain; flex-shrink: 0;">
             <div class="sidebar-logo-text">YATIS</div>
@@ -62,7 +65,8 @@
             <div class="sidebar-item" onclick="showSection('profile')">
                 <span class="sidebar-icon">
                     @if(auth()->user()->profile_picture)
-                        <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
+                        <img src="{{ asset('uploads/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: none; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
                     @else
                         <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
                     @endif
@@ -154,7 +158,8 @@
             <div class="sidebar-item" onclick="showSection('profile')">
                 <span class="sidebar-icon">
                     @if(auth()->user()->profile_picture)
-                        <img src="{{ asset('storage/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;">
+                        <img src="{{ asset('uploads/' . auth()->user()->profile_picture) }}?t={{ time() }}" alt="Profile" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: none; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
                     @else
                         <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">{{ strtoupper(substr(auth()->user()->first_name, 0, 1)) }}</div>
                     @endif
@@ -194,3 +199,4 @@
         </form>
     </div>
 </div>
+

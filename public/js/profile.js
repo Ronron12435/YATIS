@@ -398,7 +398,7 @@ window.uploadAvatar = function (input) {
                 const avatarEl = document.getElementById('profileAvatar');
                 if (res.data && res.data.profile_picture) {
                     console.log('Updating avatar with:', res.data.profile_picture);
-                    avatarEl.innerHTML = `<img src="/storage/${res.data.profile_picture}?t=${Date.now()}" alt="Avatar">`;
+                    avatarEl.innerHTML = `<img src="/uploads/${res.data.profile_picture}?t=${Date.now()}" alt="Avatar">`;
                 }
                 showModal('Success', 'Profile picture updated successfully!');
                 setTimeout(() => location.reload(), 1500);
@@ -436,7 +436,7 @@ window.uploadCover = function (input) {
             if (res.success) {
                 const coverEl = document.getElementById('profileCover');
                 if (res.data.cover_photo) {
-                    coverEl.style.backgroundImage = `url('/storage/${res.data.cover_photo}')`;
+                    coverEl.style.backgroundImage = `url('/uploads/${res.data.cover_photo}')`;
                     showModal('Success', 'Cover photo updated successfully!');
                     setTimeout(() => location.reload(), 1500);
                 }

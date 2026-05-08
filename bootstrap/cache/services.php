@@ -27,12 +27,11 @@
     23 => 'Laravel\\Pail\\PailServiceProvider',
     24 => 'Laravel\\Sail\\SailServiceProvider',
     25 => 'Laravel\\Sanctum\\SanctumServiceProvider',
-    26 => 'Laravel\\Socialite\\SocialiteServiceProvider',
-    27 => 'Carbon\\Laravel\\ServiceProvider',
-    28 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
-    29 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    30 => 'App\\Providers\\AppServiceProvider',
-    31 => 'App\\Providers\\RouteServiceProvider',
+    26 => 'Carbon\\Laravel\\ServiceProvider',
+    27 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
+    28 => 'Termwind\\Laravel\\TermwindServiceProvider',
+    29 => 'App\\Providers\\AppServiceProvider',
+    30 => 'App\\Providers\\RouteServiceProvider',
   ),
   'eager' => 
   array (
@@ -212,7 +211,6 @@
     'Illuminate\\Contracts\\Validation\\UncompromisedVerifier' => 'Illuminate\\Validation\\ValidationServiceProvider',
     'Laravel\\Sail\\Console\\InstallCommand' => 'Laravel\\Sail\\SailServiceProvider',
     'Laravel\\Sail\\Console\\PublishCommand' => 'Laravel\\Sail\\SailServiceProvider',
-    'Laravel\\Socialite\\Contracts\\Factory' => 'Laravel\\Socialite\\SocialiteServiceProvider',
   ),
   'when' => 
   array (
@@ -256,9 +254,6 @@
     array (
     ),
     'Laravel\\Sail\\SailServiceProvider' => 
-    array (
-    ),
-    'Laravel\\Socialite\\SocialiteServiceProvider' => 
     array (
     ),
   ),

@@ -53,6 +53,24 @@ Route::middleware('auth')->group(function () {
     })->name('logout');
 });
 
+// Serve storage files directly - bypass symlink permission issues on Windows
+Route::get('/storage/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($fullPath)) {
+        abort(404, 'File not found: ' . $path);
+    }
+    
+    if (!is_readable($fullPath)) {
+        abort(403, 'File not readable: ' . $path);
+    }
+    
+    // Get MIME type
+    $mimeType = mime_content_type($fullPath);
+    
+    return response()->file($fullPath, ['Content-Type' => $mimeType]);
+})->where('path', '.*')->name('storage.serve');
+
 // Temporary route to create test friendships - REMOVE AFTER TESTING
 Route::get('/setup/create-friendships', function () {
     if (!auth()->check()) {

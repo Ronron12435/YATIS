@@ -149,11 +149,9 @@ class UserRepository
 
     public function getPeopleMap(int $authId)
     {
-        // Sagay City bounds (accurate)
-        $sagayMinLat = 10.85;
-        $sagayMaxLat = 10.94;
-        $sagayMinLng = 123.38;
-        $sagayMaxLng = 123.47;
+        // Sagay City default coordinates
+        $defaultLat = 10.8967;
+        $defaultLng = 123.4253;
         
         // Get current user's location
         $authUser = User::find($authId);
@@ -166,17 +164,17 @@ class UserRepository
         \Log::info("Getting people map for user: {$authUser->username} (ID: {$authId}, Role: {$authUser->role})");
         
         // Get only normal users (role='user'), exclude admin and business accounts
-        // Show all users with coordinates (not just online)
+        // Show ALL users regardless of whether they have coordinates
         $users = User::where('id', '!=', $authId)
             ->where('role', 'user')  // Only normal users
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
             ->select('id', 'username', 'first_name', 'last_name', 'location_name', 'latitude', 'longitude', 'online_status', 'last_activity_at')
             ->get();
         
-        \Log::info("Found " . $users->count() . " normal users with coordinates (excluding admin and business)");
+        \Log::info("Found " . $users->count() . " normal users (excluding admin and business)");
         foreach ($users as $u) {
-            \Log::info("  - {$u->username} (Role: user, Status: {$u->online_status}): lat={$u->latitude}, lng={$u->longitude}");
+            $lat = $u->latitude ?? $defaultLat;
+            $lng = $u->longitude ?? $defaultLng;
+            \Log::info("  - {$u->username} (Role: user, Status: {$u->online_status}): lat={$lat}, lng={$lng}");
         }
         
         // Get all friendships for this user in one query
@@ -186,7 +184,7 @@ class UserRepository
             return $f->user_id === $authId ? $f->friend_id : $f->user_id;
         });
         
-        return $users->map(function ($user, $index) use ($authId, $friendships, $sagayMinLat, $sagayMaxLat, $sagayMinLng, $sagayMaxLng) {
+        return $users->map(function ($user, $index) use ($authId, $friendships, $defaultLat, $defaultLng) {
             $friendship = $friendships->get($user->id);
             
             $status = 'none';
@@ -200,9 +198,9 @@ class UserRepository
                 }
             }
             
-            // Use actual coordinates from database
-            $latitude = (float) ($user->latitude ?? 10.8967);
-            $longitude = (float) ($user->longitude ?? 123.4253);
+            // Use actual coordinates from database, or default to Sagay City if not set
+            $latitude = (float) ($user->latitude ?? $defaultLat);
+            $longitude = (float) ($user->longitude ?? $defaultLng);
             
             \Log::info("User {$user->username} (ID: {$user->id}): lat={$latitude}, lng={$longitude}, status={$status}");
             
