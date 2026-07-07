@@ -51,7 +51,8 @@
 </div>
 
 <style>
-.job-card { background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.1); margin-bottom:15px; }
+.job-card { background:#fff; padding:20px; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.1); margin-bottom:15px; cursor:pointer; transition:all 0.25s ease; }
+.job-card:hover { background:rgba(25, 118, 210, 0.1); box-shadow:0 2px 10px rgba(0,0,0,.15); }
 .job-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
 .job-header h4 { color:#667eea; margin:0; font-size:17px; }
 .job-meta { display:flex; flex-wrap:wrap; gap:10px; margin:10px 0; font-size:13px; color:#666; }
@@ -62,7 +63,8 @@
 .badge-accepted { background:#e8f5e9; color:#2e7d32; }
 .badge-rejected { background:#ffebee; color:#c62828; }
 .badge-reviewed { background:#e3f2fd; color:#1565c0; }
-.ma-card { background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.08); margin-bottom:20px; overflow:hidden; }
+.ma-card { background:#fff; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.08); margin-bottom:20px; overflow:hidden; cursor:pointer; transition:all 0.25s ease; }
+.ma-card:hover { background:rgba(25, 118, 210, 0.1); box-shadow:0 2px 10px rgba(0,0,0,.15); }
 .ma-card-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px 0; }
 .ma-card-header h4 { color:#1a3a52; font-size:17px; margin:0; }
 .ma-business-row { display:flex; align-items:center; gap:8px; padding:10px 20px; background:linear-gradient(135deg,#e3f2fd,#bbdefb); border-left:4px solid #2196F3; margin:10px 0 0; }
@@ -73,4 +75,43 @@
 .ma-card-footer { padding:14px 20px; }
 .badge-hired { background:#4caf50; color:#fff; padding:4px 14px; border-radius:20px; font-size:11px; font-weight:700; }
 .badge-reviewing { background:#00bcd4; color:#fff; padding:4px 14px; border-radius:20px; font-size:11px; font-weight:700; }
+
+/* Dark mode support for job cards */
+body.dark-mode #jl-apps-list > div,
+body.dark-mode #jl-jobs-list > div,
+body.dark-mode #my-jobs > div {
+    background-color: #1a1f2e !important;
+    color: #e8eaed !important;
+}
+
+body.dark-mode #jl-apps-list > div:hover,
+body.dark-mode #jl-jobs-list > div:hover,
+body.dark-mode #my-jobs > div:hover {
+    background-color: rgba(25, 118, 210, 0.15) !important;
+}
+
+body.dark-mode #jl-apps-list > div > div,
+body.dark-mode #jl-jobs-list > div > div,
+body.dark-mode #my-jobs > div > div {
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+body.dark-mode #jl-apps-list h4,
+body.dark-mode #jl-jobs-list h4,
+body.dark-mode #my-jobs h4 {
+    color: #e8eaed !important;
+}
+
+body.dark-mode #jl-apps-list p,
+body.dark-mode #jl-jobs-list p,
+body.dark-mode #my-jobs p {
+    color: #c5cad1 !important;
+}
+
+body.dark-mode #jl-apps-list span[style*="color:#7f8c8d"],
+body.dark-mode #jl-jobs-list span[style*="color:#7f8c8d"],
+body.dark-mode #my-jobs span[style*="color:#7f8c8d"] {
+    color: #9aa0a6 !important;
+}
 </style>

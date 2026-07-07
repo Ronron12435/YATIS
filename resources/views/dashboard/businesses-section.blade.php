@@ -19,7 +19,7 @@
     <div class="card">
         <div id="businesses-map-container" style="width: 100%; height: 500px; border-radius: 8px; overflow: hidden; border: 2px solid #00bcd4; margin: 15px 0; position: relative;"></div>
         
-        <div style="display: flex; gap: 20px; margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px;">
+        <div class="business-legend" style="display: flex; gap: 20px; margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; transition: background 0.3s, color 0.3s;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <div style="width: 16px; height: 16px; background: #ffd700; border-radius: 50%;"></div>
                 <span style="font-size: 13px; color: #666;">Food Business</span>
@@ -33,6 +33,16 @@
                 <span style="font-size: 13px; color: #666;">Services Business</span>
             </div>
         </div>
+
+        <style>
+            body.dark-mode .business-legend {
+                background: #2a2a2a !important;
+            }
+            
+            body.dark-mode .business-legend span {
+                color: #e0e0e0 !important;
+            }
+        </style>
     </div>
 
     <div class="stats">
@@ -73,17 +83,27 @@ window.resetBusinessFilter = function() {
     // Reset sidebar filter UI
     document.querySelectorAll('.business-filter-item').forEach(el => {
         el.style.background = '';
+        el.style.color = '';
     });
 };
 
 window.updateFilterUI = function(element) {
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    
     // Remove highlight from all filter items
     document.querySelectorAll('.business-filter-item').forEach(el => {
         el.style.background = '';
+        el.style.color = '';
     });
     
-    // Highlight the clicked filter item
-    element.style.background = '#e3f2fd';
+    // Highlight the clicked filter item with dark mode support
+    if (isDarkMode) {
+        element.style.background = 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)';
+        element.style.color = '#ffffff';
+    } else {
+        element.style.background = '#e3f2fd';
+        element.style.color = '';
+    }
 };
 
 window.initBusinessesMap = function() {

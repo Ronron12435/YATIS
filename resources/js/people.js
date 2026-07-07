@@ -31,43 +31,18 @@ window.initPeopleMap = function() {
         peopleMap.invalidateSize(true);
     });
 
-    // Update user location in background without showing marker
-    function updateMyLocation(lat, lng) {
-        fetch('/api/profile/update-location', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ latitude: lat, longitude: lng })
-        });
-    }
-
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            pos => updateMyLocation(pos.coords.latitude, pos.coords.longitude),
-            () => {
-                const userLat = document.querySelector('meta[name="user-latitude"]')?.content;
-                const userLng = document.querySelector('meta[name="user-longitude"]')?.content;
-                if (userLat && userLng) {
-                    updateMyLocation(parseFloat(userLat), parseFloat(userLng));
-                } else {
-                    fetch('https://ipapi.co/json/').then(r => r.json()).then(d => { if(d.latitude) updateMyLocation(d.latitude, d.longitude); }).catch(()=>{});
-                }
-            },
+            pos => {},
+            () => {},
             { enableHighAccuracy: true, timeout: 8000 }
         );
-    } else {
-        const userLat = document.querySelector('meta[name="user-latitude"]')?.content;
-        const userLng = document.querySelector('meta[name="user-longitude"]')?.content;
-        if (userLat && userLng) {
-            updateMyLocation(parseFloat(userLat), parseFloat(userLng));
-        }
     }
 
     // Delay loading markers to ensure map is ready
     setTimeout(() => {
         loadPeopleMarkers();
     }, 1000);
-    
     loadFriendsList();
     loadFriendRequests();
 };

@@ -9,12 +9,11 @@ const JobsModule = (() => {
 
     const init = () => {
         getUserRole();
-        loadMyApplications();
+        setupEventListeners();
         setTimeout(() => {
             if (document.getElementById('jobs-list')) loadJobs();
             if (document.getElementById('my-jobs-list')) loadMyJobs();
         }, 100);
-        setupEventListeners();
     };
 
     const setupEventListeners = () => {
@@ -39,7 +38,6 @@ const JobsModule = (() => {
                 return r.json();
             })
             .then(response => {
-                // Handle paginated response: { data: { data: [...], ... } } or { data: [...] }
                 let jobs = [];
                 if (response.data && response.data.data && Array.isArray(response.data.data)) {
                     jobs = response.data.data;
@@ -61,52 +59,46 @@ const JobsModule = (() => {
         if (!jobsList) return;
 
         if (!jobs || jobs.length === 0) {
-            jobsList.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No jobs available</p>';
+            jobsList.innerHTML = '<div style="text-align:center; padding:60px 20px; color:#999;"><i style="font-size:48px; color:#ddd; display:block; margin-bottom:16px;" class="fas fa-briefcase"></i><p style="margin:0; font-size:14px;">No jobs available</p></div>';
             return;
         }
 
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const cardBg = isDarkMode ? '#1a1f2e' : 'white';
+        const textPrimary = isDarkMode ? '#e8eaed' : '#1a3a52';
+        const textSecondary = isDarkMode ? '#9aa0a6' : '#7f8c8d';
+        const textTertiary = isDarkMode ? '#c5cad1' : '#666';
+
         jobsList.innerHTML = jobs.map(job => {
-            const postedDate = new Date(job.created_at).toLocaleDateString();
+            const postedDate = new Date(job.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
             const isExpired = job.deadline && new Date(job.deadline) < new Date();
-            const statusBadge = isExpired
-                ? '<span style="background:#e74c3c; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Expired</span>'
-                : job.status === 'open' 
-                ? '<span style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Open</span>'
-                : '<span style="background:#95a5a6; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Closed</span>';
+            const statusLabel = isExpired ? 'Expired' : (job.status === 'open' ? 'Open' : 'Closed');
+            const statusColor = isExpired ? '#e74c3c' : (job.status === 'open' ? '#27ae60' : '#95a5a6');
+            const statusBg = isDarkMode 
+                ? (isExpired ? 'rgba(231, 76, 60, 0.15)' : (job.status === 'open' ? 'rgba(39, 174, 96, 0.15)' : 'rgba(149, 165, 166, 0.15)'))
+                : (isExpired ? '#ffebee' : (job.status === 'open' ? '#e8f5e9' : '#eceff1'));
 
             return `
-                <div style="border:1px solid #ddd; border-radius:8px; padding:15px; background:white; transition:box-shadow 0.2s;">
-                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
-                        <div>
-                            <h4 style="margin:0 0 5px 0; color:#333;">${escapeHtml(job.title)}</h4>
-                            <p style="margin:0; color:#666; font-size:14px;">
-                                <i class="fas fa-map-marker-alt"></i> ${escapeHtml(job.location)}
+                <div style="background:${cardBg}; border-radius:8px; padding:20px; margin-bottom:16px; border-left:5px solid ${statusColor}; box-shadow:0 2px 8px rgba(0,0,0,${isDarkMode ? '0.3' : '0.08'}); transition:all 0.3s ease;">
+                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
+                        <div style="flex:1;">
+                            <h4 style="margin:0 0 6px 0; color:${textPrimary}; font-size:15px; font-weight:700;">${escapeHtml(job.title)}</h4>
+                            <p style="margin:0; color:${textSecondary}; font-size:13px;">
+                                <i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>${escapeHtml(job.location)}
                             </p>
                         </div>
-                        <div>${statusBadge}</div>
+                        <span style="background:${statusBg}; color:${statusColor}; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; white-space:nowrap; flex-shrink:0; margin-left:12px;">${statusLabel}</span>
                     </div>
-
-                    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin:10px 0; font-size:13px;">
-                        <div>
-                            <span style="color:#999;">Type:</span>
-                            <div style="color:#333; font-weight:600;">${escapeHtml(job.job_type)}</div>
-                        </div>
-                        <div>
-                            <span style="color:#999;">Salary:</span>
-                            <div style="color:#333; font-weight:600;">${job.salary_range ? escapeHtml(job.salary_range) : 'Not specified'}</div>
-                        </div>
-                        <div>
-                            <span style="color:#999;">Posted:</span>
-                            <div style="color:#333; font-weight:600;">${postedDate}</div>
-                        </div>
+                    <div style="display:flex; gap:20px; margin:14px 0; font-size:13px; flex-wrap:wrap;">
+                        <span style="color:${textTertiary};"><strong style="color:${textPrimary};">Type:</strong> ${escapeHtml(job.job_type)}</span>
+                        <span style="color:${textTertiary};"><strong style="color:${textPrimary};">Salary:</strong> ${job.salary_range ? escapeHtml(job.salary_range) : 'Not specified'}</span>
+                        <span style="color:${textSecondary};"><i class="fas fa-clock" style="margin-right:4px;"></i>${postedDate}</span>
                     </div>
-
-                    <p style="margin:10px 0; color:#555; font-size:14px; line-height:1.5;">
+                    <p style="margin:12px 0; color:${textTertiary}; font-size:13px; line-height:1.6;">
                         ${escapeHtml(job.description).substring(0, 150)}${job.description.length > 150 ? '...' : ''}
                     </p>
-
-                    <button onclick="JobsModule.viewJobDetails(${job.id})" style="width:100%; padding:10px 12px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
-                        <i class="fas fa-eye"></i> View Details
+                    <button onclick="JobsModule.viewJobDetails(${job.id})" style="width:100%; padding:10px 16px; background:linear-gradient(135deg, #3498db 0%, #2980b9 100%); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:13px; transition:all 0.2s ease; margin-top:8px;">
+                        View Details
                     </button>
                 </div>
             `;
@@ -130,10 +122,8 @@ const JobsModule = (() => {
     const viewJobDetails = (jobId) => {
         currentJobId = jobId;
         
-        // First try to find in allJobs array
         let job = allJobs.find(j => j.id === jobId);
         
-        // If not found, fetch it directly
         if (!job) {
             fetch(`/api/jobs/${jobId}`, { credentials: 'include' })
                 .then(r => {
@@ -144,7 +134,6 @@ const JobsModule = (() => {
                     job = response.data;
                     if (job) {
                         populateJobDetails(job);
-                        // Ensure applications are loaded before checking
                         if (myApplications.length === 0) {
                             loadMyApplications().then(() => {
                                 checkAndUpdateApplyButton(jobId);
@@ -161,7 +150,6 @@ const JobsModule = (() => {
         }
 
         populateJobDetails(job);
-        // Ensure applications are loaded before checking
         if (myApplications.length === 0) {
             loadMyApplications().then(() => {
                 checkAndUpdateApplyButton(jobId);
@@ -285,44 +273,58 @@ const JobsModule = (() => {
     };
 
     const renderMyApplications = (applications) => {
-        const appsList = document.getElementById('my-applications');
+        const appsList = document.getElementById('jl-apps-list');
         if (!appsList) return;
 
-        // Store applications for duplicate check
         myApplications = applications;
 
         if (!applications || applications.length === 0) {
-            appsList.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">You haven\'t applied to any jobs yet</p>';
+            appsList.innerHTML = '<div style="text-align:center; padding:60px 20px; color:#999;"><i style="font-size:48px; color:#ddd; display:block; margin-bottom:16px;" class="fas fa-file-alt"></i><p style="margin:0; font-size:14px;">You haven\'t applied to any jobs yet</p></div>';
             return;
         }
 
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const cardBg = isDarkMode ? '#1a1f2e' : 'white';
+        const textPrimary = isDarkMode ? '#e8eaed' : '#1a3a52';
+        const textSecondary = isDarkMode ? '#9aa0a6' : '#7f8c8d';
+        const textTertiary = isDarkMode ? '#c5cad1' : '#666';
+
         appsList.innerHTML = applications.map(app => {
-            const statusColors = {
-                'pending': '#f39c12',
-                'reviewed': '#3498db',
-                'accepted': '#27ae60',
-                'rejected': '#e74c3c'
+            const appStatus = app.app_status || app.status || 'pending';
+            const appliedDate = new Date(app.applied_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            const interviewDate = app.interview_date ? new Date(app.interview_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : null;
+            
+            const statusConfig = {
+                'pending': { color: '#f39c12', bg: isDarkMode ? 'rgba(243, 156, 18, 0.15)' : '#fffbf0', icon: 'hourglass-half' },
+                'reviewed': { color: '#3498db', bg: isDarkMode ? 'rgba(52, 152, 219, 0.15)' : '#eff7ff', icon: 'eye' },
+                'accepted': { color: '#27ae60', bg: isDarkMode ? 'rgba(39, 174, 96, 0.15)' : '#f0fdf4', icon: 'check-circle' },
+                'rejected': { color: '#e74c3c', bg: isDarkMode ? 'rgba(231, 76, 60, 0.15)' : '#fef2f2', icon: 'times-circle' }
             };
-            const statusColor = statusColors[app.app_status || app.status] || '#95a5a6';
-            const appliedDate = new Date(app.applied_at).toLocaleDateString();
-            const status = (app.app_status || app.status || 'pending').charAt(0).toUpperCase() + (app.app_status || app.status || 'pending').slice(1);
+            const status = statusConfig[appStatus] || { color: '#95a5a6', bg: isDarkMode ? 'rgba(149, 165, 166, 0.15)' : '#f5f5f5', icon: 'circle' };
 
             return `
-                <div style="border:1px solid #ddd; border-radius:8px; padding:15px; background:white;">
-                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
-                        <div>
-                            <h4 style="margin:0 0 5px 0; color:#333;">${escapeHtml(app.job_title || 'Job')}</h4>
-                            <p style="margin:0; color:#666; font-size:14px;">Applied on ${appliedDate}</p>
+                <div style="background:${cardBg}; border-radius:8px; overflow:hidden; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,${isDarkMode ? '0.3' : '0.08'}); border-left:5px solid ${status.color}; transition:all 0.3s ease;">
+                    <div style="display:flex; justify-content:space-between; align-items:start; padding:16px 20px; background:${status.bg}; border-bottom:1px solid rgba(0,0,0,${isDarkMode ? '0.2' : '0.05'});">
+                        <div style="flex:1;">
+                            <h4 style="margin:0 0 4px 0; color:${textPrimary}; font-size:15px; font-weight:700;">${escapeHtml(app.job_title || 'Job Position')}</h4>
+                            <p style="margin:0; color:${textSecondary}; font-size:12px;">
+                                <i class="fas fa-calendar-alt" style="margin-right:4px;"></i>Applied on ${appliedDate}
+                            </p>
                         </div>
-                        <span style="background:${statusColor}; color:white; padding:6px 12px; border-radius:4px; font-size:12px; font-weight:600;">
-                            ${status}
+                        <span style="background:${status.color}; color:white; padding:6px 14px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; flex-shrink:0; margin-left:12px;">
+                            <i class="fas fa-${status.icon}" style="margin-right:4px;"></i>${appStatus.charAt(0).toUpperCase() + appStatus.slice(1)}
                         </span>
                     </div>
-                    ${app.interview_date ? `
-                        <p style="margin:10px 0; color:#27ae60; font-size:14px;">
-                            <i class="fas fa-calendar"></i> Interview scheduled: ${new Date(app.interview_date).toLocaleDateString()}
+                    <div style="padding:14px 20px;">
+                        <p style="margin:0 0 10px 0; color:${textTertiary}; font-size:13px;">
+                            <i class="fas fa-map-marker-alt" style="margin-right:6px; color:${textSecondary};"></i>${escapeHtml(app.location || 'Location')}
                         </p>
-                    ` : ''}
+                        ${interviewDate ? `
+                            <div style="background:${isDarkMode ? 'rgba(33, 150, 243, 0.2)' : '#e3f2fd'}; border-left:3px solid #2196F3; padding:10px 12px; border-radius:4px; font-size:13px; color:${isDarkMode ? '#64b5f6' : '#1565c0'}; font-weight:600;">
+                                <i class="fas fa-calendar-check" style="margin-right:6px;"></i>Interview scheduled: ${interviewDate}
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
             `;
         }).join('');
@@ -351,33 +353,39 @@ const JobsModule = (() => {
 
     const renderMyJobs = (jobs) => {
         const myJobsList = document.getElementById('my-jobs');
+        if (!myJobsList) return;
+
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        const cardBg = isDarkMode ? '#1a1f2e' : 'white';
+        const textPrimary = isDarkMode ? '#e8eaed' : '#1a3a52';
+        const textSecondary = isDarkMode ? '#9aa0a6' : '#7f8c8d';
 
         myJobsList.innerHTML = jobs.map(job => {
             const applicationsCount = job.applications_count || 0;
             const isExpired = job.deadline && new Date(job.deadline) < new Date();
-            const statusBadge = isExpired
-                ? '<span style="background:#e74c3c; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Expired</span>'
-                : job.status === 'open' 
-                ? '<span style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Open</span>'
-                : '<span style="background:#95a5a6; color:white; padding:4px 8px; border-radius:4px; font-size:12px;">Closed</span>';
+            const statusLabel = isExpired ? 'Expired' : (job.status === 'open' ? 'Open' : 'Closed');
+            const statusColor = isExpired ? '#e74c3c' : (job.status === 'open' ? '#27ae60' : '#95a5a6');
+            const statusBg = isDarkMode 
+                ? (isExpired ? 'rgba(231, 76, 60, 0.15)' : (job.status === 'open' ? 'rgba(39, 174, 96, 0.15)' : 'rgba(149, 165, 166, 0.15)'))
+                : (isExpired ? '#ffebee' : (job.status === 'open' ? '#e8f5e9' : '#eceff1'));
 
             return `
-                <div style="border:1px solid #ddd; border-radius:8px; padding:15px; background:white;">
-                    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
-                        <div>
-                            <h4 style="margin:0 0 5px 0; color:#333;">${escapeHtml(job.title)}</h4>
-                            <p style="margin:0; color:#666; font-size:14px;">
-                                <i class="fas fa-map-marker-alt"></i> ${escapeHtml(job.location)}
+                <div style="background:${cardBg}; border-radius:8px; overflow:hidden; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,${isDarkMode ? '0.3' : '0.08'}); border-left:5px solid ${statusColor};">
+                    <div style="display:flex; justify-content:space-between; align-items:start; padding:16px 20px; background:${statusBg}; border-bottom:1px solid rgba(0,0,0,${isDarkMode ? '0.2' : '0.05'});">
+                        <div style="flex:1;">
+                            <h4 style="margin:0 0 4px 0; color:${textPrimary}; font-size:15px; font-weight:700;">${escapeHtml(job.title)}</h4>
+                            <p style="margin:0; color:${textSecondary}; font-size:12px;">
+                                <i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>${escapeHtml(job.location)}
                             </p>
                         </div>
-                        <div>${statusBadge}</div>
+                        <span style="background:${statusColor}; color:white; padding:6px 14px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; flex-shrink:0; margin-left:12px;">${statusLabel}</span>
                     </div>
-                    <div style="display:flex; gap:10px; margin-top:12px;">
-                        <button onclick="JobsModule.toggleJobStatus(${job.id})" style="flex:1; padding:8px 12px; background:#f39c12; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
-                            <i class="fas fa-toggle-${job.status === 'open' ? 'on' : 'off'}"></i> ${job.status === 'open' ? 'Close' : 'Open'}
+                    <div style="padding:14px 20px; display:flex; gap:10px;">
+                        <button onclick="JobsModule.toggleJobStatus(${job.id})" style="flex:1; padding:8px 12px; background:linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; transition:all 0.2s ease;">
+                            ${job.status === 'open' ? '<i class="fas fa-lock"></i> Close Job' : '<i class="fas fa-unlock"></i> Reopen'}
                         </button>
-                        <button onclick="JobsModule.viewApplications(${job.id})" style="flex:1; padding:8px 12px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">
-                            <i class="fas fa-file-alt"></i> View Applications (${applicationsCount})
+                        <button onclick="JobsModule.viewApplications(${job.id})" style="flex:1; padding:8px 12px; background:linear-gradient(135deg, #3498db 0%, #2980b9 100%); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:12px; transition:all 0.2s ease;">
+                            <i class="fas fa-file-alt"></i> ${applicationsCount === 1 ? '1 App' : applicationsCount + ' Apps'}
                         </button>
                     </div>
                 </div>
@@ -457,7 +465,8 @@ const JobsModule = (() => {
         openApplyModal,
         closeModals,
         toggleJobStatus,
-        viewApplications
+        viewApplications,
+        loadMyApplications
     };
 })();
 
@@ -467,3 +476,7 @@ if (document.readyState === 'loading') {
 } else {
     JobsModule.init();
 }
+
+// Expose loadMyApplications globally for dashboard.blade.php
+// Simply delegates to the module's internal loadMyApplications function
+window.loadMyApplications = () => JobsModule.loadMyApplications ? JobsModule.loadMyApplications() : Promise.resolve([]);

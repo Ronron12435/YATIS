@@ -11,7 +11,6 @@ window.initProfileSection = function () {
     loadPosts();
     setupCharCounters();
     storeOriginalFormValues();
-    loadCurrentLocation();
 };
 
 function storeOriginalFormValues() {
@@ -629,255 +628,6 @@ window.closeModal = function () {
     if (overlay) overlay.remove();
 };
 
-// ── Location Update ──────────────────────────────────────────────────────────
-
-function loadCurrentLocation() {
-    console.log('📍 Loading current location...');
-    
-    fetch('/api/user/location', {
-        credentials: 'include',
-        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    })
-        .then(r => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json();
-        })
-        .then(res => {
-            console.log('✅ Location response:', res);
-            
-            const latInput = document.getElementById('locationLatitude');
-            const lngInput = document.getElementById('locationLongitude');
-            const displayEl = document.getElementById('currentLocationDisplay');
-            
-            if (res.data && res.data.latitude && res.data.longitude) {
-                const lat = parseFloat(res.data.latitude);
-                const lng = parseFloat(res.data.longitude);
-                
-                console.log('📌 Current location:', lat, lng);
-                
-                if (latInput) latInput.value = lat;
-                if (lngInput) lngInput.value = lng;
-                
-                if (displayEl) {
-                    displayEl.innerHTML = `
-                        <div style="font-weight: 600; color: #1a3a52; margin-bottom: 4px;">📍 Latitude: ${lat.toFixed(4)}</div>
-                        <div style="font-weight: 600; color: #1a3a52;">📍 Longitude: ${lng.toFixed(4)}</div>
-                        <div style="font-size: 11px; color: #999; margin-top: 6px;">Last updated: ${res.data.location_updated_at ? new Date(res.data.location_updated_at).toLocaleString() : 'Never'}</div>
-                    `;
-                }
-            } else {
-                console.log('⚠️ No location data found');
-                if (displayEl) {
-                    displayEl.innerHTML = '<div style="color: #999;">No location set yet. Enable GPS or enter coordinates manually.</div>';
-                }
-            }
-        })
-        .catch(err => {
-            console.error('❌ Error loading location:', err);
-            const displayEl = document.getElementById('currentLocationDisplay');
-            if (displayEl) {
-                displayEl.innerHTML = '<div style="color: #e74c3c;">Error loading location</div>';
-            }
-        });
-}
-
-window.enableLocationGPS = function () {
-    console.log('📍 Enabling GPS location...');
-    
-    const latInput = document.getElementById('locationLatitude');
-    const lngInput = document.getElementById('locationLongitude');
-    const msgEl = document.getElementById('locationMessage');
-    
-    msgEl.innerHTML = '<div class="message" style="background: #e3f2fd; color: #1976d2; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;">⏳ Requesting GPS location...</div>';
-    
-    if (!navigator.geolocation) {
-        console.warn('⚠️ Geolocation not supported');
-        msgEl.innerHTML = '<div class="message error">Geolocation is not supported by your browser. Please enter coordinates manually.</div>';
-        return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            
-            console.log('✅ GPS location obtained:', lat, lng);
-            
-            if (latInput) latInput.value = lat.toFixed(4);
-            if (lngInput) lngInput.value = lng.toFixed(4);
-            
-            msgEl.innerHTML = '<div class="message success">✅ GPS location captured! Click "Save Location" to update.</div>';
-            setTimeout(() => msgEl.innerHTML = '', 3000);
-        },
-        (error) => {
-            console.warn('⚠️ Geolocation error:', error.code, error.message);
-            msgEl.innerHTML = '<div class="message error">⚠️ GPS access denied or timed out. Using IP-based location fallback...</div>';
-            
-            fetch('https://ipapi.co/json/')
-                .then(r => r.json())
-                .then(data => {
-                    if (data.latitude && data.longitude) {
-                        const lat = parseFloat(data.latitude);
-                        const lng = parseFloat(data.longitude);
-                        
-                        console.log('✅ IP-based location:', lat, lng);
-                        
-                        if (latInput) latInput.value = lat.toFixed(4);
-                        if (lngInput) lngInput.value = lng.toFixed(4);
-                        
-                        msgEl.innerHTML = '<div class="message success">✅ IP-based location captured! Click "Save Location" to update.</div>';
-                        setTimeout(() => msgEl.innerHTML = '', 3000);
-                    }
-                })
-                .catch(() => {
-                    msgEl.innerHTML = '<div class="message error">❌ Could not determine location. Please enter coordinates manually.</div>';
-                });
-        }
-    );
-};
-
-window.searchAddress = function (query) {
-    console.log('🔍 Searching address in Sagay City:', query);
-    
-    const suggestionsEl = document.getElementById('addressSuggestions');
-    
-    if (!query || query.length < 2) {
-        suggestionsEl.style.display = 'none';
-        return;
-    }
-    
-    const searchQuery = `${query}, Sagay City, Negros Occidental, Philippines`;
-    
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=10&viewbox=123.38,10.94,123.47,10.85&bounded=1`)
-        .then(r => r.json())
-        .then(results => {
-            console.log('✅ Search results from Sagay City:', results);
-            
-            const sagayMinLat = 10.85;
-            const sagayMaxLat = 10.94;
-            const sagayMinLng = 123.38;
-            const sagayMaxLng = 123.47;
-            
-            const filteredResults = results.filter(result => {
-                const lat = parseFloat(result.lat);
-                const lng = parseFloat(result.lon);
-                const inBounds = lat >= sagayMinLat && lat <= sagayMaxLat && lng >= sagayMinLng && lng <= sagayMaxLng;
-                return inBounds;
-            });
-            
-            if (!filteredResults.length) {
-                suggestionsEl.innerHTML = '<div style="padding: 12px; color: #999; text-align: center;">No results found in Sagay City.</div>';
-                suggestionsEl.style.display = 'block';
-                return;
-            }
-            
-            suggestionsEl.innerHTML = filteredResults.map(result => `
-                <div onclick="selectAddress('${result.display_name}', ${result.lat}, ${result.lon})" style="padding: 12px 14px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.2s;">
-                    <div style="font-weight: 600; color: #1a3a52; font-size: 13px;">${result.display_name}</div>
-                    <div style="font-size: 11px; color: #999; margin-top: 2px;">Lat: ${parseFloat(result.lat).toFixed(4)}, Lng: ${parseFloat(result.lon).toFixed(4)}</div>
-                </div>
-            `).join('');
-            
-            suggestionsEl.style.display = 'block';
-            
-            suggestionsEl.querySelectorAll('div[onclick]').forEach(el => {
-                el.addEventListener('mouseover', () => el.style.background = '#f5f5f5');
-                el.addEventListener('mouseout', () => el.style.background = 'transparent');
-            });
-        })
-        .catch(err => {
-            console.error('❌ Search error:', err);
-            suggestionsEl.innerHTML = '<div style="padding: 12px; color: #e74c3c; text-align: center;">Search error. Please try again.</div>';
-            suggestionsEl.style.display = 'block';
-        });
-};
-
-window.selectAddress = function (address, lat, lng) {
-    console.log('✅ Selected address:', address, lat, lng);
-    
-    const addressInput = document.getElementById('locationAddress');
-    const latInput = document.getElementById('locationLatitude');
-    const lngInput = document.getElementById('locationLongitude');
-    const suggestionsEl = document.getElementById('addressSuggestions');
-    
-    if (addressInput) addressInput.value = address;
-    if (latInput) latInput.value = parseFloat(lat).toFixed(4);
-    if (lngInput) lngInput.value = parseFloat(lng).toFixed(4);
-    
-    suggestionsEl.style.display = 'none';
-    
-    const msgEl = document.getElementById('locationMessage');
-    msgEl.innerHTML = '<div class="message success">✅ Address selected! Click "Save Location" to update.</div>';
-    setTimeout(() => msgEl.innerHTML = '', 3000);
-};
-
-window.updateLocationSubmit = function (e) {
-    e.preventDefault();
-    
-    console.log('💾 Submitting location update...');
-    
-    const msgEl = document.getElementById('locationMessage');
-    msgEl.innerHTML = '';
-    
-    const latitude = parseFloat(document.getElementById('locationLatitude').value);
-    const longitude = parseFloat(document.getElementById('locationLongitude').value);
-    
-    if (isNaN(latitude) || isNaN(longitude)) {
-        console.error('❌ Invalid coordinates');
-        msgEl.innerHTML = '<div class="message error">Please search for an address or enable GPS to get coordinates.</div>';
-        return;
-    }
-    
-    if (latitude < -90 || latitude > 90) {
-        console.error('❌ Latitude out of range');
-        msgEl.innerHTML = '<div class="message error">Latitude must be between -90 and 90.</div>';
-        return;
-    }
-    
-    if (longitude < -180 || longitude > 180) {
-        console.error('❌ Longitude out of range');
-        msgEl.innerHTML = '<div class="message error">Longitude must be between -180 and 180.</div>';
-        return;
-    }
-    
-    const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg> Saving...';
-
-    fetch('/api/user/location', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-            latitude: latitude,
-            longitude: longitude,
-        }),
-    })
-        .then(r => r.json())
-        .then(res => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            if (res.success) {
-                msgEl.innerHTML = '<div class="message success">✅ Location updated successfully!</div>';
-                loadCurrentLocation();
-                setTimeout(() => msgEl.innerHTML = '', 3000);
-            } else {
-                msgEl.innerHTML = `<div class="message error">${res.message || 'Failed to update location'}</div>`;
-            }
-        })
-        .catch(() => {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            msgEl.innerHTML = '<div class="message error">❌ Network error. Please try again.</div>';
-        });
-};
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function setEl(id, val) {
@@ -896,6 +646,163 @@ function formatDate(dateStr) {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
+
+// ── Confirm Modal ─────────────────────────────────────────────────────────────
+
+function confirmModal(message, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;';
+
+    overlay.innerHTML = `
+        <div style="background:#1f2937;border-radius:14px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid #374151;text-align:center;">
+            <div style="font-size:36px;margin-bottom:14px;">🗑️</div>
+            <p style="color:#e5e7eb;font-size:15px;margin:0 0 24px;line-height:1.6;">${message}</p>
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button id="confirm-cancel-btn" style="padding:10px 24px;border-radius:8px;border:1px solid #4b5563;background:transparent;color:#9ca3af;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;">Cancel</button>
+                <button id="confirm-ok-btn" style="padding:10px 24px;border-radius:8px;border:none;background:#e74c3c;color:white;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;">Remove</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#confirm-ok-btn').addEventListener('click', () => {
+        overlay.remove();
+        onConfirm();
+    });
+
+    overlay.querySelector('#confirm-cancel-btn').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ── Avatar Menu ───────────────────────────────────────────────────────────────
+
+window.toggleAvatarMenu = function (event) {
+    event.stopPropagation();
+    const menu = document.getElementById('avatarMenu');
+    if (!menu) return;
+
+    if (menu.style.display === 'none' || !menu.style.display) {
+        const btn = event.currentTarget;
+        const rect = btn.getBoundingClientRect();
+        menu.style.display = 'block';
+        menu.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+        menu.style.left = (rect.left + window.scrollX - 120) + 'px';
+    } else {
+        menu.style.display = 'none';
+    }
+};
+
+window.closeAvatarMenu = function () {
+    const menu = document.getElementById('avatarMenu');
+    if (menu) menu.style.display = 'none';
+};
+
+document.addEventListener('click', function () {
+    window.closeAvatarMenu();
+});
+
+window.viewProfilePictureModal = function () {
+    const img = document.querySelector('#profileAvatar img');
+    if (!img) return;
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+    overlay.innerHTML = `<img src="${img.src}" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">`;
+    overlay.addEventListener('click', () => overlay.remove());
+    document.body.appendChild(overlay);
+};
+
+// ── Photo Upload ──────────────────────────────────────────────────────────────
+
+window.uploadAvatar = function (input) {
+    if (!input.files || !input.files[0]) return;
+    const formData = new FormData();
+    formData.append('avatar', input.files[0]);
+
+    fetch('/api/profile/avatar', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+        body: formData,
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                location.reload();
+            } else {
+                alert(res.message || 'Failed to upload avatar.');
+            }
+        })
+        .catch(() => alert('Failed to upload avatar.'));
+};
+
+window.uploadCover = function (input) {
+    if (!input.files || !input.files[0]) return;
+    const formData = new FormData();
+    formData.append('cover', input.files[0]);
+
+    fetch('/api/profile/cover', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+        body: formData,
+    })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                location.reload();
+            } else {
+                alert(res.message || 'Failed to upload cover photo.');
+            }
+        })
+        .catch(() => alert('Failed to upload cover photo.'));
+};
+
+// ── Photo Delete ──────────────────────────────────────────────────────────────
+
+window.removeProfilePicture = function () {
+    confirmModal('Remove your profile picture?', () => {
+        fetch('/api/profile/avatar', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    location.reload();
+                } else {
+                    alert(res.message || 'Failed to remove profile picture.');
+                }
+            })
+            .catch(() => alert('Failed to remove profile picture.'));
+    });
+};
+
+window.deleteCover = function () {
+    confirmModal('Remove your cover photo?', () => {
+        fetch('/api/profile/cover', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    location.reload();
+                } else {
+                    alert(res.message || 'Failed to remove cover photo.');
+                }
+            })
+            .catch(() => alert('Failed to remove cover photo.'));
+    });
+};
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 

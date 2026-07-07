@@ -39,14 +39,32 @@ class JobRepository
 
     public function findById(int $id): ?object
     {
-        $query = DB::table('job_postings as jp')
-            ->leftJoin('users as u', 'u.id', '=', 'jp.employer_id')
-            ->leftJoin('businesses as b', 'b.id', '=', 'jp.business_id')
-            ->select('jp.*', 'u.username as employer_name', 'b.name as business_name', 'b.category as business_type')
-            ->where('jp.id', $id)
-            ->where('jp.status', '=', 'open');
-        
-        return $query->first();
+        $job = JobPosting::with(['employer', 'business'])
+            ->where('status', 'open')
+            ->find($id);
+
+        if (!$job) {
+            return null;
+        }
+
+        return (object) [
+            'id' => $job->id,
+            'employer_id' => $job->employer_id,
+            'business_id' => $job->business_id,
+            'title' => $job->title,
+            'description' => $job->description,
+            'requirements' => $job->requirements,
+            'job_type' => $job->job_type,
+            'salary_range' => $job->salary_range,
+            'location' => $job->location,
+            'status' => $job->status,
+            'deadline' => $job->deadline,
+            'created_at' => $job->created_at,
+            'updated_at' => $job->updated_at,
+            'employer_name' => $job->employer?->username,
+            'business_name' => $job->business?->name,
+            'business_type' => $job->business?->category,
+        ];
     }
 
     public function findRawById(int $id): ?object
@@ -56,24 +74,23 @@ class JobRepository
 
     public function create(array $data): int
     {
-        return DB::table('job_postings')->insertGetId($data);
+        return JobPosting::create($data)->id;
     }
 
     public function update(int $id, array $data): void
     {
-        DB::table('job_postings')->where('id', $id)->update($data);
+        JobPosting::find($id)?->update($data);
     }
 
     public function delete(int $id): void
     {
-        DB::table('job_postings')->where('id', $id)->delete();
+        JobPosting::destroy($id);
     }
 
     public function getByBusiness(int $businessId)
     {
-        return DB::table('job_postings')
-            ->where('business_id', $businessId)
-            ->where('status', '=', 'open')
+        return JobPosting::where('business_id', $businessId)
+            ->where('status', 'open')
             ->select('id', 'title', 'job_type', 'salary_range', 'location', 'status', 'created_at')
             ->orderByDesc('created_at')
             ->get();
@@ -81,21 +98,25 @@ class JobRepository
 
     public function getByEmployer(int $employerId)
     {
-        return DB::table('job_postings as jp')
-            ->leftJoin('businesses as b', 'b.id', '=', 'jp.business_id')
-            ->where('jp.employer_id', $employerId)
-            ->select([
-                'jp.id', 'jp.title', 'jp.location', 'jp.created_at', 'jp.job_type',
-                'jp.salary_range', 'jp.status', 'b.name as business_name'
-            ])
-            ->orderByDesc('jp.created_at')
+        return JobPosting::with('business')
+            ->withCount(['applications' => function ($query) {
+                $query->where('status', 'pending');
+            }])
+            ->where('employer_id', $employerId)
+            ->orderByDesc('created_at')
             ->get()
             ->map(function ($job) {
-                $job->applications_count = DB::table('job_applications')
-                    ->where('job_posting_id', $job->id)
-                    ->where('status', 'pending')
-                    ->count();
-                return $job;
+                return (object) [
+                    'id' => $job->id,
+                    'title' => $job->title,
+                    'location' => $job->location,
+                    'created_at' => $job->created_at,
+                    'job_type' => $job->job_type,
+                    'salary_range' => $job->salary_range,
+                    'status' => $job->status,
+                    'business_name' => $job->business?->name,
+                    'applications_count' => $job->applications_count,
+                ];
             });
     }
 
@@ -111,67 +132,74 @@ class JobRepository
 
     public function findApplicationById(int $id): ?object
     {
-        return DB::table('job_applications as ja')
-            ->join('job_postings as jp', 'jp.id', '=', 'ja.job_posting_id')
-            ->select('ja.id', 'jp.employer_id')
-            ->where('ja.id', $id)
-            ->first();
+        $app = JobApplication::with('jobPosting')
+            ->find($id);
+
+        if (!$app) {
+            return null;
+        }
+
+        return (object) [
+            'id' => $app->id,
+            'employer_id' => $app->jobPosting?->employer_id,
+        ];
     }
 
     public function getApplicationsByUser(int $userId)
     {
-        return DB::table('job_applications as ja')
-            ->leftJoin('job_postings as jp', 'jp.id', '=', 'ja.job_posting_id')
-            ->leftJoin('businesses as b', 'b.id', '=', 'jp.business_id')
-            ->select([
-                'ja.id',
-                'ja.job_posting_id as job_id',
-                'ja.status as app_status',
-                'ja.applied_at as applied_at',
-                'ja.interview_date',
-                'jp.title as job_title',
-                'jp.location',
-                'b.name as business_name'
-            ])
-            ->where('ja.user_id', $userId)
-            ->orderByDesc('ja.applied_at')
-            ->get();
+        return JobApplication::with(['jobPosting' => function ($query) {
+            $query->with('business');
+        }])
+        ->where('user_id', $userId)
+        ->orderByDesc('applied_at')
+        ->get()
+        ->map(function ($application) {
+            return (object) [
+                'id' => $application->id,
+                'job_id' => $application->job_posting_id,
+                'app_status' => $application->status,
+                'applied_at' => $application->applied_at,
+                'interview_date' => $application->interview_date,
+                'job_title' => $application->jobPosting?->title ?? 'Deleted Job',
+                'location' => $application->jobPosting?->location ?? 'N/A',
+                'business_name' => $application->jobPosting?->business?->name ?? null,
+            ];
+        });
     }
 
     public function getApplicationsByJob(int $jobId)
     {
-        $selectColumns = [
-            'ja.id',
-            'ja.status as app_status',
-            'ja.applied_at as applied_at',
-            'ja.interview_date',
-            'ja.resume',
-            'ja.cover_letter',
-            'u.username',
-            'u.first_name',
-            'u.last_name',
-            'u.email'
-        ];
-        
-        return DB::table('job_applications as ja')
-            ->join('users as u', 'u.id', '=', 'ja.user_id')
-            ->select($selectColumns)
-            ->where('ja.job_posting_id', $jobId)
-            ->orderByDesc('ja.applied_at')
-            ->get();
+        return JobApplication::with('user')
+            ->where('job_posting_id', $jobId)
+            ->orderByDesc('applied_at')
+            ->get()
+            ->map(function ($app) {
+                return (object) [
+                    'id' => $app->id,
+                    'app_status' => $app->status,
+                    'applied_at' => $app->applied_at,
+                    'interview_date' => $app->interview_date,
+                    'resume' => $app->resume,
+                    'cover_letter' => $app->cover_letter,
+                    'username' => $app->user->username,
+                    'first_name' => $app->user->first_name,
+                    'last_name' => $app->user->last_name,
+                    'email' => $app->user->email,
+                ];
+            });
     }
 
     public function updateApplication(int $id, array $data): void
     {
-        DB::table('job_applications')->where('id', $id)->update($data);
+        JobApplication::find($id)?->update($data);
     }
 
     public function pendingApplicationsCount(int $employerId): int
     {
-        return DB::table('job_applications as ja')
-            ->join('job_postings as jp', 'jp.id', '=', 'ja.job_posting_id')
-            ->where('jp.employer_id', $employerId)
-            ->where('ja.status', 'pending')
-            ->count();
+        return JobApplication::whereHas('jobPosting', function ($query) use ($employerId) {
+            $query->where('employer_id', $employerId);
+        })
+        ->where('status', 'pending')
+        ->count();
     }
 }

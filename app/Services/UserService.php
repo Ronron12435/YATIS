@@ -3,10 +3,8 @@
 namespace App\Services;
 
 use App\DTOs\User\UpdateUserDTO;
-use App\DTOs\User\UpdateLocationDTO;
 use App\Repositories\UserRepository;
 use App\Responses\ApiResponse;
-use App\Responses\LocationResponse;
 
 class UserService
 {
@@ -76,54 +74,6 @@ class UserService
     {
         $users = $this->userRepository->getPeopleMap($authId);
         return new ApiResponse(true, $users->values()->all(), 'Success');
-    }
-
-    public function updateLocation(UpdateLocationDTO $dto): LocationResponse
-    {
-        try {
-            $user = $this->userRepository->updateLocation($dto->userId, $dto->latitude, $dto->longitude);
-            
-            return new LocationResponse(
-                success: true,
-                data: [
-                    'id' => $user->id,
-                    'latitude' => $user->latitude,
-                    'longitude' => $user->longitude,
-                    'location_updated_at' => $user->location_updated_at,
-                ],
-                message: 'Location updated successfully',
-                statusCode: 200
-            );
-        } catch (\Exception $e) {
-            return new LocationResponse(
-                success: false,
-                data: null,
-                message: 'Failed to update location',
-                statusCode: 400,
-                errors: ['error' => $e->getMessage()]
-            );
-        }
-    }
-
-    public function getLocation(int $userId): LocationResponse
-    {
-        $location = $this->userRepository->getUserLocation($userId);
-        
-        if (!$location) {
-            return new LocationResponse(
-                success: false,
-                data: null,
-                message: 'User not found',
-                statusCode: 404
-            );
-        }
-
-        return new LocationResponse(
-            success: true,
-            data: $location,
-            message: 'Location retrieved successfully',
-            statusCode: 200
-        );
     }
 
     public function setOnlineStatus(int $userId, string $status): ApiResponse

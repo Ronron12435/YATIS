@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\DTOs\User\UpdateUserDTO;
-use App\DTOs\User\UpdateLocationDTO;
 use App\Services\UserService;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -157,29 +156,6 @@ class UserController extends Controller
             'total_users' => $users->count(),
             'role_breakdown' => $roleCount
         ]);
-    }
-
-    public function updateLocation(Request $request)
-    {
-        $validated = $request->validate([
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-        ]);
-
-        $dto = new UpdateLocationDTO(
-            userId: $request->user()->id,
-            latitude: (float) $validated['latitude'],
-            longitude: (float) $validated['longitude'],
-        );
-
-        $response = $this->userService->updateLocation($dto);
-        return response()->json($response->toArray(), $response->statusCode);
-    }
-
-    public function getLocation(Request $request)
-    {
-        $response = $this->userService->getLocation($request->user()->id);
-        return response()->json($response->toArray(), $response->statusCode);
     }
 
     public function businesses(Request $request)

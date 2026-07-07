@@ -29,6 +29,63 @@
         .dest-popup { border-radius: 8px !important; }
         .leaflet-popup-content { border-radius: 8px !important; }
         .leaflet-popup-content-wrapper { border-radius: 8px !important; box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important; }
+
+        /* Dark mode support for destination cards */
+        body.dark-mode .dest-card {
+            background-color: #1a1f2e !important;
+            color: #e8eaed !important;
+        }
+
+        body.dark-mode .dest-card-title {
+            color: #00bcd4 !important;
+        }
+
+        body.dark-mode .dest-card-desc,
+        body.dark-mode .dest-card-meta {
+            color: #c5cad1 !important;
+        }
+
+        body.dark-mode .dest-rating-text {
+            color: #9aa0a6 !important;
+        }
+
+        body.dark-mode .dest-panel {
+            background-color: #1a1f2e !important;
+            color: #e8eaed !important;
+        }
+
+        body.dark-mode .review-card {
+            background-color: rgba(52, 152, 219, 0.1) !important;
+        }
+
+        body.dark-mode .review-text {
+            color: #c5cad1 !important;
+        }
+
+        body.dark-mode .dest-panel-body {
+            background-color: #1a1f2e !important;
+        }
+
+        body.dark-mode #dest-map-search {
+            background-color: #2a3142 !important;
+            color: #e8eaed !important;
+            border-color: #00bcd4 !important;
+        }
+
+        body.dark-mode #dest-map-search::placeholder {
+            color: #9aa0a6 !important;
+        }
+
+        body.dark-mode #dest-write-rating,
+        body.dark-mode #dest-write-text {
+            background-color: #2a3142 !important;
+            color: #e8eaed !important;
+            border-color: #444 !important;
+        }
+
+        body.dark-mode label[style*="color:#1a3a52"] {
+            color: #00bcd4 !important;
+        }
     </style>
 
     <h1 class="page-title"><i class="fas fa-globe-asia"></i> Tourist Destinations - Sagay City, Negros Occidental</h1>
@@ -61,10 +118,6 @@
                     <span id="dest-map-toggle-text">Hide Map</span>
                 </button>
             </div>
-        </div>
-        <div id="dest-gps-status" style="font-size: 13px; color: #666; margin-bottom: 12px; display: inline-flex; align-items: center; gap: 6px;">
-            <span style="width: 8px; height: 8px; border-radius: 50%; background: #95a5a6; display: inline-block;"></span>
-            <span>GPS: Initializing...</span>
         </div>
         <div id="dest-map-wrapper">
             <div style="position: relative; margin-bottom: 12px;">

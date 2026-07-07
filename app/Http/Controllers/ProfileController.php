@@ -166,46 +166,6 @@ class ProfileController extends Controller
         return response()->json($response, $response['success'] ? 200 : 400);
     }
 
-    public function updateLocation(Request $request)
-    {
-        if (!auth()->check()) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
-        }
-        
-        $validated = $request->validate([
-            'latitude' => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
-        ]);
-
-        try {
-            $lat = (float) $validated['latitude'];
-            $lng = (float) $validated['longitude'];
-            
-            $user = auth()->user();
-            $user->update([
-                'latitude' => $lat,
-                'longitude' => $lng,
-                'location_updated_at' => now(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Location updated successfully',
-                'data' => [
-                    'latitude' => (float) $user->latitude,
-                    'longitude' => (float) $user->longitude,
-                    'location_updated_at' => $user->location_updated_at,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update location: ' . $e->getMessage(),
-                'data' => null,
-            ], 400);
-        }
-    }
-
     public function viewProfile(int $id)
     {
         $response = $this->profileService->getUserProfileForView($id);

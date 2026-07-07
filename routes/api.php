@@ -90,12 +90,6 @@ Route::get('/me', [AuthController::class, 'me']);
     // Users
     Route::apiResource('users', UserController::class);
     
-    // User Location Routes
-    Route::post('/user/location', [UserController::class, 'updateLocation']);
-    Route::post('/update-location', [UserController::class, 'updateLocation']);
-    Route::get('/user/location', [UserController::class, 'getLocation']);
-    Route::get('/user/businesses', [UserController::class, 'businesses']);
-    
     // Profile Routes
     Route::get('/profile/current', [ProfileController::class, 'current']);
     Route::get('/profile/current/posts', [ProfileController::class, 'getPosts']);
@@ -158,7 +152,6 @@ Route::get('/me', [AuthController::class, 'me']);
     Route::get('/debug/users', [UserController::class, 'checkRoles']);
     Route::get('/debug/people-map', [UserController::class, 'debugPeopleMap']);
     Route::post('/debug/set-coordinates', [UserController::class, 'setUserCoordinates']);
-    Route::post('/profile/update-location', [ProfileController::class, 'updateLocation']);
     Route::post('/user/online-status', [UserController::class, 'setOnlineStatus']);
     Route::get('/user/nearby-active', [UserController::class, 'getNearbyActiveUsers']);
     

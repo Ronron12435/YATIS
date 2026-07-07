@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\DTOs\Destination\AddReviewDTO;
 use App\DTOs\Destination\CreateDestinationDTO;
+use App\Models\User;
 use App\Repositories\DestinationRepository;
 use App\Responses\ApiResponse;
 use Illuminate\Support\Facades\DB;
@@ -125,6 +126,7 @@ class DestinationService
 
     public function getDashboardData(int $userId): ApiResponse
     {
+        $user = User::find($userId);
         $destinations = $this->destinationRepository->getAllForDashboard();
         $total = $this->destinationRepository->totalCount();
         $myReviews = $this->destinationRepository->userReviewCount($userId);
@@ -135,6 +137,8 @@ class DestinationService
             'total'          => $total,
             'my_reviews'     => $myReviews,
             'my_avg_rating'  => $myAvgRating,
+            'user_latitude'  => $user?->latitude ?? null,
+            'user_longitude' => $user?->longitude ?? null,
         ], 'Success');
     }
 }

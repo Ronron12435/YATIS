@@ -14,7 +14,8 @@ let routingControl = null;
 
 window.initDestinationsSection = function () {
     loadDestinationsDashboard();
-    setTimeout(() => initDestMap(), 100);
+    // Increased delay to ensure API response populates userLat/userLng before map init
+    setTimeout(() => initDestMap(), 500);
 };
 
 function loadDestinationsDashboard() {
@@ -41,20 +42,28 @@ function loadDestinationsDashboard() {
             }
             const d = res.data;
             
-            // Log each destination's review count
-            if (d.destinations && Array.isArray(d.destinations)) {
-                d.destinations.forEach(dest => {
-                });
-            }
-
             setEl('dest-total-count', d.total || 0);
             setEl('dest-my-reviews', d.my_reviews || 0);
             setEl('dest-my-avg', (d.my_avg_rating || 0).toFixed(1));
 
             allDestinations = d.destinations || [];
             
-            // Get user's real-time GPS location
-            getRealTimeGPSLocation();
+            // Use live location from dashboard map first, then API response, then meta tags
+            if (window.currentUserLat && window.currentUserLng) {
+                userLat = window.currentUserLat;
+                userLng = window.currentUserLng;
+            } else if (d.user_latitude && d.user_longitude) {
+                userLat = d.user_latitude;
+                userLng = d.user_longitude;
+            } else {
+                // Fallback to meta tags (stored DB location)
+                const metaLat = document.querySelector('meta[name="user-latitude"]')?.content;
+                const metaLng = document.querySelector('meta[name="user-longitude"]')?.content;
+                if (metaLat && metaLng) {
+                    userLat = parseFloat(metaLat);
+                    userLng = parseFloat(metaLng);
+                }
+            }
             
             renderDestinationsList(allDestinations);
             
@@ -83,20 +92,22 @@ function initDestMap() {
         return;
     }
 
-    destMap = L.map('dest-map-container', { zoomControl: true }).setView([10.8967, 123.4253], 12);
+    // Use user's actual location if available, otherwise default to Sagay City
+    const initialLat = window.currentUserLat || userLat || 10.8967;
+    const initialLng = window.currentUserLng || userLng || 123.4253;
+    
+    destMap = L.map('dest-map-container', { zoomControl: true }).setView([initialLat, initialLng], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
         maxZoom: 19,
     }).addTo(destMap);
 
-    
-    // Create marker immediately with default location
-    userLat = 10.8967;
-    userLng = 123.4253;
-    createUserLocationMarker(userLat, userLng);
-    
-    // Then load actual location from database and update marker
-    loadUserLocationFromDatabase();
+    // Create marker with user's actual location
+    if (userLat && userLng) {
+        createUserLocationMarker(userLat, userLng);
+    } else {
+        createUserLocationMarker(initialLat, initialLng);
+    }
 
     // Map search
     const searchInput = document.getElementById('dest-map-search');
@@ -137,19 +148,19 @@ function createUserLocationMarker(lat, lng) {
     
     // Accuracy circle (light cyan)
     window._destUserAccuracy = L.circle([lat, lng], {
-        radius: 50,
+        radius: 30,
         color: '#00bcd4',
         fillColor: '#00bcd4',
-        fillOpacity: 0.15,
+        fillOpacity: 0.12,
         weight: 1
     }).addTo(destMap);
     
-    // Cyan dot marker - LARGER and MORE VISIBLE
+    // Cyan dot marker - small
     window._destUserMarker = L.circleMarker([lat, lng], {
-        radius: 15,
+        radius: 7,
         fillColor: '#00bcd4',
         color: 'white',
-        weight: 4,
+        weight: 2,
         opacity: 1,
         fillOpacity: 1,
         zIndex: 1000
@@ -304,7 +315,7 @@ function renderDestMapMarkers(filter) {
 
 window.getDirectionsTo = function (lat, lng, name) {
     if (!userLat || !userLng) {
-        loadUserLocationFromDatabase();
+        getRealTimeGPSLocation();
         setTimeout(() => {
             if (userLat && userLng) {
                 openDirectionsModal(userLat, userLng, lat, lng, name);
@@ -767,7 +778,6 @@ function formatDate(dateStr) {
 // Get real-time GPS location from browser
 function getRealTimeGPSLocation() {
     if (!navigator.geolocation) {
-        loadUserLocationFromDatabase();
         return;
     }
 
@@ -775,7 +785,6 @@ function getRealTimeGPSLocation() {
         (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
 
             userLat = lat;
             userLng = lng;
@@ -784,16 +793,9 @@ function getRealTimeGPSLocation() {
             if (destMap) {
                 createUserLocationMarker(lat, lng);
             }
-
-            // Save to database for future use
-            saveLocationToDatabase(lat, lng);
-
-            // Update GPS status
-            updateGpsStatus('active', `GPS Active (${accuracy.toFixed(0)}m accuracy)`);
         },
-        (error) => {
-            // Fallback to database location
-            loadUserLocationFromDatabase();
+        () => {
+            // GPS unavailable — coordinates already set from dashboard shared state
         },
         {
             enableHighAccuracy: true,
@@ -801,72 +803,6 @@ function getRealTimeGPSLocation() {
             maximumAge: 0
         }
     );
-}
-
-function loadUserLocationFromDatabase() {
-    
-    fetch('/api/user/location', {
-        credentials: 'include',
-        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-    })
-        .then(r => {
-            if (!r.ok) {
-                throw new Error(`HTTP ${r.status}`);
-            }
-            return r.json();
-        })
-        .then(response => {
-            
-            if (response.success && response.data) {
-                
-                if (response.data.latitude !== null && response.data.latitude !== undefined && 
-                    response.data.longitude !== null && response.data.longitude !== undefined) {
-                    
-                    userLat = parseFloat(response.data.latitude);
-                    userLng = parseFloat(response.data.longitude);
-                    
-                    
-                    // Update marker immediately with actual location
-                    if (destMap) {
-                        createUserLocationMarker(userLat, userLng);
-                        updateGpsStatus('active', 'Location loaded from database');
-                    } else {
-                    }
-                } else {
-                    updateGpsStatus('active', 'Using default location');
-                }
-            } else {
-                updateGpsStatus('active', 'Using default location');
-            }
-        })
-        .catch(err => {
-            updateGpsStatus('active', 'Using default location');
-        });
-}
-
-function saveLocationToDatabase(lat, lng) {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-    
-    fetch('/api/user/location', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: JSON.stringify({
-            latitude: lat,
-            longitude: lng,
-        }),
-    })
-        .then(r => r.json())
-        .then(response => {
-            if (response.success) {
-            }
-        })
-        .catch(err => {});
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────

@@ -9,18 +9,28 @@
         </div>
         
         <!-- Legend -->
-        <div style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap; justify-content: center;">
+        <div style="display: flex; gap: 15px; margin-top: 15px; flex-wrap: wrap; justify-content: center; background: white; padding: 15px; border-radius: 8px; color: #666;">
+            <style>
+                #businesses-map .card > div:last-of-type {
+                    background: white;
+                    color: #666;
+                }
+                body.dark-mode #businesses-map .card > div:last-of-type {
+                    background: #2a2a2a;
+                    color: #e0e0e0;
+                }
+            </style>
             <div style="display: flex; align-items: center; gap: 5px;">
                 <div style="width: 20px; height: 20px; background: #ffd700; border-radius: 50%; border: 2px solid white;"></div>
-                <span style="font-size: 13px; color: #666;">Food Business</span>
+                <span style="font-size: 13px;">Food Business</span>
             </div>
             <div style="display: flex; align-items: center; gap: 5px;">
                 <div style="width: 20px; height: 20px; background: #3498db; border-radius: 50%; border: 2px solid white;"></div>
-                <span style="font-size: 13px; color: #666;">Goods Business</span>
+                <span style="font-size: 13px;">Goods Business</span>
             </div>
             <div style="display: flex; align-items: center; gap: 5px;">
                 <div style="width: 20px; height: 20px; background: #9b59b6; border-radius: 50%; border: 2px solid white;"></div>
-                <span style="font-size: 13px; color: #666;">Services Business</span>
+                <span style="font-size: 13px;">Services Business</span>
             </div>
         </div>
     </div>

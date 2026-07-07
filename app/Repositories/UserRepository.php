@@ -73,35 +73,6 @@ class UserRepository
         return User::where('id', $id)->update($data) > 0;
     }
 
-    public function updateLocation(int $userId, float $latitude, float $longitude): User
-    {
-        $user = $this->findById($userId);
-        if (!$user) {
-            throw new \Exception('User not found');
-        }
-        
-        return $this->update($user, [
-            'latitude' => $latitude,
-            'longitude' => $longitude,
-            'location_updated_at' => now(),
-        ]);
-    }
-
-    public function getUserLocation(int $userId): ?array
-    {
-        $user = $this->findById($userId);
-        if (!$user) {
-            return null;
-        }
-
-        return [
-            'id' => $user->id,
-            'latitude' => $user->latitude,
-            'longitude' => $user->longitude,
-            'location_updated_at' => $user->location_updated_at,
-        ];
-    }
-
     public function setOnlineStatus(int $userId, string $status): User
     {
         $user = $this->findById($userId);

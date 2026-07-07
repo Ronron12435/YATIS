@@ -165,6 +165,37 @@
         body.dark-mode .alert-success { background: #1a3a2a; border-color: #2ecc71; }
         body.dark-mode .alert-warning { background: #3a3a1a; border-color: #f39c12; }
         body.dark-mode .alert-danger { background: #3a1a1a; border-color: #e74c3c; }
+        
+        /* Dark mode for white boxes and info containers */
+        body.dark-mode [style*="background: white"] { background-color: #1a1f2e !important; color: #e8eaed !important; }
+        body.dark-mode [style*="background:white"] { background-color: #1a1f2e !important; color: #e8eaed !important; }
+        body.dark-mode [style*="background: #fff"] { background-color: #1a1f2e !important; color: #e8eaed !important; }
+        body.dark-mode [style*="background:#fff"] { background-color: #1a1f2e !important; color: #e8eaed !important; }
+        body.dark-mode [style*="background: linear-gradient(135deg, #e8f5e9"] { background: linear-gradient(135deg, #1a3a2a 0%, #1a2a2e 100%) !important; }
+        body.dark-mode [style*="background: #fff3cd"] { background-color: #3a3a1a !important; color: #f39c12 !important; border-left-color: #f39c12 !important; }
+        body.dark-mode [style*="background:#fff3cd"] { background-color: #3a3a1a !important; color: #f39c12 !important; border-left-color: #f39c12 !important; }
+        body.dark-mode [style*="background: #f8f9fa"] { background-color: #262d3a !important; color: #c5cad1 !important; }
+        body.dark-mode [style*="background:#f8f9fa"] { background-color: #262d3a !important; color: #c5cad1 !important; }
+        body.dark-mode [style*="background: #f0f4ff"] { background-color: rgba(52, 152, 219, 0.15) !important; }
+        body.dark-mode [style*="color: #555"] { color: #c5cad1 !important; }
+        body.dark-mode [style*="color:#555"] { color: #c5cad1 !important; }
+        body.dark-mode [style*="color: #666"] { color: #9aa0a6 !important; }
+        body.dark-mode [style*="color:#666"] { color: #9aa0a6 !important; }
+        body.dark-mode [style*="color: #888"] { color: #7a8089 !important; }
+        body.dark-mode [style*="color:#888"] { color: #7a8089 !important; }
+        body.dark-mode [style*="color: #999"] { color: #7a8089 !important; }
+        body.dark-mode [style*="color:#999"] { color: #7a8089 !important; }
+        body.dark-mode [style*="color: #1a3a52"] { color: #4db8d4 !important; }
+        body.dark-mode [style*="color:#1a3a52"] { color: #4db8d4 !important; }
+        body.dark-mode [style*="color: #e74c3c"] { color: #ff6b5b !important; }
+        body.dark-mode [style*="color:#e74c3c"] { color: #ff6b5b !important; }
+        body.dark-mode [style*="border: 2px solid #00bcd4"] { border-color: #00bcd4 !important; }
+        body.dark-mode [style*="border:2px solid #00bcd4"] { border-color: #00bcd4 !important; }
+        body.dark-mode div[style*="background: white; padding"] { background-color: #1a1f2e !important; }
+        body.dark-mode div[style*="background:white; padding"] { background-color: #1a1f2e !important; }
+        
+        /* Dark mode for business filter items when selected */
+        body.dark-mode .business-filter-item[style*="background: #e3f2fd"] { background-color: #1a3a52 !important; }
     </style>
 </head>
 <body>
@@ -368,6 +399,9 @@
             // Get user's real-time GPS location
             if(navigator.geolocation) {
                 function placeUserMarker(lat, lng) {
+                    // Share coordinates globally so other sections (e.g. destinations map) stay in sync
+                    window.currentUserLat = lat;
+                    window.currentUserLng = lng;
                     if(window.userLocationMarker) dashboardMap.removeLayer(window.userLocationMarker);
                     if(window.userLocationAccuracy) dashboardMap.removeLayer(window.userLocationAccuracy);
 
@@ -437,6 +471,9 @@
             if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating...'; btn.disabled = true; }
 
             function placeAndSave(lat, lng) {
+                // Share coordinates globally so other sections (e.g. destinations map) stay in sync
+                window.currentUserLat = lat;
+                window.currentUserLng = lng;
                 if(dashboardMap) {
                     if(window.userLocationMarker) dashboardMap.removeLayer(window.userLocationMarker);
                     if(window.userLocationAccuracy) dashboardMap.removeLayer(window.userLocationAccuracy);
